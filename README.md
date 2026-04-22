@@ -41,10 +41,11 @@
 ## 🛠️ วิธีติดตั้งและใช้งานระบบ Backtest (Python)
 
 ### 1. การติดตั้ง Libraries ที่จำเป็น
-ก่อนที่จะรันสคริปต์ ให้ทำการติดตั้งไลบรารีเหล่านี้ผ่าน Terminal:
+ก่อนที่จะรันสคริปต์ ให้ทำการติดตั้งไลบรารีเหล่านี้ผ่าน Terminal (แนะนำให้ใช้ `pip3` หรือ `python3 -m pip` สำหรับ macOS):
 ```bash
-pip install pandas numpy yfinance ccxt
+pip3 install -r requirements.txt
 ```
+*(หรือจะพิมพ์ติดตั้งโดยตรงผ่าน: `pip3 install pandas numpy yfinance ccxt`)*
 
 ### 2. การรันสคริปต์แบบเดี่ยว (Single Asset)
 เปิด Terminal ไปที่โฟลเดอร์ของโปรเจกต์นี้ จากนั้นรันคำสั่ง:
