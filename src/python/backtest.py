@@ -185,6 +185,7 @@ def generate_report(trades, params, output_file):
     wins = len(df_trades[df_trades['Result'] == 'WIN'])
     losses = total_trades - wins
     win_rate = (wins / total_trades) * 100
+    roi_pct = (total_profit / params['capital']) * 100
     
     # Box Width Formatting
     width = 60
@@ -207,6 +208,7 @@ def generate_report(trades, params, output_file):
     ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")
     ui += box_line(f" ▶ Final Capital   : ${final_capital:,.2f}")
     ui += box_line(f" ▶ Total Profit    : ${total_profit:,.2f}")
+    ui += box_line(f" ▶ Growth Profit % : {roi_pct:,.2f}%")
     ui += box_line(f" ▶ Max Drawdown    : {max_drawdown:.2f}%")
     ui += box_line("")
     ui += box_line("[ TRADE STATISTICS ]")
@@ -240,6 +242,7 @@ def generate_report(trades, params, output_file):
         f.write(f"Initial Capital: ${params['capital']:,.2f}\n")
         f.write(f"Final Capital: ${final_capital:,.2f}\n")
         f.write(f"Total Profit: ${total_profit:,.2f}\n")
+        f.write(f"Growth Profit %: {roi_pct:,.2f}%\n")
         f.write(f"Max Drawdown: {max_drawdown:.2f}%\n")
         f.write(f"Total Trades: {total_trades}\n")
         f.write(f"Wins: {wins}\n")
