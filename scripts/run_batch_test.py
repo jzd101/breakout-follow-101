@@ -13,7 +13,7 @@ with open("backtest_results_all_tf.txt", "w", encoding="utf-8") as f:
             f.write(msg + "\n")
             
             p = subprocess.run(
-                ["python3", "main.py"], 
+                ["python3", "src/backtest_engine.py"], 
                 input=f"{sym}\n{tf}\nmax\n1000\n1\n", 
                 text=True, capture_output=True
             )

@@ -38,12 +38,11 @@
 
 ## 🚀 Current Status & Next Possible Steps
 **Status:** 
-- ระบบ Core Logic แบบ Backtest (Python) อยู่ในไฟล์ `main.py` ปรับแก้ให้สอดคล้องกับพฤติกรรม TradingView อย่างสมบูรณ์แล้ว
-- ได้สร้างสคริปต์ `test_all.py` เพื่อรันทดสอบชุดใหญ่ครอบคลุม 6 สินทรัพย์ (GBPUSD, GBPJPY, EURUSD, EURJPY, XAUUSD, BTCUSD) บนหลาย Timeframe (5m, 15m, 1h, 4h)
-- **Insight จากการทดสอบ:** กลยุทธ์ Breakout ทำงานได้ดีที่สุดกับเทรนด์ของ Crypto (BTC) โดยเฉพาะที่ Timeframe 15m และ 1h (กำไร >280% - 340%) ส่วน Timeframe ต่ำๆ อย่าง 5m มีสัญญาณหลอก (False Breakout) เยอะมากทำให้ขาดทุนในทุกสินทรัพย์
-- พบข้อจำกัด API ของ `yfinance` ที่ไม่สามารถดึงข้อมูล Timeframe `4h` ได้ (จะขึ้น Error ไม่พบข้อมูล) ส่วน Crypto (`ccxt`) ดึงได้ลึก 7 ปีในทุก Timeframe
+- มีการปรับปรุงโครงสร้างโปรเจกต์ใหม่: โค้ด Backtest อยู่ใน `src/backtest_engine.py`, ไฟล์ EA อยู่ใน `mql5/BreakoutFollow.mq5` และสคริปต์รันทดสอบอยู่ `scripts/run_batch_test.py`
+- ระบบ Core Logic แบบ Backtest (Python) ได้ถูกนำมารวมร่างกับ Skill ใหม่อย่าง `backtesting-trading-strategies` ทำให้สามารถคำนวณ Metrics ขั้นสูงได้ (เช่น Sharpe Ratio, Max Drawdown, Calmar Ratio) รวมถึงคิดค่าธรรมเนียม Commission เพื่อความสมจริง
+- ได้ทดสอบผ่าน `scripts/run_batch_test.py` ครอบคลุม 6 สินทรัพย์ (GBPUSD, GBPJPY, EURUSD, EURJPY, XAUUSD, BTCUSD) บนหลาย Timeframe (5m, 15m, 1h, 4h)
+- **Insight จากการทดสอบ:** กลยุทธ์ Breakout ทำงานได้ดีที่สุดกับเทรนด์ของ Crypto (BTC) โดยเฉพาะที่ Timeframe 15m และ 1h ส่วน Timeframe ต่ำๆ อย่าง 5m มีสัญญาณหลอก (False Breakout) และค่าคอมมิชชันที่แพง ทำให้ขาดทุนในทุกสินทรัพย์
+- ไฟล์ EA (MQL5) ได้รับการตรวจสอบแล้วว่าทำงานสอดคล้องกับ Python (ใช้ Ask/Bid เพื่อคำนวณ Spread พื้นฐาน)
 **Ideas for Next Steps:**
-1. สร้างไฟล์ Python (`main.py` หรืออื่นๆ) ในโปรเจกต์นี้ เพื่อรวบรวมโค้ด Backtest ที่เคยเขียนไว้ นำมาใช้งานจริง
-2. สร้างไฟล์ EA (`.mq5`) นำโค้ดมาเตรียมพร้อมสำหรับการ Compile
-3. เพิ่มระบบ Data Visualization ใน Python (เช่น ใช้ `Matplotlib` หรือ `Plotly`) เพื่อพล็อตกราฟแสดงจุดเข้าซื้อ-ขาย (Buy/Sell signals)
-4. ทดสอบนำ MQL5 EA ไปรันในโหมด Strategy Tester ของ MT5 เพื่อตรวจสอบการทำงานในสภาพแวดล้อมจริง
+1. ทดสอบนำ MQL5 EA ไปรันในโหมด Strategy Tester ของ MT5 เพื่อตรวจสอบการทำงานในสภาพแวดล้อมจริง
+2. ศึกษาและปรับจูน Parameter การตั้งค่าของแต่ละคู่เงิน เช่น ATR Multiplier สำหรับคู่เงินที่มี Volatility ต่างกัน

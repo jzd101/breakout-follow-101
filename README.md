@@ -2,6 +2,12 @@
 
 ระบบเทรดอิงตามแนวโน้มและการทะลุของราคา (Trend Following + Breakout) ที่ถูกพัฒนาขึ้นโดยเน้นความเป็นไปได้ทางสถิติและคณิตศาสตร์ ปราศจากการคาดเดาตลาด ระบบนี้มาพร้อมกับสคริปต์จำลองการเทรด (Backtest Engine) ด้วย Python และ Expert Advisor (EA) สำหรับรันเทรดอัตโนมัติบนแพลตฟอร์ม MetaTrader 5 (MT5)
 
+## 📁 โครงสร้างโปรเจกต์
+1. `src/backtest_engine.py`: โค้ดหลักในการดึงข้อมูล (yfinance / ccxt) และรัน Backtest ด้วยกลยุทธ์ Breakout
+2. `mql5/BreakoutFollow.mq5`: โค้ด Expert Advisor (EA) สำหรับนำไปรันบน MetaTrader 5
+3. `scripts/run_batch_test.py`: สคริปต์สำหรับรันทดสอบชุดใหญ่ (ครอบคลุม 6 คู่เงินยอดฮิต ในหลาย Timeframe)
+4. `results/batch_test_summary.txt`: ไฟล์สรุปผลการทดสอบทั้งหมด
+
 ## 💡 แนวคิดของระบบ (Core Strategy)
 ระบบจะเข้าทำกำไรก็ต่อเมื่อตลาดมีทิศทาง (Trend) ที่ชัดเจน, มีการเบรคเอาต์ (Breakout) เพื่อหาจุดเข้าที่ได้เปรียบ, และยืนยันความแข็งแกร่งด้วยปริมาณการซื้อขาย (Volume) 
 
@@ -43,7 +49,7 @@ pip install pandas numpy yfinance ccxt
 ### 2. การรันสคริปต์แบบเดี่ยว (Single Asset)
 เปิด Terminal ไปที่โฟลเดอร์ของโปรเจกต์นี้ จากนั้นรันคำสั่ง:
 ```bash
-python main.py
+python3 src/backtest_engine.py
 ```
 *(ระบบจะตรวจจับอัตโนมัติ: หากเป็น Crypto จะดึงข้อมูลด้วย `ccxt`, หากเป็น Forex/Metals จะดึงข้อมูลด้วย `yfinance`)*
 
@@ -58,7 +64,7 @@ python main.py
 ### 4. การรันทดสอบหลายสินทรัพย์ (Batch Backtesting)
 หากต้องการรันทดสอบกลยุทธ์กับหลายสินทรัพย์ยอดฮิตพร้อมกัน (GBPUSD, GBPJPY, EURUSD, EURJPY, XAUUSD, BTCUSD) สามารถรันผ่านสคริปต์ได้:
 ```bash
-python test_all.py
+python3 scripts/run_batch_test.py
 ```
 ---
 
