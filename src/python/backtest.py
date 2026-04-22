@@ -22,23 +22,15 @@ def calculate_indicators(df):
                           np.maximum(abs(df['High'] - df['Prev_Close']), 
                                      abs(df['Low'] - df['Prev_Close'])))
     
-    # RMA formulation
-    def rma(series_values, length):
-        rma_series = np.zeros_like(series_values)
-        rma_series[length-1] = np.mean(series_values[:length])
-        for i in range(length, len(series_values)):
-            rma_series[i] = (rma_series[i-1] * (length - 1) + series_values[i]) / length
-        return pd.Series(rma_series, index=df.index)
-
-    # Handling NaN initially
-    tr_clean = df['TR'].fillna(0).values
-    df['ATR_14'] = rma(tr_clean, 14)
-    # Replace the initial 0s back with NaN
-    df.loc[:13, 'ATR_14'] = np.nan
+    # RMA (Running Moving Average) calculation for ATR
+    def calculate_rma(series, length):
+        return series.ewm(alpha=1/length, min_periods=length, adjust=False).mean()
+        
+    df['ATR_14'] = calculate_rma(df['TR'], 14)
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0):
+def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0):
     capital = initial_capital
     position = None  # 'LONG', 'SHORT'
     entry_price = 0
@@ -78,7 +70,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0):
                     position = None
                 elif next_candle['High'] >= tp_price:
                     # TP hit
-                    profit = risk_amount * rr
+                    profit = (risk_amount * rr)
                     capital += profit
                     trades.append({
                         'Exit_Date': next_candle['Date'],
@@ -103,7 +95,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0):
                     position = None
                 elif next_candle['Low'] <= tp_price:
                     # TP hit
-                    profit = risk_amount * rr
+                    profit = (risk_amount * rr)
                     capital += profit
                     trades.append({
                         'Exit_Date': next_candle['Date'],
@@ -114,7 +106,12 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0):
                     })
                     position = None
                     
-            continue  # Don't open a new trade if we are already in one
+            if position is None:
+                # Deduction for commission (optional, but video mentions it)
+                # capital -= capital * 0.001 # 0.1% commission example
+                pass
+            else:
+                continue  # Don't open a new trade if we are already in one
             
         # Check Entry Conditions
         close = current_candle['Close']
@@ -125,25 +122,29 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0):
         vol_ma = current_candle['Vol_MA']
         atr = current_candle['ATR_14']
         
-        # Volume condition
-        vol_condition = True
-        if has_volume:
-            vol_condition = vol > vol_ma
+        # EMA Filter
+        ema_long_cond = close > ema if use_ema else True
+        ema_short_cond = close < ema if use_ema else True
+        
+        # Volume Filter
+        vol_cond = True
+        if use_vol and has_volume:
+            vol_cond = vol > vol_ma
         
         # LONG Condition
-        if close > ema and close > upper_bb and vol_condition:
+        if ema_long_cond and close > upper_bb and vol_cond:
             position = 'LONG'
-            entry_price = next_candle['Open'] # Enter on next candle open
-            sl_price = entry_price - (atr * 2)
-            tp_price = entry_price + (atr * 2 * rr)
+            entry_price = next_candle['Open']
+            sl_price = entry_price - (atr * atr_mult)
+            tp_price = entry_price + (atr * atr_mult * rr)
             risk_amount = capital * (risk_pct / 100)
             
         # SHORT Condition
-        elif close < ema and close < lower_bb and vol_condition:
+        elif ema_short_cond and close < lower_bb and vol_cond:
             position = 'SHORT'
             entry_price = next_candle['Open']
-            sl_price = entry_price + (atr * 2)
-            tp_price = entry_price - (atr * 2 * rr)
+            sl_price = entry_price + (atr * atr_mult)
+            tp_price = entry_price - (atr * atr_mult * rr)
             risk_amount = capital * (risk_pct / 100)
             
     return trades, capital
@@ -263,7 +264,10 @@ if __name__ == "__main__":
     parser.add_argument('--capital', type=float, default=1000.0, help='Initial Capital')
     parser.add_argument('--risk', type=float, default=0.5, help='Risk % per trade')
     parser.add_argument('--rr', type=float, default=2.0, help='Risk Reward Ratio')
-    parser.add_argument('--output', type=str, default='report.txt', help='Output report text file')
+    parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
+    parser.add_argument('--output', type=str, default='report.txt', help='Output report file')
+    parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
+    parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
     
     args = parser.parse_args()
     
@@ -277,8 +281,8 @@ if __name__ == "__main__":
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr)
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult)
     
     print("Generating report...")
     params = {

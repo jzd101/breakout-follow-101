@@ -13,6 +13,9 @@ def main():
     parser.add_argument('--capital', type=float, default=1000.0, help='Initial Capital')
     parser.add_argument('--risk', type=float, default=0.5, help='Risk % per trade')
     parser.add_argument('--rr', type=str, default='2.0', help='Risk Reward Ratio (e.g., 2 or 1:2)')
+    parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
+    parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
+    parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
     
     args = parser.parse_args()
     
@@ -28,10 +31,8 @@ def main():
         rr_val = float(rr_str)
         
     symbol_upper = args.symbol.upper()
-    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data'))
     reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../reports'))
     
-    os.makedirs(data_dir, exist_ok=True)
     os.makedirs(reports_dir, exist_ok=True)
     
     report_txt = os.path.join(reports_dir, f"{symbol_upper}_{args.timeframe}_report.txt")
@@ -47,8 +48,8 @@ def main():
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val)
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult)
     
     print("Generating report...")
     params = {

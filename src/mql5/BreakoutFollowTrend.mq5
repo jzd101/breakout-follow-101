@@ -10,6 +10,9 @@
 
 input double InpRiskPct = 0.5;      // Risk % per trade
 input double InpRR = 2.0;           // Risk Reward Ratio
+input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
+input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
+input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 20;      // Bollinger Bands Period
 input double InpBBDev = 2.0;        // Bollinger Bands Deviations
@@ -68,7 +71,7 @@ void OnTick()
    ArraySetAsSeries(lowerBB, true);
    ArraySetAsSeries(atr, true);
    
-   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return;
+   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) ema[0] = 0;
    if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return;
    if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return;
    if(CopyBuffer(handleATR, 0, 1, 1, atr) <= 0) return;
@@ -76,45 +79,50 @@ void OnTick()
    double close1 = iClose(_Symbol, _Period, 1);
    long vol1 = iVolume(_Symbol, _Period, 1);
    
-   // Calculate Volume MA for the last InpVolPeriod bars
-   long vol_sum = 0;
-   for(int i=1; i<=InpVolPeriod; i++)
+   // Calculate Volume MA
+   double vol_ma = 0;
+   if(InpUseVol)
      {
-      vol_sum += iVolume(_Symbol, _Period, i);
+      long vol_sum = 0;
+      for(int i=1; i<=InpVolPeriod; i++)
+        {
+         vol_sum += iVolume(_Symbol, _Period, i);
+        }
+      vol_ma = (double)vol_sum / InpVolPeriod;
      }
-   double vol_ma = (double)vol_sum / InpVolPeriod;
    
-   // Volume Filter Check
-   // Note: In Forex, volume might be 0. If it's always 0, we disable the filter.
-   bool vol_condition = (vol1 > vol_ma) || (vol_ma == 0); 
+   // Filters
+   bool vol_condition = !InpUseVol || (vol1 > vol_ma) || (vol_ma == 0);
+   bool ema_long = !InpUseEMA || (close1 > ema[0]);
+   bool ema_short = !InpUseEMA || (close1 < ema[0]);
    
    // LONG Condition
-   if(close1 > ema[0] && close1 > upperBB[0] && vol_condition)
+   if(ema_long && close1 > upperBB[0] && vol_condition)
      {
       double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      double slDist = atr[0] * 2.0;
+      double slDist = atr[0] * InpATRMult;
       double slPrice = entryPrice - slDist;
       double tpPrice = entryPrice + (slDist * InpRR);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
         {
-         trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout Follow Trend LONG");
+         trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG");
         }
      }
      
    // SHORT Condition
-   else if(close1 < ema[0] && close1 < lowerBB[0] && vol_condition)
+   else if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
       double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-      double slDist = atr[0] * 2.0;
+      double slDist = atr[0] * InpATRMult;
       double slPrice = entryPrice + slDist;
       double tpPrice = entryPrice - (slDist * InpRR);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
         {
-         trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout Follow Trend SHORT");
+         trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT");
         }
      }
   }
