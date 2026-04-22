@@ -31,9 +31,10 @@
 - [x] **Phase 5: Dynamic Inputs (Python)** ปรับปรุงโค้ด Python ให้สามารถรับค่า Input จากผู้ใช้งานผ่าน Terminal ได้แบบ Real-time (Symbol, Timeframe, Period, Capital, Risk %)
 
 ## 🛠️ Technology Stack
-* **Python:** `ccxt` (Binance API Data Fetching), `pandas` (Data Manipulation), `numpy` (Calculation)
+* **Python:** `ccxt` (Binance API Data Fetching), `yfinance` (Forex/Metals), `pandas` (Data Manipulation), `numpy` (Calculation)
 * **MQL5:** MetaTrader 5 (Expert Advisor)
 * **🚨 Synchronization Rule:** ทุกครั้งที่มีการแก้ไข/อัปเดตโค้ดเงื่อนไขในฝั่ง `main.py` (Python) **จะต้องแก้ไขโค้ดในฝั่ง EA (`.mq5`) ให้ตรงกันเสมอ** เพื่อรักษาความสอดคล้องของระบบ
+* **🚨 README Update Rule:** ทุกครั้งที่มีการเปลี่ยนแปลงใดๆ ในโปรเจกต์ (โค้ด, ฟีเจอร์, ตั้งค่า) **จะต้องอัปเดตไฟล์ `README.md` ให้เป็นข้อมูลล่าสุดเสมอ**
 
 ## 🚀 Current Status & Next Possible Steps
 **Status:** 
