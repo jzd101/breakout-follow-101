@@ -1,76 +1,116 @@
-# Breakout Follow Trend Trading System 📈
+# Breakout Follow Trend System
 
-ระบบเทรดอิงตามแนวโน้มและการทะลุของราคา (Trend Following + Breakout) ที่ถูกพัฒนาขึ้นโดยเน้นความเป็นไปได้ทางสถิติและคณิตศาสตร์ ปราศจากการคาดเดาตลาด ระบบนี้มาพร้อมกับสคริปต์จำลองการเทรด (Backtest Engine) ด้วย Python และ Expert Advisor (EA) สำหรับรันเทรดอัตโนมัติบนแพลตฟอร์ม MetaTrader 5 (MT5)
+This repository contains the complete implementation of the "Breakout Follow Trend" trading strategy, derived from a YouTube video tutorial. The system is built for both historical backtesting using Python and live trading using MetaTrader 5 (MT5).
 
-## 📁 โครงสร้างโปรเจกต์
-1. `src/backtest_engine.py`: โค้ดหลักในการดึงข้อมูล (yfinance / ccxt) และรัน Backtest ด้วยกลยุทธ์ Breakout
-2. `mql5/BreakoutFollow.mq5`: โค้ด Expert Advisor (EA) สำหรับนำไปรันบน MetaTrader 5
-3. `scripts/run_batch_test.py`: สคริปต์สำหรับรันทดสอบชุดใหญ่ (ครอบคลุม 6 คู่เงินยอดฮิต ในหลาย Timeframe)
-4. `results/batch_test_summary.txt`: ไฟล์สรุปผลการทดสอบทั้งหมด
+## System Architecture
 
-## 💡 แนวคิดของระบบ (Core Strategy)
-ระบบจะเข้าทำกำไรก็ต่อเมื่อตลาดมีทิศทาง (Trend) ที่ชัดเจน, มีการเบรคเอาต์ (Breakout) เพื่อหาจุดเข้าที่ได้เปรียบ, และยืนยันความแข็งแกร่งด้วยปริมาณการซื้อขาย (Volume) 
+The strategy is a trend-following breakout system with the following rules:
 
-### 📊 ตัวชี้วัดที่ใช้งาน (Indicators)
-* **EMA (200):** เส้นค่าเฉลี่ยเคลื่อนที่เพื่อกรองเทรนด์หลัก (ราคา > EMA200 คือ ขาขึ้น, ราคา < EMA200 คือ ขาลง)
-* **Bollinger Bands (20, 2):** ใช้ขอบบนและขอบล่างของ Band เพื่อจับจุดที่ราคาเกิดการ Breakout
-* **Volume & Volume MA (20):** ยืนยันว่าการเบรคเอาต์นั้นมีแรงซื้อหรือแรงขายจริงรองรับ (ปริมาณซื้อขายต้องมากกว่าค่าเฉลี่ย)
-* **ATR (14):** วัดความผันผวนของตลาด เพื่อนำไปตั้งค่า Stop Loss แบบยืดหยุ่น (Dynamic Stop Loss)
+### Indicators
+1. **EMA 200**: Used to determine the long-term trend.
+2. **Bollinger Bands (20, 2)**: Used to identify volatility breakouts.
+3. **Volume MA (20)**: Used as a filter to ensure the breakout has institutional backing (higher than average volume).
+4. **ATR (14)**: Used to calculate dynamic Stop Loss and Take Profit levels based on market volatility.
 
-### 🎯 เงื่อนไขการเข้าทำกำไร (Entry Rules)
-* **🟢 LONG (ซื้อ):** เมื่อราคาปิด **สูงกว่า** เส้น EMA200 + แท่งเทียนทะลุ **ขอบบน** Bollinger Bands + Volume **สูงกว่า** ค่าเฉลี่ย
-* **🔴 SHORT (ขาย):** เมื่อราคาปิด **ต่ำกว่า** เส้น EMA200 + แท่งเทียนทะลุ **ขอบล่าง** Bollinger Bands + Volume **สูงกว่า** ค่าเฉลี่ย
+### Trade Conditions
 
-### 🛡️ การจัดการความเสี่ยง (Risk Management)
-* **Stop Loss (SL):** วัดระยะ 2 เท่าของค่า ATR ณ จุดเข้าเทรด
-* **Take Profit (TP):** ตั้งอัตราส่วน Risk:Reward ที่ 1:2
-* **Position Sizing:** เสี่ยงเพียง 1% - 3% ของพอร์ตทบต้น ต่อการเทรด 1 ครั้ง
+**LONG (Buy)**
+- Previous candle closes **above** the EMA 200.
+- Previous candle closes **above** the Upper Bollinger Band.
+- Previous candle volume is **greater** than the 20-period Volume MA.
+- **Entry**: Open of the current candle.
+- **Stop Loss**: Entry - (2 * ATR).
+- **Take Profit**: Entry + (2 * ATR * Risk Reward Ratio).
 
----
-
-## 💻 เทคโนโลยีที่ใช้ (Tech Stack)
-* **Python 3.x:** สำหรับดึงข้อมูลและทำ Backtest
-  * `ccxt`: ดึงข้อมูลราคา Cryptocurrency ย้อนหลังระดับหลายปีจากกระดานเทรด (เช่น Binance)
-  * `yfinance`: ดึงข้อมูลราคาสินทรัพย์ดั้งเดิม เช่น Forex (GBPJPY, EURUSD) หรือ ทองคำ (XAUUSD)
-  * `pandas`: จัดการชุดข้อมูลและคำนวณ Indicators
-  * `numpy`: ช่วยประมวลผลทางคณิตศาสตร์อย่างรวดเร็ว
-* **MQL5 (MetaTrader 5):** ภาษาสำหรับเขียนหุ่นยนต์เทรด (EA) ให้เทรดอัตโนมัติแบบ Real-time
+**SHORT (Sell)**
+- Previous candle closes **below** the EMA 200.
+- Previous candle closes **below** the Lower Bollinger Band.
+- Previous candle volume is **greater** than the 20-period Volume MA.
+- **Entry**: Open of the current candle.
+- **Stop Loss**: Entry + (2 * ATR).
+- **Take Profit**: Entry - (2 * ATR * Risk Reward Ratio).
 
 ---
 
-## 🛠️ วิธีติดตั้งและใช้งานระบบ Backtest (Python)
+## Directory Structure
 
-### 1. การติดตั้ง Libraries ที่จำเป็น
-ก่อนที่จะรันสคริปต์ ให้ทำการติดตั้งไลบรารีเหล่านี้ผ่าน Terminal (แนะนำให้ใช้ `pip3` หรือ `python3 -m pip` สำหรับ macOS):
-```bash
-pip3 install -r requirements.txt
 ```
-*(หรือจะพิมพ์ติดตั้งโดยตรงผ่าน: `pip3 install pandas numpy yfinance ccxt`)*
-
-### 2. การรันสคริปต์แบบเดี่ยว (Single Asset)
-เปิด Terminal ไปที่โฟลเดอร์ของโปรเจกต์นี้ จากนั้นรันคำสั่ง:
-```bash
-python3 src/backtest_engine.py
+breakout-follow-101/
+│
+├── src/
+│   ├── python/
+│   │   ├── run_system.py        # Main wrapper script for downloading data & backtesting
+│   │   ├── download_data.py     # Script to download data from Yahoo Finance
+│   │   └── backtest.py          # Backtesting engine
+│   └── mql5/
+│       └── BreakoutFollowTrend.mq5  # MT5 Expert Advisor (Bot)
+│
+├── data/                        # Contains downloaded CSV data files
+├── reports/                     # Contains generated txt and csv backtest reports
+├── scripts/                     # Utility scripts (e.g., YouTube transcript extraction)
+│
+├── README.md                    # Project documentation
+└── MEMORY.md                    # Persistent memory state of the project
 ```
-*(ระบบจะตรวจจับอัตโนมัติ: หากเป็น Crypto จะดึงข้อมูลด้วย `ccxt`, หากเป็น Forex/Metals จะดึงข้อมูลด้วย `yfinance`)*
 
-### 3. การป้อนข้อมูล (Dynamic Inputs)
-เมื่อรันสคริปต์ โปรแกรมจะถามค่าตั้งต้นเพื่อใช้ในการคำนวณแบบ Real-time:
-* **Symbol:** ชื่อคู่สินทรัพย์ (เช่น `BTC/USDT`, `XAUUSD`, `GBPJPY`)
-* **Timeframe:** กรอบเวลา (เช่น `1h`, `1d`)
-* **Period:** ระยะเวลาย้อนหลัง (เช่น `2y`, `max`)
-* **Capital:** เงินทุนเริ่มต้น ($)
-* **Risk:** ความเสี่ยงต่อออเดอร์ (%)
-
-### 4. การรันทดสอบหลายสินทรัพย์ (Batch Backtesting)
-หากต้องการรันทดสอบกลยุทธ์กับหลายสินทรัพย์ยอดฮิตพร้อมกัน (GBPUSD, GBPJPY, EURUSD, EURJPY, XAUUSD, BTCUSD) สามารถรันผ่านสคริปต์ได้:
-```bash
-python3 scripts/run_batch_test.py
-```
 ---
 
-## 🤖 ระบบเทรดอัตโนมัติ (MT5 EA)
-สำหรับไฟล์ที่เป็นนามสกุล `.mq5` สามารถนำไปวางไว้ในโฟลเดอร์ `MQL5/Experts/` ของโปรแกรม MetaTrader 5 จากนั้นเปิด MetaEditor เพื่อกด Compile และนำไปใช้งานจริงบนแพลตฟอร์มได้ทันที
+## Python Backtest System
+
+### Requirements & Installation
+
+You need Python 3 installed. Install the required dependencies using `pip`:
+
+```bash
+pip install pandas yfinance numpy
+```
+
+### Usage
+
+The easiest way to run a backtest is using the `run_system.py` wrapper. It automatically fetches the data, maps common symbols to their `yfinance` equivalents (e.g., `GBPUSD` -> `GBPUSD=X`, `XAUUSD` -> `GC=F`), and generates a report.
+
+```bash
+python3 src/python/run_system.py --symbol GBPUSD --timeframe 1h --years 1 --capital 1000 --risk 0.5 --rr 2.0
+```
+
+**Parameters:**
+- `--symbol`: Trading pair (e.g., `GBPUSD`, `XAUUSD`, `BTCUSD`).
+- `--timeframe`: Interval (e.g., `1h`, `15m`, `1d`). Default is `1h`.
+- `--years`: Years of historical data to download. Default is `1`. *(Note: For the `1h` timeframe, `yfinance` has a strict maximum limit of 729 days. If you request more than 2 years, the script will automatically cap it to 729 days to prevent errors.)*
+- `--capital`: Starting capital in USD. Default is `1000.0`.
+- `--risk`: Risk percentage per trade. Default is `0.5`.
+- `--rr`: Risk to Reward ratio. You can input a float (e.g., `2.0`) or a ratio string (e.g., `1:2` or `1:3`). Default is `2.0`.
+
+The system will output the data to the `data/` folder and generate the reports in the `reports/` folder.
+
+> **Note on Forex Volume**: Yahoo Finance often does not provide Volume data for Forex pairs (it returns 0). The backtesting engine will automatically detect if the entire dataset has 0 volume and will safely **disable** the volume filter for that backtest, allowing it to proceed normally.
 
 ---
-**⚠️ คำเตือน (Disclaimer):** เครื่องมือนี้ถูกพัฒนาขึ้นเพื่อการศึกษาและการจำลองเชิงสถิติเท่านั้น ผู้ใช้ควรทำการ Forward Test หรือรันบนบัญชี Demo ก่อนนำไปใช้เทรดด้วยเงินจริงเสมอ
+
+## MT5 Trading Bot (Expert Advisor)
+
+The system is also fully implemented as an MQL5 Expert Advisor located at `src/mql5/BreakoutFollowTrend.mq5`.
+
+### Installation
+1. Copy `BreakoutFollowTrend.mq5` into your MT5 `MQL5/Experts/` folder.
+2. Open MetaEditor and compile the file.
+3. Attach it to any chart in MT5.
+
+### EA Inputs
+- **InpRiskPct**: Percentage of account balance to risk per trade (Default: 0.5%).
+- **InpRR**: Risk-Reward Ratio (Default: 2.0).
+- **InpEMAPeriod**: Length of the EMA (Default: 200).
+- **InpBBPeriod**: Length of Bollinger Bands (Default: 20).
+- **InpBBDev**: Deviation of Bollinger Bands (Default: 2.0).
+- **InpVolPeriod**: Length of Volume Moving Average (Default: 20).
+- **InpATRPeriod**: Length of ATR (Default: 14).
+
+---
+
+## Development Notes
+
+Any future modifications to the core trading logic **MUST** be reflected simultaneously in both:
+1. `src/python/backtest.py`
+2. `src/mql5/BreakoutFollowTrend.mq5`
+
+The `README.md` and `MEMORY.md` files must also be continuously updated to reflect the latest project state.
