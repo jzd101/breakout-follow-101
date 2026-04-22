@@ -6,15 +6,30 @@
 Implement a robust trading strategy using a "Breakout Follow Trend with Volume Filter" model. Establish a persistent memory context, refine a Python backtest engine, and maintain code parity with an MQL5 Expert Advisor for MT5 deployment. Ensure optimization for Crypto, Forex, and Commodities.
 
 ### Strategy Rules
-- **Indicators**: EMA 200, Bollinger Bands (20, 2), Volume MA (20), ATR (14).
-- **Long**: Close > EMA 200 AND Close > Upper BB AND Volume > Volume MA.
-- **Short**: Close < EMA 200 AND Close < Lower BB AND Volume > Volume MA.
-- **Risk Management**: Risk X% per trade. Stop Loss = 2 * ATR. Take Profit = SL Distance * RR (e.g. 1:2).
+- **Indicators**: EMA 200, Bollinger Bands (20, 2), Volume MA (20), ATR (14) using RMA smoothing.
+- **Filters**: EMA 200 (Optional), Volume Filter (Optional).
+- **Long**: Close > Upper BB (and optional EMA/Volume filters).
+- **Short**: Close < Lower BB (and optional EMA/Volume filters).
+- **Risk Management**: Compounding (Risk X% of current balance).
+- **SL/TP**: Stop Loss = ATR * ATR_Mult. Take Profit = SL Distance * RR.
 
 ### Current State & Structure
-- Code is organized into `src/` (python and mql5 logic), `data/` (for CSV histories), `reports/` (for backtest results), and `scripts/` (for one-off utilities).
-- We have `run_system.py` as a master wrapper to download data and run backtests using simple ticker names (e.g. `GBPUSD`, `XAUUSD`, `BTCUSD`).
-- MQL5 EA `BreakoutFollowTrend.mq5` matches the Python logic 100%.
+- **Architecture**: In-memory data processing. CSV storage in `data/` has been removed to reduce clutter and ensure fresh data.
+- **Python Logic**: Centralized in `run_system.py`, `backtest.py`, and `download_data.py`.
+- **MT5 Parity**: `BreakoutFollowTrend.mq5` updated with optional filters and ATR Multiplier settings.
+- **Reporting**: Advanced Text UI with Monthly Breakdown and Growth Profit % (ROI).
+- **Git**: `reports/` and common python files added to `.gitignore`.
+
+### Technical Notes & Limits
+- **Data Limits**: yfinance caps 1h data at 729 days and <1h data at 59 days.
+- **ATR Smoothing**: Using `ewm` with `alpha=1/length` to match TradingView's RMA precisely.
+- **Performance**: Crypto ROI is highly sensitive to the Volume Filter and ATR Multiplier.
+
+### Persistent Tasks
+- [x] Integrate ROI % in reports.
+- [x] Add .gitignore for reports.
+- [x] Remove data directory creation.
+- [x] Synchronize MQL5 EA with Python tuning parameters.
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any changes to the core trading logic, entry/exit conditions, or indicator periods MUST be updated in both `src/python/backtest.py` and `src/mql5/BreakoutFollowTrend.mq5`. Do not forget!
