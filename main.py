@@ -24,8 +24,16 @@ def fetch_data(symbol, interval, period):
 
     if use_yf:
         print(f"\nกำลังดึงข้อมูล {yf_symbol} ผ่าน yfinance...")
-        print(f"(หมายเหตุ: yfinance มีข้อจำกัดดึงข้อมูล 1h ย้อนหลังได้สูงสุดแค่ 2 ปี หรือ 730 วัน)")
-        period_yf = '730d' if (interval == '1h' and ('y' in period or period == 'max')) else period
+        if interval == '1m':
+            period_yf = '7d'
+        elif interval in ['5m', '15m', '30m']:
+            period_yf = '60d'
+        elif interval in ['1h', '60m', '90m']:
+            period_yf = '730d'
+        else:
+            period_yf = period if period != 'max' else '10y'
+            
+        print(f"(หมายเหตุ: ใช้ period {period_yf} เนื่องจากข้อจำกัดของ yfinance สำหรับ Timeframe {interval})")
         df = yf.download(yf_symbol, interval=interval, period=period_yf, progress=False)
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
