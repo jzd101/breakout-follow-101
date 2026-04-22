@@ -185,44 +185,47 @@ def generate_report(trades, params, output_file):
     losses = total_trades - wins
     win_rate = (wins / total_trades) * 100
     
-    # Generate Beautiful Console UI
-    ui = f"""
-╔══════════════════════════════════════════════════════════════╗
-║                    BREAKOUT FOLLOW TREND                     ║
-║                       BACKTEST REPORT                        ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  [ SYSTEM SETTINGS ]                                         ║
-║  ▶ Symbol          : {params.get('symbol', 'Unknown')}
-║  ▶ Timeframe       : {params.get('timeframe', 'Unknown')}
-║  ▶ Risk Per Trade  : {params.get('risk', 0.0)}%
-║  ▶ Risk:Reward     : 1:{params.get('rr', 2.0)}
-║                                                              ║
-║  [ ACCOUNT SUMMARY ]                                         ║
-║  ▶ Initial Capital : ${params['capital']:,.2f}                            
-║  ▶ Final Capital   : ${final_capital:,.2f}                            
-║  ▶ Total Profit    : ${total_profit:,.2f}                            
-║  ▶ Max Drawdown    : {max_drawdown:.2f}%                                  
-║                                                              ║
-║  [ TRADE STATISTICS ]                                        ║
-║  ▶ Total Trades    : {total_trades}                                      
-║  ▶ Wins / Losses   : {wins} / {losses}                                
-║  ▶ Win Rate        : {win_rate:.2f}%                                  
-║                                                              ║
-╠══════════════════════════════════════════════════════════════╣
-║  [ YEARLY BREAKDOWN ]                                        ║
-"""
+    # Box Width Formatting
+    width = 60
+    
+    def box_line(left_text):
+        return f"║ {left_text:<{width}} ║\n"
+
+    ui = "╔" + "═" * (width + 2) + "╗\n"
+    ui += f"║{'BREAKOUT FOLLOW TREND':^{width+2}}║\n"
+    ui += f"║{'BACKTEST REPORT':^{width+2}}║\n"
+    ui += "╠" + "═" * (width + 2) + "╣\n"
+    ui += box_line("")
+    ui += box_line("[ SYSTEM SETTINGS ]")
+    ui += box_line(f" ▶ Symbol          : {params.get('symbol', 'Unknown')}")
+    ui += box_line(f" ▶ Timeframe       : {params.get('timeframe', 'Unknown')}")
+    ui += box_line(f" ▶ Risk Per Trade  : {params.get('risk', 0.0)}%")
+    ui += box_line(f" ▶ Risk:Reward     : 1:{params.get('rr', 2.0)}")
+    ui += box_line("")
+    ui += box_line("[ ACCOUNT SUMMARY ]")
+    ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")
+    ui += box_line(f" ▶ Final Capital   : ${final_capital:,.2f}")
+    ui += box_line(f" ▶ Total Profit    : ${total_profit:,.2f}")
+    ui += box_line(f" ▶ Max Drawdown    : {max_drawdown:.2f}%")
+    ui += box_line("")
+    ui += box_line("[ TRADE STATISTICS ]")
+    ui += box_line(f" ▶ Total Trades    : {total_trades}")
+    ui += box_line(f" ▶ Wins / Losses   : {wins} / {losses}")
+    ui += box_line(f" ▶ Win Rate        : {win_rate:.2f}%")
+    ui += box_line("")
+    ui += "╠" + "═" * (width + 2) + "╣\n"
+    ui += box_line("[ YEARLY BREAKDOWN ]")
+    
     for _, y_row in df_yearly.iterrows():
         year = y_row['Year']
-        ui += f"║  ▶ {year}             : ${y_row['Profit']:,.2f}\n"
+        ui += box_line(f" ▶ {year}             : ${y_row['Profit']:,.2f}")
         # Get months for this year
         year_months = df_monthly[df_monthly['Month'].str.startswith(year)]
         for _, m_row in year_months.iterrows():
-            # Get month part from YYYY-MM
             month_str = m_row['Month'].split('-')[1]
-            ui += f"║     └─ Month {month_str}     : ${m_row['Profit']:,.2f}\n"
+            ui += box_line(f"    └─ Month {month_str}      : ${m_row['Profit']:,.2f}")
 
-    ui += "╚══════════════════════════════════════════════════════════════╝\n"
+    ui += "╚" + "═" * (width + 2) + "╝\n"
     
     print(ui)
     
