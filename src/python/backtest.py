@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0):
+def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True):
     capital = initial_capital
     position = None  # 'LONG', 'SHORT'
     entry_price = 0
@@ -137,7 +137,10 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
             entry_price = next_candle['Open']
             sl_price = entry_price - (atr * atr_mult)
             tp_price = entry_price + (atr * atr_mult * rr)
-            risk_amount = capital * (risk_pct / 100)
+            
+            # Risk calculation
+            base_for_risk = capital if compound else initial_capital
+            risk_amount = base_for_risk * (risk_pct / 100)
             
         # SHORT Condition
         elif ema_short_cond and close < lower_bb and vol_cond:
@@ -145,7 +148,10 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
             entry_price = next_candle['Open']
             sl_price = entry_price + (atr * atr_mult)
             tp_price = entry_price - (atr * atr_mult * rr)
-            risk_amount = capital * (risk_pct / 100)
+            
+            # Risk calculation
+            base_for_risk = capital if compound else initial_capital
+            risk_amount = base_for_risk * (risk_pct / 100)
             
     return trades, capital
 
@@ -203,6 +209,7 @@ def generate_report(trades, params, output_file):
     ui += box_line(f" ▶ Timeframe       : {params.get('timeframe', 'Unknown')}")
     ui += box_line(f" ▶ Risk Per Trade  : {params.get('risk', 0.0)}%")
     ui += box_line(f" ▶ Risk:Reward     : 1:{params.get('rr', 2.0)}")
+    ui += box_line(f" ▶ Risk Mode       : {'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}")
     ui += box_line("")
     ui += box_line("[ ACCOUNT SUMMARY ]")
     ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")
@@ -239,6 +246,7 @@ def generate_report(trades, params, output_file):
         f.write(f"Timeframe: {params.get('timeframe', 'Unknown')}\n")
         f.write(f"Risk Per Trade: {params.get('risk', 0.0)}%\n")
         f.write(f"Risk:Reward: 1:{params.get('rr', 2.0)}\n")
+        f.write(f"Risk Mode: {'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}\n")
         f.write(f"Initial Capital: ${params['capital']:,.2f}\n")
         f.write(f"Final Capital: ${final_capital:,.2f}\n")
         f.write(f"Total Profit: ${total_profit:,.2f}\n")
@@ -271,6 +279,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, default='report.txt', help='Output report file')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
     parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
+    parser.add_argument('--no-compound', action='store_true', help='Use fixed risk amount from initial capital instead of compounding')
     
     args = parser.parse_args()
     
@@ -284,8 +293,8 @@ if __name__ == "__main__":
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult)
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {not args.no_compound}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, not args.no_compound)
     
     print("Generating report...")
     params = {

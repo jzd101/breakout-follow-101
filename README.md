@@ -11,6 +11,7 @@ The strategy is a trend-following breakout system with the following rules:
 2. **Bollinger Bands (20, 2)**: Used to identify volatility breakouts.
 3. **Volume MA (20)**: Used as a filter to ensure the breakout has institutional backing (higher than average volume).
 4. **ATR (14)**: Used to calculate dynamic Stop Loss and Take Profit levels based on market volatility.
+5. **Risk Management**: Flexible choice between **Compounding** (risk is % of current balance) and **Fixed** (risk is % of initial capital).
 
 ### Trade Conditions
 
@@ -78,11 +79,12 @@ python3 src/python/run_system.py --symbol GBPUSD --timeframe 1h --years 1 --capi
 - `--timeframe`: Interval (e.g., `1h`, `15m`, `1d`). Default is `1h`.
 - `--years`: Years of historical data to download. Default is `1`.
 - `--capital`: Starting capital in USD. Default is `1000.0`.
-- `--risk`: Risk percentage per trade (compounding on current balance). Default is `0.5`.
+- `--risk`: Risk percentage per trade. Default is `0.5`.
 - `--rr`: Risk to Reward ratio (e.g., `2.0` or `1:2`). Default is `2.0`.
 - `--atr-mult`: ATR Multiplier for Stop Loss. Default is `2.0`.
 - `--no-ema`: Flag to **disable** the EMA 200 trend filter.
 - `--no-vol`: Flag to **disable** the Volume filter.
+- `--no-compound`: Flag to **disable** compounding (risk will be based on `--capital` for every trade).
 
 ### Reporting
 The system generates a professional Text-UI report in `reports/` and printed to the console, featuring:
@@ -106,6 +108,8 @@ The system is also fully implemented as an MQL5 Expert Advisor located at `src/m
 - **InpRiskPct**: Percentage of account balance to risk per trade.
 - **InpRR**: Risk-Reward Ratio.
 - **InpATRMult**: ATR Multiplier for Stop Loss.
+- **InpCompound**: Enable/Disable Compounding Risk (Default: true).
+- **InpFixedBalance**: Balance used for risk calculation if compounding is disabled.
 - **InpUseEMA**: Enable/Disable EMA 200 filter (Default: true).
 - **InpUseVol**: Enable/Disable Volume filter (Default: true).
 - **InpEMAPeriod**: Length of the EMA (Default: 200).

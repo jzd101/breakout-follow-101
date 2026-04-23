@@ -10,7 +10,7 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 - **Filters**: EMA 200 (Optional), Volume Filter (Optional).
 - **Long**: Close > Upper BB (and optional EMA/Volume filters).
 - **Short**: Close < Lower BB (and optional EMA/Volume filters).
-- **Risk Management**: Compounding (Risk X% of current balance).
+- **Risk Management**: Compounding (Risk X% of current balance) OR Fixed (Risk X% of initial capital).
 - **SL/TP**: Stop Loss = ATR * ATR_Mult. Take Profit = SL Distance * RR.
 
 ### Current State & Structure
@@ -30,6 +30,7 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 - [x] Add .gitignore for reports.
 - [x] Remove data directory creation.
 - [x] Synchronize MQL5 EA with Python tuning parameters.
+- [x] Add option for Fixed vs Compounding risk.
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any changes to the core trading logic, entry/exit conditions, or indicator periods MUST be updated in both `src/python/backtest.py` and `src/mql5/BreakoutFollowTrend.mq5`. Do not forget!

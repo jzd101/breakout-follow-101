@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
     parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
+    parser.add_argument('--no-compound', action='store_true', help='Use fixed risk amount from initial capital instead of compounding')
     
     args = parser.parse_args()
     
@@ -48,8 +49,8 @@ def main():
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult)
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {not args.no_compound}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, not args.no_compound)
     
     print("Generating report...")
     params = {
@@ -57,7 +58,8 @@ def main():
         'timeframe': args.timeframe,
         'capital': args.capital,
         'risk': args.risk,
-        'rr': rr_val
+        'rr': rr_val,
+        'compound': not args.no_compound
     }
     generate_report(trades, params, report_txt)
 

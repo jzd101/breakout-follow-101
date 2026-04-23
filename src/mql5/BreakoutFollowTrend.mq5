@@ -11,6 +11,8 @@
 input double InpRiskPct = 0.5;      // Risk % per trade
 input double InpRR = 2.0;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
+input bool   InpCompound = true;    // Use Compounding Risk (of current balance)
+input double InpFixedBalance = 1000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
@@ -132,8 +134,8 @@ void OnTick()
 //+------------------------------------------------------------------+
 double CalculateLotSize(double sl_distance)
   {
-   double accountBalance = AccountInfoDouble(ACCOUNT_BALANCE);
-   double riskAmount = accountBalance * (InpRiskPct / 100.0);
+   double baseBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
+   double riskAmount = baseBalance * (InpRiskPct / 100.0);
    
    double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
    double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
