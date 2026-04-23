@@ -75,7 +75,7 @@ pip install pandas yfinance numpy
 The easiest way to run a backtest is using the `run_system.py` wrapper. It automatically fetches the data, maps common symbols to their `yfinance` equivalents (e.g., `GBPUSD` -> `GBPUSD=X`, `XAUUSD` -> `GC=F`), and generates a report.
 
 ```bash
-python3 src/python/run_system.py --symbol EURUSD --timeframe 1h --years 1 --capital 10000 --risk 2 --rr 2.0
+python3 src/python/run_system.py --symbol EURUSD --timeframe 1h --years 1 --capital 10000 --risk 2 --rr 2.0 --max-trades 1 --no-compound
 ```
 
 **Parameters:**
