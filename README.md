@@ -89,6 +89,7 @@ python3 src/python/run_system.py --symbol EURUSD --timeframe 1h --years 1 --capi
 - `--no-ema`: Flag to **disable** the EMA 200 trend filter.
 - `--no-vol`: Flag to **disable** the Volume filter.
 - `--no-compound`: Flag to **disable** compounding (risk will be based on `--capital` for every trade).
+- `--max-trades`: Maximum number of concurrent trades. Default is `1`.
 
 ### Reporting
 The system generates a professional Text-UI report in `reports/` and printed to the console, featuring:
@@ -125,6 +126,7 @@ The system is also fully implemented as an MQL5 Expert Advisor located at `src/m
 - **InpMagic**: Magic Number for position management.
 - **InpWeekendClose**: Enable/Disable forced closure on Friday evening (Default: true).
 - **InpFridayHour**: Hour on Friday to close positions (Broker Time, Default: 21).
+- **InpMaxTrades**: Maximum number of concurrent trades (Default: 1).
 
 ---
 

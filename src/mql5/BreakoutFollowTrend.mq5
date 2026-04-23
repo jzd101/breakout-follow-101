@@ -22,6 +22,7 @@ input int    InpVolPeriod = 20;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input int    InpFridayHour = 21;     // Friday Hour to close (Broker Time)
+input int    InpMaxTrades = 1;       // Maximum concurrent trades
 
 int handleEMA, handleBB, handleATR;
 CTrade trade;
@@ -79,8 +80,8 @@ void OnTick()
    if(current_time == last_time) return;
    last_time = current_time;
    
-   // Check if we already have an open position with our magic number
-   if(HasOpenPosition()) return;
+   // Check if we have space for more trades
+   if(CountOpenPositions() >= InpMaxTrades) return;
    
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[], atr[];
@@ -146,20 +147,21 @@ void OnTick()
   }
 
 //+------------------------------------------------------------------+
-//| Check if there is an open position with the magic number         |
+//| Count open positions with the magic number                       |
 //+------------------------------------------------------------------+
-bool HasOpenPosition()
+int CountOpenPositions()
   {
+   int count = 0;
    for(int i=PositionsTotal()-1; i>=0; i--)
      {
       ulong ticket = PositionGetTicket(i);
       if(PositionSelectByTicket(ticket))
         {
          if(PositionGetInteger(POSITION_MAGIC) == InpMagic && PositionGetString(POSITION_SYMBOL) == _Symbol)
-            return true;
+            count++;
         }
      }
-   return false;
+   return count;
   }
 
 //+------------------------------------------------------------------+

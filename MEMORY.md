@@ -17,7 +17,7 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 ### Current State & Structure
 - **Architecture**: In-memory data processing. CSV storage in `data/` has been removed to reduce clutter and ensure fresh data.
 - **Python Logic**: Centralized in `run_system.py`, `backtest.py`, and `download_data.py`.
-- **MT5 Parity**: `BreakoutFollowTrend.mq5` fully synchronized with Python logic, including Magic Number filtering and Weekend Closure.
+- **MT5 Parity**: `BreakoutFollowTrend.mq5` fully synchronized with Python logic, including Magic Number filtering, Weekend Closure, and Max Trades limit.
 - **Reporting**: Professional box-drawn Text UI saved as UTF-8 reports. Includes monthly stats (Total trades, Wins/Losses, Win Rate).
 - **Git**: Common python cache files added to `.gitignore`.
 
@@ -25,6 +25,7 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 - **Data Limits**: yfinance caps 1h data at 729 days and <1h data at 59 days.
 - **ATR Smoothing**: Using `ewm` with `alpha=1/length` to match TradingView's RMA precisely.
 - **Weekend Closure**: In Python, this is calculated based on time gaps > 48h or weekday drops. In MT5, it uses broker server time (Friday hour check).
+- **Concurrent Trades**: Both systems now support multiple concurrent trades via the `max-trades` (Python) or `InpMaxTrades` (MT5) setting.
 
 ### Persistent Tasks
 - [x] Integrate ROI % in reports.
@@ -34,6 +35,7 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 - [x] Add option for Fixed vs Compounding risk.
 - [x] Implement Weekend Closure logic in Python and MT5.
 - [x] Enhance reporting with monthly win/loss stats and box-drawn UI in files.
+- [x] Add option for Maximum Concurrent Trades (Max Trades).
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any changes to the core trading logic, entry/exit conditions, or indicator periods MUST be updated in both `src/python/backtest.py` and `src/mql5/BreakoutFollowTrend.mq5`. Do not forget!

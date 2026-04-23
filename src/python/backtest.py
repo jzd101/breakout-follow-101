@@ -30,14 +30,9 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True):
+def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1):
     capital = initial_capital
-    position = None  # 'LONG', 'SHORT'
-    entry_price = 0
-    sl_price = 0
-    tp_price = 0
-    risk_amount = 0
-    
+    active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
     
     # Check if volume data exists
@@ -59,80 +54,84 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         # Detect Weekend: Next candle is more than 48 hours away or weekday number drops (e.g. Fri -> Mon)
         is_weekend_end = (next_date.weekday() < current_date.weekday()) or ((next_date - current_date).total_seconds() > 172800)
         
-        # If we have an open position, check for exit
-        if position is not None:
-            # 1. Normal Exit (SL/TP)
-            if position == 'LONG':
-                if next_candle['Low'] <= sl_price:
-                    capital -= risk_amount
-                    trades.append({
-                        'Exit_Date': next_candle['Date'],
-                        'Type': 'LONG',
-                        'Result': 'LOSS',
-                        'Profit': -risk_amount,
-                        'Capital': capital
-                    })
-                    position = None
-                elif next_candle['High'] >= tp_price:
-                    profit = (risk_amount * rr)
-                    capital += profit
-                    trades.append({
-                        'Exit_Date': next_candle['Date'],
-                        'Type': 'LONG',
-                        'Result': 'WIN',
-                        'Profit': profit,
-                        'Capital': capital
-                    })
-                    position = None
-            elif position == 'SHORT':
-                if next_candle['High'] >= sl_price:
-                    capital -= risk_amount
-                    trades.append({
-                        'Exit_Date': next_candle['Date'],
-                        'Type': 'SHORT',
-                        'Result': 'LOSS',
-                        'Profit': -risk_amount,
-                        'Capital': capital
-                    })
-                    position = None
-                elif next_candle['Low'] <= tp_price:
-                    profit = (risk_amount * rr)
-                    capital += profit
-                    trades.append({
-                        'Exit_Date': next_candle['Date'],
-                        'Type': 'SHORT',
-                        'Result': 'WIN',
-                        'Profit': profit,
-                        'Capital': capital
-                    })
-                    position = None
+        # 1. Check for exits on all active trades
+        still_active = []
+        for trade_pos in active_trades:
+            exited = False
             
-            # 2. Weekend Exit (Force close at current candle close if next candle is weekend)
-            if position is not None and is_weekend_end:
+            # Normal Exit (SL/TP) on next candle
+            if trade_pos['type'] == 'LONG':
+                if next_candle['Low'] <= trade_pos['sl']:
+                    capital -= trade_pos['risk']
+                    trades.append({
+                        'Exit_Date': next_candle['Date'],
+                        'Type': 'LONG',
+                        'Result': 'LOSS',
+                        'Profit': -trade_pos['risk'],
+                        'Capital': capital
+                    })
+                    exited = True
+                elif next_candle['High'] >= trade_pos['tp']:
+                    profit = (trade_pos['risk'] * rr)
+                    capital += profit
+                    trades.append({
+                        'Exit_Date': next_candle['Date'],
+                        'Type': 'LONG',
+                        'Result': 'WIN',
+                        'Profit': profit,
+                        'Capital': capital
+                    })
+                    exited = True
+            elif trade_pos['type'] == 'SHORT':
+                if next_candle['High'] >= trade_pos['sl']:
+                    capital -= trade_pos['risk']
+                    trades.append({
+                        'Exit_Date': next_candle['Date'],
+                        'Type': 'SHORT',
+                        'Result': 'LOSS',
+                        'Profit': -trade_pos['risk'],
+                        'Capital': capital
+                    })
+                    exited = True
+                elif next_candle['Low'] <= trade_pos['tp']:
+                    profit = (trade_pos['risk'] * rr)
+                    capital += profit
+                    trades.append({
+                        'Exit_Date': next_candle['Date'],
+                        'Type': 'SHORT',
+                        'Result': 'WIN',
+                        'Profit': profit,
+                        'Capital': capital
+                    })
+                    exited = True
+            
+            # Weekend Exit (Force close)
+            if not exited and is_weekend_end:
                 exit_price = current_candle['Close']
-                if position == 'LONG':
-                    # Calculate profit based on distance moved relative to initial risk
-                    reward_ratio = (exit_price - entry_price) / (entry_price - sl_price) if entry_price != sl_price else 0
+                if trade_pos['type'] == 'LONG':
+                    reward_ratio = (exit_price - trade_pos['entry']) / (trade_pos['entry'] - trade_pos['sl']) if trade_pos['entry'] != trade_pos['sl'] else 0
                 else:
-                    reward_ratio = (entry_price - exit_price) / (sl_price - entry_price) if entry_price != sl_price else 0
+                    reward_ratio = (trade_pos['entry'] - exit_price) / (trade_pos['sl'] - trade_pos['entry']) if trade_pos['entry'] != trade_pos['sl'] else 0
                 
-                profit = reward_ratio * risk_amount
+                profit = reward_ratio * trade_pos['risk']
                 capital += profit
                 trades.append({
                     'Exit_Date': current_date,
-                    'Type': position,
+                    'Type': trade_pos['type'],
                     'Result': 'WIN' if profit > 0 else 'LOSS',
                     'Profit': profit,
                     'Capital': capital,
                     'Notes': 'Weekend Close'
                 })
-                position = None
-
-            if position is not None:
-                continue  # Still in trade, skip entry check
+                exited = True
             
-        # Check Entry Conditions (Don't enter if it's the last candle of the week)
-        if is_weekend_end:
+            if not exited:
+                still_active.append(trade_pos)
+        
+        active_trades = still_active
+            
+        # 2. Check Entry Conditions (Only if we have space for more trades and not weekend)
+        if len(active_trades) >= max_trades or is_weekend_end:
             continue
             
         close = current_candle['Close']
@@ -154,7 +153,6 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         
         # LONG Condition
         if ema_long_cond and close > upper_bb and vol_cond:
-            position = 'LONG'
             entry_price = next_candle['Open']
             sl_price = entry_price - (atr * atr_mult)
             tp_price = entry_price + (atr * atr_mult * rr)
@@ -163,9 +161,16 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
             base_for_risk = capital if compound else initial_capital
             risk_amount = base_for_risk * (risk_pct / 100)
             
+            active_trades.append({
+                'type': 'LONG',
+                'entry': entry_price,
+                'sl': sl_price,
+                'tp': tp_price,
+                'risk': risk_amount
+            })
+            
         # SHORT Condition
         elif ema_short_cond and close < lower_bb and vol_cond:
-            position = 'SHORT'
             entry_price = next_candle['Open']
             sl_price = entry_price + (atr * atr_mult)
             tp_price = entry_price - (atr * atr_mult * rr)
@@ -173,6 +178,14 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
             # Risk calculation
             base_for_risk = capital if compound else initial_capital
             risk_amount = base_for_risk * (risk_pct / 100)
+            
+            active_trades.append({
+                'type': 'SHORT',
+                'entry': entry_price,
+                'sl': sl_price,
+                'tp': tp_price,
+                'risk': risk_amount
+            })
             
     return trades, capital
 
