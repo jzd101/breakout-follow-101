@@ -12,18 +12,19 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 - **Short**: Close < Lower BB (and optional EMA/Volume filters).
 - **Risk Management**: Compounding (Risk X% of current balance) OR Fixed (Risk X% of initial capital).
 - **SL/TP**: Stop Loss = ATR * ATR_Mult. Take Profit = SL Distance * RR.
+- **Weekend Logic**: Force-close all positions on Friday evening to avoid weekend gaps. Prevent new entries at the end of Friday.
 
 ### Current State & Structure
 - **Architecture**: In-memory data processing. CSV storage in `data/` has been removed to reduce clutter and ensure fresh data.
 - **Python Logic**: Centralized in `run_system.py`, `backtest.py`, and `download_data.py`.
-- **MT5 Parity**: `BreakoutFollowTrend.mq5` updated with optional filters and ATR Multiplier settings.
-- **Reporting**: Advanced Text UI with Monthly Breakdown and Growth Profit % (ROI).
-- **Git**: `reports/` and common python files added to `.gitignore`.
+- **MT5 Parity**: `BreakoutFollowTrend.mq5` fully synchronized with Python logic, including Magic Number filtering and Weekend Closure.
+- **Reporting**: Professional box-drawn Text UI saved as UTF-8 reports. Includes monthly stats (Total trades, Wins/Losses, Win Rate).
+- **Git**: Common python cache files added to `.gitignore`.
 
 ### Technical Notes & Limits
 - **Data Limits**: yfinance caps 1h data at 729 days and <1h data at 59 days.
 - **ATR Smoothing**: Using `ewm` with `alpha=1/length` to match TradingView's RMA precisely.
-- **Performance**: Crypto ROI is highly sensitive to the Volume Filter and ATR Multiplier.
+- **Weekend Closure**: In Python, this is calculated based on time gaps > 48h or weekday drops. In MT5, it uses broker server time (Friday hour check).
 
 ### Persistent Tasks
 - [x] Integrate ROI % in reports.
@@ -31,6 +32,8 @@ Implement a robust trading strategy using a "Breakout Follow Trend with Volume F
 - [x] Remove data directory creation.
 - [x] Synchronize MQL5 EA with Python tuning parameters.
 - [x] Add option for Fixed vs Compounding risk.
+- [x] Implement Weekend Closure logic in Python and MT5.
+- [x] Enhance reporting with monthly win/loss stats and box-drawn UI in files.
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any changes to the core trading logic, entry/exit conditions, or indicator periods MUST be updated in both `src/python/backtest.py` and `src/mql5/BreakoutFollowTrend.mq5`. Do not forget!

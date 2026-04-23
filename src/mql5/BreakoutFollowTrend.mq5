@@ -19,7 +19,9 @@ input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 20;      // Bollinger Bands Period
 input double InpBBDev = 2.0;        // Bollinger Bands Deviations
 input int    InpVolPeriod = 20;     // Volume MA Period
-input int    InpATRPeriod = 14;     // ATR Period
+input int    InpMagic = 123456;      // Magic Number
+input bool   InpWeekendClose = true; // Close all trades on Friday evening
+input int    InpFridayHour = 21;     // Friday Hour to close (Broker Time)
 
 int handleEMA, handleBB, handleATR;
 CTrade trade;
@@ -29,6 +31,8 @@ CTrade trade;
 //+------------------------------------------------------------------+
 int OnInit()
   {
+   trade.SetExpertMagicNumber(InpMagic);
+   
    handleEMA = iMA(_Symbol, _Period, InpEMAPeriod, 0, MODE_EMA, PRICE_CLOSE);
    handleBB = iBands(_Symbol, _Period, InpBBPeriod, 0, InpBBDev, PRICE_CLOSE);
    handleATR = iATR(_Symbol, _Period, InpATRPeriod);
@@ -57,14 +61,26 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   // Check for Weekend Close (only if we have positions)
+   if(InpWeekendClose)
+     {
+      MqlDateTime dt;
+      TimeToStruct(TimeCurrent(), dt);
+      if(dt.day_of_week == 5 && dt.hour >= InpFridayHour) // 5 = Friday
+        {
+         CloseAllPositions();
+         return; // Don't look for new entries
+        }
+     }
+
    // Execute only on new bar
    static datetime last_time = 0;
    datetime current_time = iTime(_Symbol, _Period, 0);
    if(current_time == last_time) return;
    last_time = current_time;
    
-   // Check open positions
-   if(PositionsTotal() > 0) return; // Wait for current position to close
+   // Check if we already have an open position with our magic number
+   if(HasOpenPosition()) return;
    
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[], atr[];
@@ -125,6 +141,39 @@ void OnTick()
       if(lotSize > 0)
         {
          trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT");
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Check if there is an open position with the magic number         |
+//+------------------------------------------------------------------+
+bool HasOpenPosition()
+  {
+   for(int i=PositionsTotal()-1; i>=0; i--)
+     {
+      ulong ticket = PositionGetTicket(i);
+      if(PositionSelectByTicket(ticket))
+        {
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagic && PositionGetString(POSITION_SYMBOL) == _Symbol)
+            return true;
+        }
+     }
+   return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Close all positions with the magic number                        |
+//+------------------------------------------------------------------+
+void CloseAllPositions()
+  {
+   for(int i=PositionsTotal()-1; i>=0; i--)
+     {
+      ulong ticket = PositionGetTicket(i);
+      if(PositionSelectByTicket(ticket))
+        {
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagic && PositionGetString(POSITION_SYMBOL) == _Symbol)
+            trade.PositionClose(ticket);
         }
      }
   }

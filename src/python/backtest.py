@@ -53,12 +53,17 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         current_candle = df.iloc[i]
         next_candle = df.iloc[i+1]
         
+        current_date = current_candle['Date']
+        next_date = next_candle['Date']
+        
+        # Detect Weekend: Next candle is more than 48 hours away or weekday number drops (e.g. Fri -> Mon)
+        is_weekend_end = (next_date.weekday() < current_date.weekday()) or ((next_date - current_date).total_seconds() > 172800)
+        
         # If we have an open position, check for exit
         if position is not None:
+            # 1. Normal Exit (SL/TP)
             if position == 'LONG':
-                # Check SL and TP on next candle
                 if next_candle['Low'] <= sl_price:
-                    # SL hit
                     capital -= risk_amount
                     trades.append({
                         'Exit_Date': next_candle['Date'],
@@ -69,7 +74,6 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                     })
                     position = None
                 elif next_candle['High'] >= tp_price:
-                    # TP hit
                     profit = (risk_amount * rr)
                     capital += profit
                     trades.append({
@@ -80,10 +84,8 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                         'Capital': capital
                     })
                     position = None
-                    
             elif position == 'SHORT':
                 if next_candle['High'] >= sl_price:
-                    # SL hit
                     capital -= risk_amount
                     trades.append({
                         'Exit_Date': next_candle['Date'],
@@ -94,7 +96,6 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                     })
                     position = None
                 elif next_candle['Low'] <= tp_price:
-                    # TP hit
                     profit = (risk_amount * rr)
                     capital += profit
                     trades.append({
@@ -105,15 +106,35 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                         'Capital': capital
                     })
                     position = None
-                    
-            if position is None:
-                # Deduction for commission (optional, but video mentions it)
-                # capital -= capital * 0.001 # 0.1% commission example
-                pass
-            else:
-                continue  # Don't open a new trade if we are already in one
             
-        # Check Entry Conditions
+            # 2. Weekend Exit (Force close at current candle close if next candle is weekend)
+            if position is not None and is_weekend_end:
+                exit_price = current_candle['Close']
+                if position == 'LONG':
+                    # Calculate profit based on distance moved relative to initial risk
+                    reward_ratio = (exit_price - entry_price) / (entry_price - sl_price) if entry_price != sl_price else 0
+                else:
+                    reward_ratio = (entry_price - exit_price) / (sl_price - entry_price) if entry_price != sl_price else 0
+                
+                profit = reward_ratio * risk_amount
+                capital += profit
+                trades.append({
+                    'Exit_Date': current_date,
+                    'Type': position,
+                    'Result': 'WIN' if profit > 0 else 'LOSS',
+                    'Profit': profit,
+                    'Capital': capital,
+                    'Notes': 'Weekend Close'
+                })
+                position = None
+
+            if position is not None:
+                continue  # Still in trade, skip entry check
+            
+        # Check Entry Conditions (Don't enter if it's the last candle of the week)
+        if is_weekend_end:
+            continue
+            
         close = current_candle['Close']
         ema = current_candle['EMA_200']
         upper_bb = current_candle['Upper_BB']
@@ -168,10 +189,26 @@ def generate_report(trades, params, output_file):
     df_trades['Exit_Date'] = pd.to_datetime(df_trades['Exit_Date'])
     df_trades.set_index('Exit_Date', inplace=True)
     
-    # Calculate Monthly Profit
-    df_monthly = df_trades.resample('ME')['Profit'].sum().reset_index()
-    df_monthly['Month'] = df_monthly['Exit_Date'].dt.strftime('%Y-%m')
-    df_monthly = df_monthly[['Month', 'Profit']]
+    # Calculate Monthly Stats
+    df_trades['Month_Period'] = df_trades.index.to_period('M')
+    monthly_groups = df_trades.groupby('Month_Period')
+    
+    monthly_data = []
+    for month, group in monthly_groups:
+        total = len(group)
+        wins = len(group[group['Result'] == 'WIN'])
+        losses = total - wins
+        win_rate = (wins / total * 100) if total > 0 else 0
+        profit = group['Profit'].sum()
+        monthly_data.append({
+            'Month': str(month),
+            'Profit': profit,
+            'Total': total,
+            'Wins': wins,
+            'Losses': losses,
+            'WinRate': win_rate
+        })
+    df_monthly = pd.DataFrame(monthly_data)
     
     # Calculate Yearly Profit
     df_yearly = df_trades.resample('YE')['Profit'].sum().reset_index()
@@ -194,7 +231,7 @@ def generate_report(trades, params, output_file):
     roi_pct = (total_profit / params['capital']) * 100
     
     # Box Width Formatting
-    width = 60
+    width = 75  # Increased width to accommodate more stats
     
     def box_line(left_text):
         return f"║ {left_text:<{width}} ║\n"
@@ -233,37 +270,17 @@ def generate_report(trades, params, output_file):
         year_months = df_monthly[df_monthly['Month'].str.startswith(year)]
         for _, m_row in year_months.iterrows():
             month_str = m_row['Month'].split('-')[1]
-            ui += box_line(f"    └─ Month {month_str}      : ${m_row['Profit']:,.2f}")
+            stats_str = f"({m_row['Total']} trades, {m_row['Wins']}W/{m_row['Losses']}L, WR: {m_row['WinRate']:.1f}%)"
+            ui += box_line(f"    └─ Month {month_str}      : ${m_row['Profit']:>10,.2f}  {stats_str}")
 
     ui += "╚" + "═" * (width + 2) + "╝\n"
     
     print(ui)
     
     # Save Report to Text File
-    with open(output_file, 'w') as f:
-        f.write("=== BACKTEST REPORT ===\n")
-        f.write(f"Symbol: {params.get('symbol', 'Unknown')}\n")
-        f.write(f"Timeframe: {params.get('timeframe', 'Unknown')}\n")
-        f.write(f"Risk Per Trade: {params.get('risk', 0.0)}%\n")
-        f.write(f"Risk:Reward: 1:{params.get('rr', 2.0)}\n")
-        f.write(f"Risk Mode: {'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}\n")
-        f.write(f"Initial Capital: ${params['capital']:,.2f}\n")
-        f.write(f"Final Capital: ${final_capital:,.2f}\n")
-        f.write(f"Total Profit: ${total_profit:,.2f}\n")
-        f.write(f"Growth Profit %: {roi_pct:,.2f}%\n")
-        f.write(f"Max Drawdown: {max_drawdown:.2f}%\n")
-        f.write(f"Total Trades: {total_trades}\n")
-        f.write(f"Wins: {wins}\n")
-        f.write(f"Losses: {losses}\n")
-        f.write(f"Win Rate: {win_rate:.2f}%\n\n")
-        
-        f.write("--- Yearly Profit ---\n")
-        f.write(df_yearly.to_string(index=False))
-        f.write("\n\n")
-        
-        f.write("--- Monthly Profit ---\n")
-        f.write(df_monthly.to_string(index=False))
-        f.write("\n")
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(ui)
+
         
     print(f"Report saved to: {output_file}")
     

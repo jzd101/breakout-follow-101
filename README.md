@@ -31,6 +31,10 @@ The strategy is a trend-following breakout system with the following rules:
 - **Stop Loss**: Entry + (ATR * ATR_Multiplier).
 - **Take Profit**: Entry - (SL_Distance * Risk_Reward_Ratio).
 
+### Logic Enhancements
+1. **Weekend Closure**: To avoid holding trades over the weekend, the system automatically closes any open positions on Friday evening.
+2. **End-of-Week Entry Filter**: The system prevents entering new trades on the last candle of the trading week (Friday).
+
 ---
 
 ## Directory Structure
@@ -46,7 +50,7 @@ breakout-follow-101/
 │   └── mql5/
 │       └── BreakoutFollowTrend.mq5  # MT5 Expert Advisor (Bot)
 │
-├── reports/                     # Backtest results (txt summaries) - Added to .gitignore
+├── reports/                     # Backtest results (box-drawn UI summaries)
 ├── scripts/                     # Utility scripts (transcript extraction, etc.)
 │
 ├── .gitignore                   # Ignore reports and python caches
@@ -90,8 +94,9 @@ python3 src/python/run_system.py --symbol EURUSD --timeframe 1h --years 1 --capi
 The system generates a professional Text-UI report in `reports/` and printed to the console, featuring:
 - **Account Summary**: Initial/Final Capital, Net Profit, Max Drawdown.
 - **Growth Profit % (ROI)**: Total return on initial investment.
-- **Monthly Breakdown**: Year-by-year and month-by-month profit analysis.
-- **Trade Statistics**: Win Rate and Win/Loss counts.
+- **Monthly Breakdown**: Year-by-year and month-by-month profit analysis **with Win/Loss counts and Win Rate for each month**.
+- **Trade Statistics**: Overall Win Rate and Win/Loss counts.
+- **Box-Drawn UI**: The saved report file now uses the same beautiful box-drawn format as the console output.
 
 ---
 
@@ -117,6 +122,9 @@ The system is also fully implemented as an MQL5 Expert Advisor located at `src/m
 - **InpBBDev**: Deviation of Bollinger Bands (Default: 2.0).
 - **InpVolPeriod**: Length of Volume Moving Average (Default: 20).
 - **InpATRPeriod**: Length of ATR (Default: 14).
+- **InpMagic**: Magic Number for position management.
+- **InpWeekendClose**: Enable/Disable forced closure on Friday evening (Default: true).
+- **InpFridayHour**: Hour on Friday to close positions (Broker Time, Default: 21).
 
 ---
 
