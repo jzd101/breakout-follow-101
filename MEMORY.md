@@ -26,11 +26,13 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 #### Exit Conditions
 - **Stop Loss** = ATR × ATR_Multiplier (default 2.0), placed below entry for LONG, above for SHORT.
 - **Take Profit** = SL_Distance × Risk_Reward_Ratio (default 2.0).
-- **Weekend Closure**: Force-close all positions on Friday evening. No new entries at end of week.
+- **Weekend Closure**: Force-close all positions on Friday evening (default 23:00). No new entries at end of week.
+- **Trading Hours**: Restricted trading window (default 09:00 - 22:00).
 
 #### Risk Management
-- **Compounding** (default): Risk X% of current balance each trade.
-- **Fixed**: Risk X% of initial capital each trade.
+- **Compounding**: Risk X% of current balance each trade.
+- **Fixed** (default): Risk X% of initial capital each trade.
+- **Risk %**: Default 2.0% per trade.
 - Transcript used: $3,000 capital, 3% risk, compound mode.
 
 ### Current State & Structure
@@ -51,7 +53,8 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Concurrent Trades**: Both systems support `max_trades` / `InpMaxTrades` parameter.
 - **SL/TP Check Priority**: When both SL and TP could be hit on the same candle, SL is checked first (conservative/pessimistic).
 - **BB Std Deviation**: Python uses `ddof=0` (population std) to match MT5's `iBands()` exactly.
-- **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 2.5%. Set to 0 to disable.
+- **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 0.0% (disabled).
+- **Trading Window**: Default window 09:00 to 22:00. Start hour is inclusive, end hour is exclusive.
 
 ### Completed Tasks
 - [x] Core strategy implementation (Python + MQL5)
@@ -67,7 +70,10 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] BB std deviation fixed to ddof=0 (population std) matching MT5/TradingView
 - [x] MQL5 RMA stabilization window increased (10× → 50×) for ATR convergence
 - [x] MQL5 weekend check moved inside new-bar gate for bar-level consistency
-- [x] Daily Loss Limit (`--daily-loss-limit` / `InpDailyLossLimit`) — default 2.5%
+- [x] Daily Loss Limit (`--daily-loss-limit` / `InpDailyLossLimit`) — default 0.0%
+- [x] Trading hours updated to 09:00 - 22:00 default
+- [x] Fixed risk set as default (Compound off)
+- [x] Risk per trade updated to 2.0% default
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
