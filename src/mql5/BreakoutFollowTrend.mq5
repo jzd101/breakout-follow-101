@@ -4,15 +4,15 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, Antigravity"
 #property link      ""
-#property version   "1.00"
+#property version   "1.01"
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 0.5;      // Risk % per trade
-input double InpRR = 2.0;           // Risk Reward Ratio
+input double InpRiskPct = 2.0;      // Risk % per trade
+input double InpRR = 3.0;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
-input bool   InpCompound = true;    // Use Compounding Risk (of current balance)
-input double InpFixedBalance = 1000.0; // Fixed balance to use if Compounding is false
+input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
+input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
@@ -23,10 +23,16 @@ input int    InpVolPeriod = 20;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input int    InpFridayHour = 21;     // Friday Hour to close (Broker Time)
-input int    InpMaxTrades = 1;       // Maximum concurrent trades
+input int    InpMaxTrades = 2;       // Maximum concurrent trades
+input double InpDailyLossLimit = 2.5; // Daily loss limit (% of initial capital). 0=disabled
 
-int handleEMA, handleBB, handleATR;
+int handleEMA, handleBB;
 CTrade trade;
+
+// Daily Loss Limit tracking
+double g_dailyPnL = 0.0;
+int    g_currentDay = -1;
+double g_dailyLossMax = 0.0;  // Calculated in OnInit
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -37,13 +43,15 @@ int OnInit()
    
    handleEMA = iMA(_Symbol, _Period, InpEMAPeriod, 0, MODE_EMA, PRICE_CLOSE);
    handleBB = iBands(_Symbol, _Period, InpBBPeriod, 0, InpBBDev, PRICE_CLOSE);
-   handleATR = iATR(_Symbol, _Period, InpATRPeriod);
    
-   if(handleEMA == INVALID_HANDLE || handleBB == INVALID_HANDLE || handleATR == INVALID_HANDLE)
+   if(handleEMA == INVALID_HANDLE || handleBB == INVALID_HANDLE)
      {
-      Print("Error creating indicators handles");
+      Print("Error creating indicator handles");
       return(INIT_FAILED);
      }
+   // Calculate daily loss max from initial balance
+   double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
+   g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
      
    return(INIT_SUCCEEDED);
   }
@@ -55,7 +63,6 @@ void OnDeinit(const int reason)
   {
    IndicatorRelease(handleEMA);
    IndicatorRelease(handleBB);
-   IndicatorRelease(handleATR);
   }
 
 //+------------------------------------------------------------------+
@@ -63,7 +70,13 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Check for Weekend Close (only if we have positions)
+   // Execute only on new bar
+   static datetime last_time = 0;
+   datetime current_time = iTime(_Symbol, _Period, 0);
+   if(current_time == last_time) return;
+   last_time = current_time;
+   
+   // Check for Weekend Close (at bar open, matching Python's bar-level check)
    if(InpWeekendClose)
      {
       MqlDateTime dt;
@@ -75,14 +88,23 @@ void OnTick()
         }
      }
 
-   // Execute only on new bar
-   static datetime last_time = 0;
-   datetime current_time = iTime(_Symbol, _Period, 0);
-   if(current_time == last_time) return;
-   last_time = current_time;
-   
+   // Daily Loss Limit: Reset on new calendar day
+   MqlDateTime dt_daily;
+   TimeToStruct(TimeCurrent(), dt_daily);
+   if(dt_daily.day != g_currentDay)
+     {
+      g_currentDay = dt_daily.day;
+      g_dailyPnL = 0.0;
+      // Recalculate daily loss max with current balance if compounding
+      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
+      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+     }
+
    // Check if we have space for more trades
    if(CountOpenPositions() >= InpMaxTrades) return;
+   
+   // Check Daily Loss Limit
+   if(InpDailyLossLimit > 0 && g_dailyPnL <= -g_dailyLossMax) return;
    
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];
@@ -103,7 +125,7 @@ void OnTick()
    double close1 = iClose(_Symbol, _Period, 1);
    long vol1 = iVolume(_Symbol, _Period, 1);
    
-   // Calculate Volume MA (SMA)
+   // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(20).mean()
    double vol_ma = 0;
    if(InpUseVol)
      {
@@ -115,7 +137,7 @@ void OnTick()
       vol_ma = (double)vol_sum / InpVolPeriod;
      }
    
-   // Filters
+   // Filters — match Python logic exactly
    bool vol_condition = !InpUseVol || (vol1 > vol_ma) || (vol_ma == 0);
    bool ema_long = !InpUseEMA || (close1 > ema[0]);
    bool ema_short = !InpUseEMA || (close1 < ema[0]);
@@ -155,27 +177,53 @@ void OnTick()
         {
          if(trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT"))
             PrintFormat("SHORT Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
+         }
+      }
+   }
+
+//+------------------------------------------------------------------+
+//| Track realized P&L for Daily Loss Limit                          |
+//+------------------------------------------------------------------+
+void OnTradeTransaction(const MqlTradeTransaction& trans,
+                        const MqlTradeRequest& request,
+                        const MqlTradeResult& result)
+  {
+   // Only process deal events for our magic number
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD)
+     {
+      ulong dealTicket = trans.deal;
+      if(HistoryDealSelect(dealTicket))
+        {
+         long dealMagic = HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
+         ENUM_DEAL_ENTRY dealEntry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+         
+         if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT)
+           {
+            double dealProfit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+            double dealSwap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
+            double dealComm = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+            g_dailyPnL += (dealProfit + dealSwap + dealComm);
+           }
         }
      }
   }
 
 //+------------------------------------------------------------------+
 //| Calculate ATR using Wilder's Smoothing (RMA)                     |
+//| Matches Python: ewm(alpha=1/length, min_periods=length, adjust=False) |
 //+------------------------------------------------------------------+
 double CalculateRMA_ATR(int period)
   {
    double tr_sum = 0;
-   // For RMA to stabilize, we need a lot of history. 
-   // However, for the current bar's ATR, we can calculate it from historical bars.
-   // We'll use a sufficient window to match the ewm calculation.
    
-   int bars_to_calculate = period * 10; // Stabilization window
-   int total_bars = iBars(_Symbol, _Period);
-   if(total_bars < bars_to_calculate) bars_to_calculate = total_bars - 1;
+   // Use a large stabilization window so RMA converges to match Python's full-dataset calc.
+   // Python processes all bars from index 0; we simulate by using max available history.
+   int bars_to_calculate = MathMin(period * 50, iBars(_Symbol, _Period) - 2);
+   if(bars_to_calculate < period * 2) return -1; // Not enough history
 
    double atr = 0;
    
-   // Initial SMA for the first 'period' bars
+   // Initial SMA for the first 'period' bars (seed value)
    for(int i = bars_to_calculate; i > bars_to_calculate - period; i--)
      {
       tr_sum += GetTrueRange(i);
@@ -193,6 +241,7 @@ double CalculateRMA_ATR(int period)
 
 //+------------------------------------------------------------------+
 //| Get True Range for a specific bar index                          |
+//| Matches Python: max(H-L, abs(H-prevC), abs(L-prevC))            |
 //+------------------------------------------------------------------+
 double GetTrueRange(int index)
   {
@@ -240,6 +289,7 @@ void CloseAllPositions()
 
 //+------------------------------------------------------------------+
 //| Calculate Lot Size based on risk percentage                      |
+//| Matches Python: risk_amount = base * (risk_pct / 100)            |
 //+------------------------------------------------------------------+
 double CalculateLotSize(double sl_distance)
   {

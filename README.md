@@ -1,70 +1,77 @@
-# Breakout Follow Trend System
+# Breakout Follow Trend 101
 
-This repository contains the complete implementation of the "Breakout Follow Trend" trading strategy, derived from a YouTube video tutorial. The system is built for both historical backtesting using Python and live trading using MetaTrader 5 (MT5).
+An automated trading system based on the **Breakout Follow Trend** strategy — trading Bollinger Band breakouts confirmed by Volume and filtered by EMA 200.
 
-## System Architecture
-
-The strategy is a trend-following breakout system with the following rules:
-
-### Indicators
-1. **EMA 200**: Used to determine the long-term trend.
-2. **Bollinger Bands (20, 2)**: Used to identify volatility breakouts.
-3. **Volume MA (20)**: Used as a filter to ensure the breakout has institutional backing (higher than average volume).
-4. **ATR (14)**: Used to calculate dynamic Stop Loss and Take Profit levels based on market volatility.
-5. **Risk Management**: Flexible choice between **Compounding** (risk is % of current balance) and **Fixed** (risk is % of initial capital).
-
-### Trade Conditions
-
-**LONG (Buy)**
-- Previous candle closes **above** the Upper Bollinger Band.
-- (Optional) Previous candle closes **above** the EMA 200.
-- (Optional) Previous candle volume is **greater** than its 20-period MA.
-- **Entry**: Open of the current candle.
-- **Stop Loss**: Entry - (ATR * ATR_Multiplier).
-- **Take Profit**: Entry + (SL_Distance * Risk_Reward_Ratio).
-
-**SHORT (Sell)**
-- Previous candle closes **below** the Lower Bollinger Band.
-- (Optional) Previous candle closes **below** the EMA 200.
-- (Optional) Previous candle volume is **greater** than its 20-period MA.
-- **Entry**: Open of the current candle.
-- **Stop Loss**: Entry + (ATR * ATR_Multiplier).
-- **Take Profit**: Entry - (SL_Distance * Risk_Reward_Ratio).
-
-### Logic Enhancements
-1. **Weekend Closure**: To avoid holding trades over the weekend, the system automatically closes any open positions on Friday evening.
-2. **End-of-Week Entry Filter**: The system prevents entering new trades on the last candle of the trading week (Friday).
+> This strategy is derived from a YouTube trading tutorial. It uses a simple yet powerful approach: when a candle breaks through the Bollinger Band with above-average volume, enter a trade in the trend direction immediately.
 
 ---
 
-## Directory Structure
+## 📐 Strategy Rules
+
+### Indicators
+| Indicator | Settings | Purpose |
+|---|---|---|
+| **EMA** | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
+| **Bollinger Bands** | Period = 20, StdDev = 2 | Breakout signal trigger |
+| **Volume MA** | Period = 20 (SMA) | Volume confirmation filter |
+| **ATR** | Period = 14, RMA smoothing | Dynamic Stop Loss calculation |
+
+### Entry Conditions
+
+**🟢 LONG (Buy)**
+1. Candle closes **above** the Upper Bollinger Band
+2. (Optional) Candle closes **above** EMA 200
+3. (Optional) Candle volume is **greater than** the 20-period Volume MA
+4. **Enter immediately** at the signal candle's close price
+
+**🔴 SHORT (Sell)**
+1. Candle closes **below** the Lower Bollinger Band
+2. (Optional) Candle closes **below** EMA 200
+3. (Optional) Candle volume is **greater than** the 20-period Volume MA
+4. **Enter immediately** at the signal candle's close price
+
+### Risk Management
+| Parameter | Default | Description |
+|---|---|---|
+| **Stop Loss** | ATR × 2 | SL distance from entry price |
+| **Take Profit** | SL × RR (2.0) | TP = SL distance × Risk:Reward Ratio |
+| **Risk Mode** | Compounding | Risk X% of current balance per trade |
+| **Weekend Close** | Enabled | Force-close all positions before the weekend |
+
+### Reference from Transcript
+- Capital: $3,000 / Risk: 3% / RR: 1:2 / Compounding mode
+- Timeframe: 1H / BTC-USDT
+- 2-year backtest result: ~2,367% ROI (as shown in the video)
+
+---
+
+## 📁 Project Structure
 
 ```
 breakout-follow-101/
 │
 ├── src/
 │   ├── python/
-│   │   ├── run_system.py        # Main wrapper script for downloading data & backtesting
-│   │   ├── download_data.py     # Script to download data from Yahoo Finance
-│   │   └── backtest.py          # Backtesting engine
+│   │   ├── run_system.py          # Wrapper: download data + backtest + report
+│   │   ├── download_data.py       # Fetch OHLCV data from Yahoo Finance
+│   │   └── backtest.py            # Backtest engine + report generator
 │   └── mql5/
-│       └── BreakoutFollowTrend.mq5  # MT5 Expert Advisor (Bot)
+│       └── BreakoutFollowTrend.mq5  # MT5 Expert Advisor (live trading bot)
 │
-├── reports/                     # Backtest results (box-drawn UI summaries)
-├── scripts/                     # Utility scripts (transcript extraction, etc.)
+├── reports/                       # Backtest results (box-drawn UI reports)
+├── scripts/                       # Transcript + utility scripts
+│   └── transcript.txt             # Original strategy source (video transcript)
 │
-├── .gitignore                   # Ignore reports and python caches
-├── README.md                    # Project documentation
-├── MEMORY.md                    # Persistent memory state
+├── MEMORY.md                      # Persistent context for AI assistant
+├── README.md                      # This document
+└── .gitignore
 ```
 
 ---
 
-## Python Backtest System
+## 🐍 Python Backtest System
 
-### Requirements & Installation
-
-You need Python 3 installed. Install the required dependencies using `pip`:
+### Installation
 
 ```bash
 pip install pandas yfinance numpy
@@ -72,68 +79,123 @@ pip install pandas yfinance numpy
 
 ### Usage
 
-The easiest way to run a backtest is using the `run_system.py` wrapper. It automatically fetches the data, maps common symbols to their `yfinance` equivalents (e.g., `GBPUSD` -> `GBPUSD=X`, `XAUUSD` -> `GC=F`), and generates a report.
+Use `run_system.py` as the main wrapper — it automatically downloads data, runs the backtest, and generates a report:
 
 ```bash
-python3 src/python/run_system.py --symbol EURUSD --timeframe 1h --years 1 --capital 10000 --risk 2 --rr 2.0 --max-trades 1 --no-compound
+# Example: BTC 1H, 2 years, $3,000 capital, 3% risk, RR 1:2, Compounding
+python3 src/python/run_system.py \
+  --symbol BTCUSD \
+  --timeframe 1h \
+  --years 2 \
+  --capital 3000 \
+  --risk 3 \
+  --rr 2.0 \
+  --atr-mult 2.0
+
+# Example: Gold (XAUUSD) without EMA filter
+python3 src/python/run_system.py \
+  --symbol XAUUSD \
+  --timeframe 1h \
+  --years 1 \
+  --capital 10000 \
+  --risk 1 \
+  --rr 2.0 \
+  --no-ema
+
+# Example: EUR/USD, Fixed risk (no compounding), max 3 concurrent trades
+python3 src/python/run_system.py \
+  --symbol EURUSD \
+  --timeframe 1h \
+  --years 1 \
+  --capital 10000 \
+  --risk 2 \
+  --rr 1:2 \
+  --no-compound \
+  --max-trades 3
 ```
 
-**Parameters:**
-- `--symbol`: Trading pair (e.g., `GBPUSD`, `XAUUSD`, `BTCUSD`).
-- `--timeframe`: Interval (e.g., `1h`, `15m`, `1d`). Default is `1h`.
-- `--years`: Years of historical data to download. Default is `1`.
-- `--capital`: Starting capital in USD. Default is `1000.0`.
-- `--risk`: Risk percentage per trade. Default is `0.5`.
-- `--rr`: Risk to Reward ratio (e.g., `2.0` or `1:2`). Default is `2.0`.
-- `--atr-mult`: ATR Multiplier for Stop Loss. Default is `2.0`.
-- `--no-ema`: Flag to **disable** the EMA 200 trend filter.
-- `--no-vol`: Flag to **disable** the Volume filter.
-- `--no-compound`: Flag to **disable** compounding (risk will be based on `--capital` for every trade).
-- `--max-trades`: Maximum number of concurrent trades. Default is `1`.
+### Parameters
 
-### Reporting
-The system generates a professional Text-UI report in `reports/` and printed to the console, featuring:
-- **Account Summary**: Initial/Final Capital, Net Profit, Max Drawdown.
-- **Growth Profit % (ROI)**: Total return on initial investment.
-- **Monthly Breakdown**: Year-by-year and month-by-month profit analysis **with Win/Loss counts and Win Rate for each month**.
-- **Trade Statistics**: Overall Win Rate and Win/Loss counts.
-- **Box-Drawn UI**: The saved report file now uses the same beautiful box-drawn format as the console output.
+| Parameter | Default | Description |
+|---|---|---|
+| `--symbol` | (required) | Asset symbol, e.g. `BTCUSD`, `XAUUSD`, `EURUSD`, `GBPJPY` |
+| `--timeframe` | `1h` | Candle interval: `1h`, `15m`, `1d` |
+| `--years` | `1` | Number of years of historical data |
+| `--capital` | `10000` | Initial capital in USD |
+| `--risk` | `2.0` | Risk % per trade |
+| `--rr` | `1:3` | Risk:Reward ratio (accepts `3.0` or `1:3` format) |
+| `--atr-mult` | `2.0` | ATR multiplier for Stop Loss |
+| `--no-ema` | off | Disable EMA 200 trend filter |
+| `--no-vol` | off | Disable Volume filter |
+| `--compound` | off | Use compounding risk instead of fixed |
+| `--max-trades` | `2` | Maximum number of concurrent trades |
+| `--daily-loss-limit` | `2.5` | Daily loss limit as % of initial capital. Stop trading for the day if hit. 0=disabled |
+
+### Data Limitations
+- **1H data**: Yahoo Finance provides a maximum of 729 days (~2 years)
+- **Sub-1H data**: Maximum of 59 days
+- **Volume**: Some Forex pairs may have zero volume — the system auto-disables the Volume filter in this case
+
+### Report Output
+Reports are generated as `.txt` files in the `reports/` directory and also printed to the console:
+- **Account Summary**: Initial/Final Capital, Net Profit, Max Drawdown
+- **Growth Profit % (ROI)**: Total return on initial investment
+- **Trade Statistics**: Win/Loss counts, Win Rate
+- **Yearly + Monthly Breakdown**: Profit per period with Win/Loss counts and Win Rate
 
 ---
 
-## MT5 Trading Bot (Expert Advisor)
-
-The system is also fully implemented as an MQL5 Expert Advisor located at `src/mql5/BreakoutFollowTrend.mq5`.
+## 🤖 MT5 Expert Advisor (MQL5)
 
 ### Installation
-1. Copy `BreakoutFollowTrend.mq5` into your MT5 `MQL5/Experts/` folder.
-2. Open MetaEditor and compile the file.
-3. Attach it to any chart in MT5.
+1. Copy `src/mql5/BreakoutFollowTrend.mq5` to the `MQL5/Experts/` folder in MetaTrader 5
+2. Open MetaEditor and compile the file
+3. Attach the EA to any chart in MT5
 
 ### EA Inputs
-- **InpRiskPct**: Percentage of account balance to risk per trade.
-- **InpRR**: Risk-Reward Ratio.
-- **InpATRMult**: ATR Multiplier for Stop Loss.
-- **InpCompound**: Enable/Disable Compounding Risk (Default: true).
-- **InpFixedBalance**: Balance used for risk calculation if compounding is disabled.
-- **InpUseEMA**: Enable/Disable EMA 200 filter (Default: true).
-- **InpUseVol**: Enable/Disable Volume filter (Default: true).
-- **InpEMAPeriod**: Length of the EMA (Default: 200).
-- **InpBBPeriod**: Length of Bollinger Bands (Default: 20).
-- **InpBBDev**: Deviation of Bollinger Bands (Default: 2.0).
-- **InpVolPeriod**: Length of Volume Moving Average (Default: 20).
-- **InpATRPeriod**: Length of ATR (Default: 14).
-- **InpMagic**: Magic Number for position management.
-- **InpWeekendClose**: Enable/Disable forced closure on Friday evening (Default: true).
-- **InpFridayHour**: Hour on Friday to close positions (Broker Time, Default: 21).
-- **InpMaxTrades**: Maximum number of concurrent trades (Default: 1).
+
+| Input | Default | Description |
+|---|---|---|
+| `InpRiskPct` | `2.0` | Risk % per trade |
+| `InpRR` | `3.0` | Risk:Reward Ratio |
+| `InpATRMult` | `2.0` | ATR Multiplier for Stop Loss |
+| `InpCompound` | `false` | Use compounding risk (% of current balance) |
+| `InpFixedBalance` | `10000` | Base balance when compounding is disabled |
+| `InpUseEMA` | `true` | Enable/Disable EMA 200 filter |
+| `InpUseVol` | `true` | Enable/Disable Volume filter |
+| `InpEMAPeriod` | `200` | EMA Period |
+| `InpBBPeriod` | `20` | Bollinger Bands Period |
+| `InpBBDev` | `2.0` | Bollinger Bands Standard Deviation |
+| `InpATRPeriod` | `14` | ATR Period |
+| `InpVolPeriod` | `20` | Volume MA Period |
+| `InpMagic` | `123456` | Magic Number for position management |
+| `InpWeekendClose` | `true` | Force-close positions on Friday evening |
+| `InpFridayHour` | `21` | Friday close hour (Broker server time) |
+| `InpMaxTrades` | `2` | Maximum concurrent trades |
+| `InpDailyLossLimit` | `2.5` | Daily loss limit (% of initial capital). 0=disabled |
 
 ---
 
-## Development Notes
+## 🔄 Python ↔ MQL5 Parity
 
-Any future modifications to the core trading logic **MUST** be reflected simultaneously in both:
-1. `src/python/backtest.py`
-2. `src/mql5/BreakoutFollowTrend.mq5`
+Both the Python backtest engine and MQL5 EA use identical logic:
 
-The `README.md` and `MEMORY.md` files must also be continuously updated to reflect the latest project state.
+| Feature | Python (`backtest.py`) | MQL5 (`BreakoutFollowTrend.mq5`) |
+|---|---|---|
+| Entry signal | Close vs BB on signal candle | Close of bar[1] vs BB |
+| Entry price | Signal candle's Close | Current market price (ASK/BID) |
+| SL/TP | ATR × multiplier from entry | ATR × multiplier from entry |
+| ATR calculation | EWM (alpha=1/14) = RMA | Manual RMA loop |
+| Volume MA | SMA 20 via `rolling()` | Manual SMA loop |
+| Weekend close | Time gap / weekday detection | Friday hour check |
+| Max trades | `max_trades` parameter | `InpMaxTrades` input |
+| Risk mode | Compound / Fixed toggle | Compound / Fixed toggle |
+| Daily loss limit | `--daily-loss-limit` (default 2.5%) | `InpDailyLossLimit` (default 2.5%) |
+
+---
+
+## ⚠️ Development Rules
+
+1. **Parity**: Any logic change must be applied to both `backtest.py` and `BreakoutFollowTrend.mq5`
+2. **Transcript is the spec**: When in doubt, refer to `scripts/transcript.txt`
+3. **Documentation**: Always update `README.md` and `MEMORY.md` after code changes

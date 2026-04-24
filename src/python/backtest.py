@@ -9,7 +9,7 @@ def calculate_indicators(df):
     
     # Bollinger Bands 20, 2
     df['SMA_20'] = df['Close'].rolling(window=20).mean()
-    df['STD_20'] = df['Close'].rolling(window=20).std()
+    df['STD_20'] = df['Close'].rolling(window=20).std(ddof=0)  # population std to match MT5/TradingView
     df['Upper_BB'] = df['SMA_20'] + 2 * df['STD_20']
     df['Lower_BB'] = df['SMA_20'] - 2 * df['STD_20']
     
@@ -30,10 +30,15 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1):
+def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.5):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
+    
+    # Daily Loss Limit tracking
+    daily_pnl = 0.0
+    current_trading_day = None
+    max_daily_loss = initial_capital * (daily_loss_limit / 100)  # Absolute $ amount
     
     # Check if volume data exists
     has_volume = df['Volume'].max() > 0
@@ -54,6 +59,12 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         # Detect Weekend: Next candle is more than 48 hours away or weekday number drops (e.g. Fri -> Mon)
         is_weekend_end = (next_date.weekday() < current_date.weekday()) or ((next_date - current_date).total_seconds() > 172800)
         
+        # Daily Loss Limit: Reset daily P&L on new calendar day
+        candle_day = current_date.date()
+        if candle_day != current_trading_day:
+            current_trading_day = candle_day
+            daily_pnl = 0.0
+        
         # 1. Check for exits on all active trades
         still_active = []
         for trade_pos in active_trades:
@@ -70,6 +81,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                         'Profit': -trade_pos['risk'],
                         'Capital': capital
                     })
+                    daily_pnl -= trade_pos['risk']
                     exited = True
                 elif next_candle['High'] >= trade_pos['tp']:
                     profit = (trade_pos['risk'] * rr)
@@ -81,6 +93,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                         'Profit': profit,
                         'Capital': capital
                     })
+                    daily_pnl += profit
                     exited = True
             elif trade_pos['type'] == 'SHORT':
                 if next_candle['High'] >= trade_pos['sl']:
@@ -92,6 +105,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                         'Profit': -trade_pos['risk'],
                         'Capital': capital
                     })
+                    daily_pnl -= trade_pos['risk']
                     exited = True
                 elif next_candle['Low'] <= trade_pos['tp']:
                     profit = (trade_pos['risk'] * rr)
@@ -103,6 +117,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                         'Profit': profit,
                         'Capital': capital
                     })
+                    daily_pnl += profit
                     exited = True
             
             # Weekend Exit (Force close)
@@ -123,6 +138,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
                     'Capital': capital,
                     'Notes': 'Weekend Close'
                 })
+                daily_pnl += profit
                 exited = True
             
             if not exited:
@@ -130,8 +146,9 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         
         active_trades = still_active
             
-        # 2. Check Entry Conditions (Only if we have space for more trades and not weekend)
-        if len(active_trades) >= max_trades or is_weekend_end:
+        # 2. Check Entry Conditions (Only if we have space for more trades, not weekend, and daily loss limit not hit)
+        daily_loss_hit = daily_loss_limit > 0 and daily_pnl <= -max_daily_loss
+        if len(active_trades) >= max_trades or is_weekend_end or daily_loss_hit:
             continue
             
         close = current_candle['Close']
@@ -153,7 +170,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         
         # LONG Condition
         if ema_long_cond and close > upper_bb and vol_cond:
-            entry_price = next_candle['Open']
+            entry_price = close  # Enter at signal candle's close (per transcript)
             sl_price = entry_price - (atr * atr_mult)
             tp_price = entry_price + (atr * atr_mult * rr)
             
@@ -171,7 +188,7 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
             
         # SHORT Condition
         elif ema_short_cond and close < lower_bb and vol_cond:
-            entry_price = next_candle['Open']
+            entry_price = close  # Enter at signal candle's close (per transcript)
             sl_price = entry_price + (atr * atr_mult)
             tp_price = entry_price - (atr * atr_mult * rr)
             
@@ -260,6 +277,8 @@ def generate_report(trades, params, output_file):
     ui += box_line(f" ▶ Risk Per Trade  : {params.get('risk', 0.0)}%")
     ui += box_line(f" ▶ Risk:Reward     : 1:{params.get('rr', 2.0)}")
     ui += box_line(f" ▶ Risk Mode       : {'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}")
+    if params.get('daily_loss_limit', 0) > 0:
+        ui += box_line(f" ▶ Daily Loss Limit: {params['daily_loss_limit']}% of initial capital")
     ui += box_line("")
     ui += box_line("[ ACCOUNT SUMMARY ]")
     ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")
@@ -302,14 +321,16 @@ def generate_report(trades, params, output_file):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Backtest Breakout System')
     parser.add_argument('--file', type=str, required=True, help='Path to historical data CSV')
-    parser.add_argument('--capital', type=float, default=1000.0, help='Initial Capital')
-    parser.add_argument('--risk', type=float, default=0.5, help='Risk % per trade')
-    parser.add_argument('--rr', type=float, default=2.0, help='Risk Reward Ratio')
+    parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital')
+    parser.add_argument('--risk', type=float, default=2.0, help='Risk % per trade')
+    parser.add_argument('--rr', type=float, default=3.0, help='Risk Reward Ratio')
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--output', type=str, default='report.txt', help='Output report file')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
     parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
-    parser.add_argument('--no-compound', action='store_true', help='Use fixed risk amount from initial capital instead of compounding')
+    parser.add_argument('--compound', action='store_true', help='Use compounding risk instead of fixed')
+    parser.add_argument('--max-trades', type=int, default=2, help='Maximum concurrent trades (default: 2)')
+    parser.add_argument('--daily-loss-limit', type=float, default=2.5, help='Daily loss limit as %% of initial capital. Stop trading for the day if hit. 0=disabled (default: 2.5)')
     
     args = parser.parse_args()
     
@@ -323,8 +344,8 @@ if __name__ == "__main__":
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {not args.no_compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, not args.no_compound)
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {args.compound}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit)
     
     print("Generating report...")
     params = {
@@ -332,6 +353,8 @@ if __name__ == "__main__":
         'timeframe': os.path.basename(args.file).split('_')[1].split('.')[0] if '_' in args.file else 'Unknown',
         'capital': args.capital,
         'risk': args.risk,
-        'rr': args.rr
+        'rr': args.rr,
+        'compound': args.compound,
+        'daily_loss_limit': args.daily_loss_limit
     }
     generate_report(trades, params, args.output)
