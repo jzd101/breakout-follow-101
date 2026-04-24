@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.5):
+def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.5, start_hour=10, end_hour=21):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
@@ -146,9 +146,18 @@ def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, u
         
         active_trades = still_active
             
-        # 2. Check Entry Conditions (Only if we have space for more trades, not weekend, and daily loss limit not hit)
+        # 2. Check Entry Conditions (Only if we have space for more trades, not weekend, daily loss limit not hit, and within trading hours)
         daily_loss_hit = daily_loss_limit > 0 and daily_pnl <= -max_daily_loss
-        if len(active_trades) >= max_trades or is_weekend_end or daily_loss_hit:
+        
+        # Time filter
+        current_hour = current_date.hour
+        in_time_window = True
+        if start_hour < end_hour:
+            in_time_window = start_hour <= current_hour < end_hour
+        else: # Overnight window (e.g. 22:00 to 04:00)
+            in_time_window = current_hour >= start_hour or current_hour < end_hour
+
+        if len(active_trades) >= max_trades or is_weekend_end or daily_loss_hit or not in_time_window:
             continue
             
         close = current_candle['Close']
@@ -279,6 +288,8 @@ def generate_report(trades, params, output_file):
     ui += box_line(f" ▶ Risk Mode       : {'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}")
     if params.get('daily_loss_limit', 0) > 0:
         ui += box_line(f" ▶ Daily Loss Limit: {params['daily_loss_limit']}% of initial capital")
+    if params.get('start_hour', 0) != 0 or params.get('end_hour', 24) != 24:
+        ui += box_line(f" ▶ Trading Hours   : {params['start_hour']:02d}:00 - {params['end_hour']:02d}:00")
     ui += box_line("")
     ui += box_line("[ ACCOUNT SUMMARY ]")
     ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")
@@ -331,6 +342,8 @@ if __name__ == "__main__":
     parser.add_argument('--compound', action='store_true', help='Use compounding risk instead of fixed')
     parser.add_argument('--max-trades', type=int, default=2, help='Maximum concurrent trades (default: 2)')
     parser.add_argument('--daily-loss-limit', type=float, default=2.5, help='Daily loss limit as %% of initial capital. Stop trading for the day if hit. 0=disabled (default: 2.5)')
+    parser.add_argument('--start-hour', type=int, default=10, help='Trading start hour (0-23, default: 10)')
+    parser.add_argument('--end-hour', type=int, default=21, help='Trading end hour (1-24, default: 21)')
     
     args = parser.parse_args()
     
@@ -345,7 +358,7 @@ if __name__ == "__main__":
     df = calculate_indicators(df)
     
     print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {args.compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit)
+    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
     
     print("Generating report...")
     params = {
@@ -355,6 +368,8 @@ if __name__ == "__main__":
         'risk': args.risk,
         'rr': args.rr,
         'compound': args.compound,
-        'daily_loss_limit': args.daily_loss_limit
+        'daily_loss_limit': args.daily_loss_limit,
+        'start_hour': args.start_hour,
+        'end_hour': args.end_hour
     }
     generate_report(trades, params, args.output)

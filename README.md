@@ -130,6 +130,8 @@ python3 src/python/run_system.py \
 | `--compound` | off | Use compounding risk instead of fixed |
 | `--max-trades` | `2` | Maximum number of concurrent trades |
 | `--daily-loss-limit` | `2.5` | Daily loss limit as % of initial capital. Stop trading for the day if hit. 0=disabled |
+| `--start-hour` | `10` | Trading start hour (0-23, UTC) |
+| `--end-hour` | `21` | Trading end hour (1-24, UTC) |
 
 ### Data Limitations
 - **1H data**: Yahoo Finance provides a maximum of 729 days (~2 years)
@@ -173,6 +175,8 @@ Reports are generated as `.txt` files in the `reports/` directory and also print
 | `InpFridayHour` | `21` | Friday close hour (Broker server time) |
 | `InpMaxTrades` | `2` | Maximum concurrent trades |
 | `InpDailyLossLimit` | `2.5` | Daily loss limit (% of initial capital). 0=disabled |
+| `InpStartHour` | `10` | Trading start hour (0-23) |
+| `InpEndHour` | `21` | Trading end hour (1-24) |
 
 ---
 
@@ -191,6 +195,13 @@ Both the Python backtest engine and MQL5 EA use identical logic:
 | Max trades | `max_trades` parameter | `InpMaxTrades` input |
 | Risk mode | Compound / Fixed toggle | Compound / Fixed toggle |
 | Daily loss limit | `--daily-loss-limit` (default 2.5%) | `InpDailyLossLimit` (default 2.5%) |
+| Trading hours | `--start-hour` / `--end-hour` | `InpStartHour` / `InpEndHour` |
+
+### Session Timing Recommendations (UTC)
+- **London Session**: 08:00 - 16:00
+- **New York Session**: 13:00 - 21:00
+- **Combined (London + NY)**: 08:00 - 21:00 or 22:00
+- **Note**: Ensure your data/broker time matches the UTC offset you use. Default 0-24 means all day.
 
 ---
 

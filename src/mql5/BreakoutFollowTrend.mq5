@@ -25,6 +25,8 @@ input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input int    InpFridayHour = 21;     // Friday Hour to close (Broker Time)
 input int    InpMaxTrades = 2;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.5; // Daily loss limit (% of initial capital). 0=disabled
+input int    InpStartHour = 10;      // Trading start hour (0-23)
+input int    InpEndHour = 21;       // Trading end hour (1-24)
 
 int handleEMA, handleBB;
 CTrade trade;
@@ -105,6 +107,17 @@ void OnTick()
    
    // Check Daily Loss Limit
    if(InpDailyLossLimit > 0 && g_dailyPnL <= -g_dailyLossMax) return;
+   
+   // Check Trading Hours
+   MqlDateTime dt_time;
+   TimeToStruct(TimeCurrent(), dt_time);
+   bool in_time_window = true;
+   if(InpStartHour < InpEndHour)
+      in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
+   else // Overnight window
+      in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
+      
+   if(!in_time_window) return;
    
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];

@@ -19,6 +19,8 @@ def main():
     parser.add_argument('--compound', action='store_true', help='Use compounding risk (of current balance) instead of fixed')
     parser.add_argument('--max-trades', type=int, default=2, help='Maximum concurrent trades (default: 2)')
     parser.add_argument('--daily-loss-limit', type=float, default=2.5, help='Daily loss limit as %% of initial capital. Stop trading for the day if hit. 0=disabled (default: 2.5)')
+    parser.add_argument('--start-hour', type=int, default=10, help='Trading start hour (0-23, default: 10)')
+    parser.add_argument('--end-hour', type=int, default=21, help='Trading end hour (1-24, default: 21)')
     
     args = parser.parse_args()
     
@@ -52,7 +54,7 @@ def main():
     df = calculate_indicators(df)
     
     print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {args.compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit)
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
     
     print("Generating report...")
     params = {
@@ -62,7 +64,9 @@ def main():
         'risk': args.risk,
         'rr': rr_val,
         'compound': args.compound,
-        'daily_loss_limit': args.daily_loss_limit
+        'daily_loss_limit': args.daily_loss_limit,
+        'start_hour': args.start_hour,
+        'end_hour': args.end_hour
     }
     generate_report(trades, params, report_txt)
 
