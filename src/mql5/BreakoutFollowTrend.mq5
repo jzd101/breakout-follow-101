@@ -85,21 +85,25 @@ void OnTick()
    if(CountOpenPositions() >= InpMaxTrades) return;
    
    // Get indicator values for the completed bar (index 1)
-   double ema[], upperBB[], lowerBB[], atr[];
+   double ema[], upperBB[], lowerBB[];
    ArraySetAsSeries(ema, true);
    ArraySetAsSeries(upperBB, true);
    ArraySetAsSeries(lowerBB, true);
-   ArraySetAsSeries(atr, true);
    
-   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) ema[0] = 0;
+   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return;
    if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return;
    if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return;
-   if(CopyBuffer(handleATR, 0, 1, 1, atr) <= 0) return;
    
+   // Manual ATR (RMA/Wilder's) Calculation to match Python
+   // Python: df['ATR_14'] = series.ewm(alpha=1/length, min_periods=length, adjust=False).mean()
+   // Formula: ATR_t = (ATR_{t-1} * (N-1) + TR_t) / N
+   double atr_val = CalculateRMA_ATR(InpATRPeriod);
+   if(atr_val <= 0) return;
+
    double close1 = iClose(_Symbol, _Period, 1);
    long vol1 = iVolume(_Symbol, _Period, 1);
    
-   // Calculate Volume MA
+   // Calculate Volume MA (SMA)
    double vol_ma = 0;
    if(InpUseVol)
      {
@@ -116,18 +120,25 @@ void OnTick()
    bool ema_long = !InpUseEMA || (close1 > ema[0]);
    bool ema_short = !InpUseEMA || (close1 < ema[0]);
    
+   // Debug Log (Compare these values with Python output)
+   /*
+   PrintFormat("Time: %s, Close: %.5f, EMA: %.5f, UpperBB: %.5f, LowerBB: %.5f, ATR: %.5f, Vol: %d, VolMA: %.2f", 
+               TimeToString(current_time), close1, ema[0], upperBB[0], lowerBB[0], atr_val, vol1, vol_ma);
+   */
+
    // LONG Condition
    if(ema_long && close1 > upperBB[0] && vol_condition)
      {
       double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      double slDist = atr[0] * InpATRMult;
+      double slDist = atr_val * InpATRMult;
       double slPrice = entryPrice - slDist;
       double tpPrice = entryPrice + (slDist * InpRR);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
         {
-         trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG");
+         if(trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG"))
+            PrintFormat("LONG Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
         }
      }
      
@@ -135,16 +146,62 @@ void OnTick()
    else if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
       double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-      double slDist = atr[0] * InpATRMult;
+      double slDist = atr_val * InpATRMult;
       double slPrice = entryPrice + slDist;
       double tpPrice = entryPrice - (slDist * InpRR);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
         {
-         trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT");
+         if(trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT"))
+            PrintFormat("SHORT Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
         }
      }
+  }
+
+//+------------------------------------------------------------------+
+//| Calculate ATR using Wilder's Smoothing (RMA)                     |
+//+------------------------------------------------------------------+
+double CalculateRMA_ATR(int period)
+  {
+   double tr_sum = 0;
+   // For RMA to stabilize, we need a lot of history. 
+   // However, for the current bar's ATR, we can calculate it from historical bars.
+   // We'll use a sufficient window to match the ewm calculation.
+   
+   int bars_to_calculate = period * 10; // Stabilization window
+   int total_bars = iBars(_Symbol, _Period);
+   if(total_bars < bars_to_calculate) bars_to_calculate = total_bars - 1;
+
+   double atr = 0;
+   
+   // Initial SMA for the first 'period' bars
+   for(int i = bars_to_calculate; i > bars_to_calculate - period; i--)
+     {
+      tr_sum += GetTrueRange(i);
+     }
+   atr = tr_sum / period;
+   
+   // Recursive RMA calculation: ATR_t = (ATR_{t-1} * (period-1) + TR_t) / period
+   for(int i = bars_to_calculate - period; i >= 1; i--)
+     {
+      atr = (atr * (period - 1) + GetTrueRange(i)) / period;
+     }
+     
+   return atr;
+  }
+
+//+------------------------------------------------------------------+
+//| Get True Range for a specific bar index                          |
+//+------------------------------------------------------------------+
+double GetTrueRange(int index)
+  {
+   double high = iHigh(_Symbol, _Period, index);
+   double low = iLow(_Symbol, _Period, index);
+   double prev_close = iClose(_Symbol, _Period, index + 1);
+   
+   double tr = MathMax(high - low, MathMax(MathAbs(high - prev_close), MathAbs(low - prev_close)));
+   return tr;
   }
 
 //+------------------------------------------------------------------+
