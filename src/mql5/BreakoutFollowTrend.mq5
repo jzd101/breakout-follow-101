@@ -26,7 +26,7 @@ input int    InpFridayHour = 23;     // Friday Hour to close (Broker Time)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 0.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 9;       // Trading start hour (0-23)
-input int    InpEndHour = 22;       // Trading end hour (1-24)
+input int    InpEndHour = 23;       // Trading end hour (1-24)
 
 int handleEMA, handleBB;
 CTrade trade;
