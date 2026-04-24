@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=0.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.5, start_hour=10, end_hour=21):
+def run_backtest(df, initial_capital=1000, risk_pct=1.0, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=0.0, start_hour=0, end_hour=24):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
@@ -333,17 +333,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Backtest Breakout System')
     parser.add_argument('--file', type=str, required=True, help='Path to historical data CSV')
     parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital')
-    parser.add_argument('--risk', type=float, default=2.0, help='Risk % per trade')
-    parser.add_argument('--rr', type=float, default=3.0, help='Risk Reward Ratio')
+    parser.add_argument('--risk', type=float, default=1.0, help='Risk % per trade')
+    parser.add_argument('--rr', type=float, default=2.0, help='Risk Reward Ratio')
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--output', type=str, default='report.txt', help='Output report file')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
     parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
-    parser.add_argument('--compound', action='store_true', help='Use compounding risk instead of fixed')
-    parser.add_argument('--max-trades', type=int, default=2, help='Maximum concurrent trades (default: 2)')
-    parser.add_argument('--daily-loss-limit', type=float, default=2.5, help='Daily loss limit as %% of initial capital. Stop trading for the day if hit. 0=disabled (default: 2.5)')
-    parser.add_argument('--start-hour', type=int, default=10, help='Trading start hour (0-23, default: 10)')
-    parser.add_argument('--end-hour', type=int, default=21, help='Trading end hour (1-24, default: 21)')
+    parser.add_argument('--no-compound', action='store_true', help='Disable compounding risk')
+    parser.add_argument('--max-trades', type=int, default=1, help='Maximum concurrent trades (default: 1)')
+    parser.add_argument('--daily-loss-limit', type=float, default=0.0, help='Daily loss limit as % of initial capital. 0=disabled (default: 0.0)')
+    parser.add_argument('--start-hour', type=int, default=0, help='Trading start hour (0-23, default: 0)')
+    parser.add_argument('--end-hour', type=int, default=24, help='Trading end hour (1-24, default: 24)')
     
     args = parser.parse_args()
     
@@ -357,8 +357,8 @@ if __name__ == "__main__":
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {args.compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {not args.no_compound}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, not args.no_compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
     
     print("Generating report...")
     params = {
