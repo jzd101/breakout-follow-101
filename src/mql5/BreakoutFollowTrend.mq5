@@ -18,6 +18,7 @@ input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 20;      // Bollinger Bands Period
 input double InpBBDev = 2.0;        // Bollinger Bands Deviations
+input int    InpATRPeriod = 14;     // ATR Period
 input int    InpVolPeriod = 20;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
