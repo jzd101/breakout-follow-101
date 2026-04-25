@@ -12,3 +12,6 @@ ENV/
 
 # OS
 .DS_Store
+
+# MQL5 compiled
+*.ex5

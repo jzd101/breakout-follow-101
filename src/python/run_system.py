@@ -10,15 +10,15 @@ def main():
     parser.add_argument('--symbol', type=str, required=True, help='Trading symbol (e.g., GBPUSD, XAUUSD, BTCUSD)')
     parser.add_argument('--timeframe', type=str, default='1h', help='Timeframe (1h, 1d, 15m)')
     parser.add_argument('--period', type=str, default='1y', help='Period from now backwards (e.g., 1d, 1w, 1mo, 1y)')
-    parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital')
-    parser.add_argument('--risk', type=float, default=2.0, help='Risk % per trade')
+    parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital (default: 10000)')
+    parser.add_argument('--risk', type=float, default=2.0, help='Risk %% per trade (default: 2.0)')
     parser.add_argument('--rr', type=str, default='1:2', help='Risk Reward Ratio (e.g., 2 or 1:2)')
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
     parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
-    parser.add_argument('--compound', action='store_true', help='Enable compounding risk (of current balance)')
+    parser.add_argument('--no-compound', action='store_true', help='Disable compounding risk (use fixed initial capital)')
     parser.add_argument('--max-trades', type=int, default=1, help='Maximum concurrent trades (default: 1)')
-    parser.add_argument('--daily-loss-limit', type=float, default=0.0, help='Daily loss limit as % of initial capital. 0=disabled (default: 0.0)')
+    parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
     parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
     parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
     
@@ -53,8 +53,10 @@ def main():
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {args.compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, args.compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
+    compound = not args.no_compound
+    
+    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {compound}...")
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
     
     print("Generating report...")
     params = {
@@ -63,7 +65,7 @@ def main():
         'capital': args.capital,
         'risk': args.risk,
         'rr': rr_val,
-        'compound': args.compound,
+        'compound': compound,
         'daily_loss_limit': args.daily_loss_limit,
         'start_hour': args.start_hour,
         'end_hour': args.end_hour,

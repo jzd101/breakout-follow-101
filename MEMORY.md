@@ -3,12 +3,12 @@
 ## Project Name: Breakout Follow Trend 101
 
 ### Source of Truth
-Strategy rules are derived from a YouTube video transcript stored in `scripts/transcript.txt`. All logic must match the transcript's description exactly.
+Strategy rules are derived from a YouTube video transcript stored in `.agents/knowledges/transcript.md`. Optimized parameters were later found through MT5 backtesting over a 16-month period.
 
 ### Core Objective
 Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maintain a Python backtest engine and an MQL5 Expert Advisor (EA) that are 100% in sync. The system is designed for Crypto (BTC/USDT), Forex, Gold, Commodities, and other tradeable assets.
 
-### Strategy Rules (from Transcript)
+### Strategy Rules (Optimized)
 
 #### Indicators
 | Indicator | Settings | Purpose |
@@ -30,10 +30,11 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Trading Hours**: Restricted trading window (default 07:00 - 20:00).
 
 #### Risk Management
-- **Compounding**: Risk X% of current balance each trade.
-- **Fixed** (default): Risk X% of initial capital each trade.
+- **Compounding** (default): Risk X% of current balance each trade.
+- **Fixed**: Risk X% of initial capital each trade (use `--no-compound`).
 - **Risk %**: Default 2.0% per trade.
-- Transcript used: $3,000 capital, 3% risk, compound mode.
+- **Capital**: Default $10,000.
+- **Daily Loss Limit**: 2.0% of initial capital.
 
 ### Current State & Structure
 - **Architecture**: In-memory data processing. No CSV files saved; data is fetched fresh via yfinance.
@@ -43,7 +44,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
   - `src/python/backtest.py` — Core backtest engine + report generator.
 - **MQL5 File**: `src/mql5/BreakoutFollowTrend.mq5` — MT5 Expert Advisor for live trading.
 - **Reporting**: Box-drawn Text UI reports saved in `reports/` directory (UTF-8).
-- **Git**: Python caches and report files in `.gitignore`.
+- **Git**: Python caches, report files, and compiled MT5 files (`*.ex5`) are in `.gitignore`.
 
 ### Technical Notes & Limits
 - **yfinance data limits**: 1h data = max 729 days; <1h data = max 59 days.
@@ -53,8 +54,9 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Concurrent Trades**: Both systems support `max_trades` / `InpMaxTrades` parameter.
 - **SL/TP Check Priority**: When both SL and TP could be hit on the same candle, SL is checked first (conservative/pessimistic).
 - **BB Std Deviation**: Python uses `ddof=0` (population std) to match MT5's `iBands()` exactly.
-- **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 0.0% (disabled).
+- **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 2.0%.
 - **Trading Window**: Default window 07:00 to 20:00. Start hour is inclusive, end hour is exclusive.
+- **Timezone**: Report displays data timezone detected from yfinance (typically UTC for Forex/Crypto).
 
 ### Completed Tasks
 - [x] Core strategy implementation (Python + MQL5)
@@ -63,24 +65,18 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Weekend Closure logic (both systems)
 - [x] Maximum Concurrent Trades support
 - [x] Box-drawn report UI with monthly stats
-- [x] ROI % in reports
-- [x] .gitignore for reports and caches
-- [x] Entry price corrected to signal candle's Close (per transcript)
-- [x] Standalone backtest.py supports all CLI parameters (compound, max-trades)
-- [x] BB std deviation fixed to ddof=0 (population std) matching MT5/TradingView
+- [x] .gitignore for reports, caches, and *.ex5
+- [x] Entry price corrected to signal candle's Close
+- [x] BB std deviation fixed to ddof=0 matching MT5/TradingView
 - [x] MQL5 RMA stabilization window increased (10× → 50×) for ATR convergence
-- [x] MQL5 weekend check moved inside new-bar gate for bar-level consistency
-- [x] Daily Loss Limit (`--daily-loss-limit` / `InpDailyLossLimit`) — default 0.0%
-- [x] Trading hours updated to 07:00 - 20:00 default (Friday close at 24:00)
-- [x] Fixed risk set as default (Compound off)
-- [x] Risk per trade updated to 2.0% default
-- [x] Replaced `--years` with flexible `--period` (e.g., `1mo`, `2w`, `1y`)
-- [x] Updated indicator defaults: BB Period = 15, Volume MA Period = 15
+- [x] Daily Loss Limit default updated to 2.0%
+- [x] Trading hours updated to 07:00 - 20:00 default
+- [x] Replaced `--years` with flexible `--period`
+- [x] Parameters optimized based on 16-month MT5 test: BB=15, VolMA=15, Risk=2%, Capital=10000, DailyLoss=2.0
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Transcript is the spec**: When in doubt, re-read `scripts/transcript.txt`.
+2. **Transcript is the spec**: Initial intent is from transcript, but optimized defaults take precedence for results.
 3. **README.md Upkeep**: Update README on every structural or parameter change.
 4. **MEMORY.md Upkeep**: Update this file to reflect latest decisions.
-5. **Data Handling**: Handle missing Volume data gracefully (check if max volume = 0). Yahoo Finance may return zero volume for some Forex pairs.
-6. **Language**: README.md must be written in **English only**.
+5. **Language**: README.md must be written in **English only**.

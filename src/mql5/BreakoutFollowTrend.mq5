@@ -11,7 +11,7 @@
 input double InpRiskPct = 2.0;      // Risk % per trade
 input double InpRR = 2.0;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
-input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
+input bool   InpCompound = true;    // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
 input bool   InpUseVol = true;      // Use Volume MA Filter
@@ -24,7 +24,7 @@ input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input int    InpFridayHour = 24;     // Friday Hour to close (Broker Time)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
-input double InpDailyLossLimit = 0.0; // Daily loss limit (% of initial capital). 0=disabled
+input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 7;       // Trading start hour (0-23)
 input int    InpEndHour = 20;       // Trading end hour (1-24)
 

@@ -3,7 +3,7 @@
 An automated trading system based on the **Breakout Follow Trend** strategy — trading Bollinger Band breakouts confirmed by Volume and filtered by EMA 200. This system is designed for high-growth assets like Bitcoin (BTC) but is applicable to Forex and Commodities.
 
 > [!NOTE]
-> This strategy is derived from a proven system described in the [scripts/transcript.txt](scripts/transcript.txt). It leverages mathematical statistics rather than predictions.
+> This strategy is derived from a proven system described in the [.agents/knowledges/transcript.md](.agents/knowledges/transcript.md). It leverages mathematical statistics rather than predictions.
 
 ---
 
@@ -36,9 +36,12 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 |---|---|---|
 | **Stop Loss** | ATR × 2 | Dynamic SL based on volatility |
 | **Take Profit** | RR 1:2.0 | TP = SL distance × 2.0 |
-| **Risk Mode** | Fixed | Use initial capital (Risk X% per trade) |
+| **Risk Mode** | Compounding | Risk X% of current balance per trade |
+| **Risk %** | 2.0% | Risk per trade |
+| **Capital** | $10,000 | Starting capital |
+| **Daily Loss Limit** | 2.0% | Stop trading if daily loss exceeds this % |
 | **Max Trades** | 1 | Focus on one high-probability setup at a time |
-| **Trading Hours** | 07:00 - 20:00 | Restricted trading window |
+| **Trading Hours** | 07:00 - 20:00 | Restricted trading window (UTC) |
 
 ---
 
@@ -49,11 +52,14 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 Use `run_system.py` to download historical data and run the backtest automatically:
 
 ```bash
-# Recommended: BTC 1H, 2 years, $10,000 capital, 2% risk (Fixed)
+# Default: BTC 1H, 1 year, $10,000 capital, 2% risk, Compounding
 python3 src/python/run_system.py --symbol BTCUSD --period 2y
 
-# Aggressive Demo (Compounding Enabled)
-python3 src/python/run_system.py --symbol BTCUSD --period 2y --risk 3.0 --compound
+# Customized Example
+python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0 --daily-loss-limit 2.5
+
+# Conservative: Fixed risk mode (no compounding)
+python3 src/python/run_system.py --symbol BTCUSD --period 2y --no-compound
 
 # Forex Example (Volume filter auto-disables if data is missing)
 python3 src/python/run_system.py --symbol EURUSD --period 1y
@@ -65,13 +71,14 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 |---|---|---|
 | `--symbol` | (req) | Asset symbol, e.g. `BTCUSD`, `XAUUSD`, `EURUSD` |
 | `--period` | `1y` | Period from now backwards (e.g. `1d`, `1w`, `1mo`, `1y`) |
+| `--capital` | `10000` | Initial capital |
 | `--risk` | `2.0` | Risk % per trade |
 | `--rr` | `1:2` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
-| `--compound` | off | Enable compounding risk (reinvest profits) |
+| `--no-compound` | off | Disable compounding (use fixed initial capital) |
 | `--no-ema` | off | Disable EMA 200 trend filter |
 | `--no-vol` | off | Disable Volume filter |
 | `--max-trades` | `1` | Maximum number of concurrent trades |
-| `--daily-loss-limit`| `0.0` | Daily loss limit % (0 = disabled) |
+| `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `7` | Trading start hour (0-23) |
 | `--end-hour` | `20` | Trading end hour (1-24) |
 
@@ -87,7 +94,10 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 ### Input Parameters (Parity with Python)
 - `InpRiskPct`: 2.0 (Risk % per trade)
 - `InpRR`: 2.0 (Risk Reward Ratio)
-- `InpCompound`: false (Use compounding)
+- `InpCompound`: true (Compounding enabled by default)
+- `InpBBPeriod`: 15 (Bollinger Bands period)
+- `InpVolPeriod`: 15 (Volume MA period)
+- `InpDailyLossLimit`: 2.0 (Daily loss limit %)
 - `InpUseEMA`: true (EMA Trend Filter)
 - `InpUseVol`: true (Volume Filter)
 - `InpMaxTrades`: 1 (Max concurrent positions)
@@ -97,24 +107,11 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 
 ---
 
-## 📈 Proven Results (BTCUSD 1H)
-
-Based on a 2-year backtest using the tuned parameters:
-
-| Mode | Risk % | Profit | Max Drawdown | Win Rate |
-| :--- | :--- | :--- | :--- | :--- |
-| **Safe** | 1.0% | **+100.81%** | 13.50% | ~39.3% |
-| **Aggressive** | 3.0% | **+491.45%** | 38.16% | ~39.3% |
-
-*Data Source: Yahoo Finance (Capped at 729 days for 1H timeframe)*
-
----
-
 ## 🔄 Python ↔ MQL5 Parity
 
 The system ensures **100% parity** between the backtest engine and the live trading bot:
 - **ATR Smoothing**: Both use RMA (Wilder's) smoothing.
-- **Indicator Sync**: Identical calculations for BB and EMA.
+- **Indicator Sync**: Identical calculations for BB (15) and EMA (200).
 - **Risk Engine**: Compounding logic matches exactly.
 - **Execution**: Signal is processed at the close of the candle.
 
@@ -123,5 +120,5 @@ The system ensures **100% parity** between the backtest engine and the live trad
 ## ⚠️ Development Rules
 
 1. **Parity First**: Any logic change must be applied to BOTH `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Spec Compliance**: refer to `scripts/transcript.txt` for core strategy intent.
+2. **Spec Compliance**: refer to `.agents/knowledges/transcript.md` for core strategy intent.
 3. **Documentation**: Always update `README.md` after parameter tuning.
