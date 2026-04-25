@@ -3,7 +3,7 @@
 An automated trading system based on the **Breakout Follow Trend** strategy — trading Bollinger Band breakouts confirmed by Volume and filtered by EMA 200. This system is designed for high-growth assets like Bitcoin (BTC) but is applicable to Forex and Commodities.
 
 > [!NOTE]
-> This strategy is derived from a proven system described in the [.agents/knowledges/transcript.md](.agents/knowledges/transcript.md). It leverages mathematical statistics rather than predictions.
+> This strategy is derived from a proven system described in the [.agents/knowledges/transcript_th.md](.agents/knowledges/transcript_th.md). It leverages mathematical statistics rather than predictions.
 
 ---
 
@@ -56,7 +56,7 @@ Use `run_system.py` to download historical data and run the backtest automatical
 python3 src/python/run_system.py --symbol BTCUSD --period 2y
 
 # Customized Example
-python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0 --daily-loss-limit 2.5
+python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0 --daily-loss-limit 2.0
 
 # Conservative: Fixed risk mode (no compounding)
 python3 src/python/run_system.py --symbol BTCUSD --period 2y --no-compound
@@ -120,5 +120,5 @@ The system ensures **100% parity** between the backtest engine and the live trad
 ## ⚠️ Development Rules
 
 1. **Parity First**: Any logic change must be applied to BOTH `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Spec Compliance**: refer to `.agents/knowledges/transcript.md` for core strategy intent.
+2. **Spec Compliance**: refer to `.agents/knowledges/transcript_th.md` for core strategy intent.
 3. **Documentation**: Always update `README.md` after parameter tuning.

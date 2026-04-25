@@ -3,7 +3,7 @@
 ## Project Name: Breakout Follow Trend 101
 
 ### Source of Truth
-Strategy rules are derived from a YouTube video transcript stored in `.agents/knowledges/transcript.md`. Optimized parameters were later found through MT5 backtesting over a 16-month period.
+Strategy rules are derived from a YouTube video transcript stored in `.agents/knowledges/transcript_th.md`. Optimized parameters were later found through MT5 backtesting over a 16-month period.
 
 ### Core Objective
 Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maintain a Python backtest engine and an MQL5 Expert Advisor (EA) that are 100% in sync. The system is designed for Crypto (BTC/USDT), Forex, Gold, Commodities, and other tradeable assets.
@@ -76,7 +76,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Transcript is the spec**: Initial intent is from transcript, but optimized defaults take precedence for results.
+2. **Transcript is the spec**: Initial intent is from transcript_th.md, but optimized defaults take precedence for results.
 3. **README.md Upkeep**: Update README on every structural or parameter change.
 4. **MEMORY.md Upkeep**: Update this file to reflect latest decisions.
 5. **Language**: README.md must be written in **English only**.
