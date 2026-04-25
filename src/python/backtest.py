@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=1000, risk_pct=2.0, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=False, max_trades=1, daily_loss_limit=0.0, start_hour=9, end_hour=22):
+def run_backtest(df, initial_capital=1000, risk_pct=2.0, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=False, max_trades=1, daily_loss_limit=0.0, start_hour=7, end_hour=20):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
@@ -344,8 +344,8 @@ if __name__ == "__main__":
     parser.add_argument('--compound', action='store_true', help='Enable compounding risk')
     parser.add_argument('--max-trades', type=int, default=1, help='Maximum concurrent trades (default: 1)')
     parser.add_argument('--daily-loss-limit', type=float, default=0.0, help='Daily loss limit as % of initial capital. 0=disabled (default: 0.0)')
-    parser.add_argument('--start-hour', type=int, default=9, help='Trading start hour (0-23, default: 9)')
-    parser.add_argument('--end-hour', type=int, default=22, help='Trading end hour (1-24, default: 22)')
+    parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
+    parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
     
     args = parser.parse_args()
     

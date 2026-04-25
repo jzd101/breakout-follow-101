@@ -26,8 +26,8 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 #### Exit Conditions
 - **Stop Loss** = ATR × ATR_Multiplier (default 2.0), placed below entry for LONG, above for SHORT.
 - **Take Profit** = SL_Distance × Risk_Reward_Ratio (default 2.0).
-- **Weekend Closure**: Force-close all positions on Friday evening (default 23:00). No new entries at end of week.
-- **Trading Hours**: Restricted trading window (default 09:00 - 23:00).
+- **Weekend Closure**: Force-close all positions on Friday evening (default 24:00). No new entries at end of week.
+- **Trading Hours**: Restricted trading window (default 07:00 - 20:00).
 
 #### Risk Management
 - **Compounding**: Risk X% of current balance each trade.
@@ -54,7 +54,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **SL/TP Check Priority**: When both SL and TP could be hit on the same candle, SL is checked first (conservative/pessimistic).
 - **BB Std Deviation**: Python uses `ddof=0` (population std) to match MT5's `iBands()` exactly.
 - **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 0.0% (disabled).
-- **Trading Window**: Default window 09:00 to 23:00. Start hour is inclusive, end hour is exclusive.
+- **Trading Window**: Default window 07:00 to 20:00. Start hour is inclusive, end hour is exclusive.
 
 ### Completed Tasks
 - [x] Core strategy implementation (Python + MQL5)
@@ -71,7 +71,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] MQL5 RMA stabilization window increased (10× → 50×) for ATR convergence
 - [x] MQL5 weekend check moved inside new-bar gate for bar-level consistency
 - [x] Daily Loss Limit (`--daily-loss-limit` / `InpDailyLossLimit`) — default 0.0%
-- [x] Trading hours updated to 09:00 - 23:00 default
+- [x] Trading hours updated to 07:00 - 20:00 default (Friday close at 24:00)
 - [x] Fixed risk set as default (Compound off)
 - [x] Risk per trade updated to 2.0% default
 - [x] Replaced `--years` with flexible `--period` (e.g., `1mo`, `2w`, `1y`)

@@ -22,11 +22,11 @@ input int    InpATRPeriod = 14;     // ATR Period
 input int    InpVolPeriod = 15;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
-input int    InpFridayHour = 23;     // Friday Hour to close (Broker Time)
+input int    InpFridayHour = 24;     // Friday Hour to close (Broker Time)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 0.0; // Daily loss limit (% of initial capital). 0=disabled
-input int    InpStartHour = 9;       // Trading start hour (0-23)
-input int    InpEndHour = 23;       // Trading end hour (1-24)
+input int    InpStartHour = 7;       // Trading start hour (0-23)
+input int    InpEndHour = 20;       // Trading end hour (1-24)
 
 int handleEMA, handleBB;
 CTrade trade;
