@@ -215,13 +215,27 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
             
     return trades, capital
 
-def generate_report(trades, params, output_file):
+def generate_report(trades, params, output_file="report.txt"):
+    # ANSI Color Codes
+    CLR_G = "\033[92m"  # Green
+    CLR_R = "\033[91m"  # Red
+    CLR_Y = "\033[93m"  # Yellow
+    CLR_C = "\033[96m"  # Cyan
+    CLR_B = "\033[94m"  # Blue
+    CLR_M = "\033[95m"  # Magenta
+    CLR_0 = "\033[0m"   # Reset
+    
+    def strip_ansi(text):
+        import re
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        return ansi_escape.sub('', text)
+
     if not trades:
-        print("\n=======================================================")
-        print("                 BACKTEST RESULTS                      ")
-        print("=======================================================")
+        print(f"\n{CLR_R}======================================================={CLR_0}")
+        print(f"                 {CLR_Y}BACKTEST RESULTS{CLR_0}                      ")
+        print(f"{CLR_R}======================================================={CLR_0}")
         print(" No trades executed. Try adjusting parameters or data. ")
-        print("=======================================================\n")
+        print(f"{CLR_R}======================================================={CLR_0}\n")
         return
         
     df_trades = pd.DataFrame(trades)
@@ -270,64 +284,73 @@ def generate_report(trades, params, output_file):
     roi_pct = (total_profit / params['capital']) * 100
     
     # Box Width Formatting
-    width = 75  # Increased width to accommodate more stats
+    width = 75
     
-    def box_line(left_text):
-        return f"║ {left_text:<{width}} ║\n"
+    def box_line(text):
+        visible_len = len(strip_ansi(text))
+        padding = width - visible_len
+        return f"{CLR_C}║{CLR_0} {text}{' ' * padding} {CLR_C}║{CLR_0}\n"
 
-    ui = "╔" + "═" * (width + 2) + "╗\n"
-    ui += f"║{'BREAKOUT FOLLOW TREND':^{width+2}}║\n"
-    ui += f"║{'BACKTEST REPORT':^{width+2}}║\n"
-    ui += "╠" + "═" * (width + 2) + "╣\n"
+    ui = f"{CLR_C}╔" + "═" * (width + 2) + f"╗{CLR_0}\n"
+    ui += f"{CLR_C}║{CLR_Y}{'BREAKOUT FOLLOW TREND':^{width+2}}{CLR_C}║{CLR_0}\n"
+    ui += f"{CLR_C}║{CLR_Y}{'BACKTEST REPORT':^{width+2}}{CLR_C}║{CLR_0}\n"
+    ui += f"{CLR_C}╠" + "═" * (width + 2) + f"╣{CLR_0}\n"
     ui += box_line("")
-    ui += box_line("[ SYSTEM SETTINGS ]")
-    ui += box_line(f" ▶ Symbol          : {params.get('symbol', 'Unknown')}")
-    ui += box_line(f" ▶ Timeframe       : {params.get('timeframe', 'Unknown')}")
-    ui += box_line(f" ▶ Risk Per Trade  : {params.get('risk', 0.0)}%")
-    ui += box_line(f" ▶ Risk:Reward     : 1:{params.get('rr', 2.0)}")
-    ui += box_line(f" ▶ Risk Mode       : {'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}")
+    ui += box_line(f"{CLR_B}[ SYSTEM SETTINGS ]{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Symbol          : {CLR_Y}{params.get('symbol', 'Unknown')}{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Timeframe       : {params.get('timeframe', 'Unknown')}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Risk Per Trade  : {CLR_Y}{params.get('risk', 0.0)}%{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Risk:Reward     : 1:{params.get('rr', 2.0)}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Risk Mode       : {CLR_M}{'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}{CLR_0}")
     if params.get('daily_loss_limit', 0) > 0:
-        ui += box_line(f" ▶ Daily Loss Limit: {params['daily_loss_limit']}% of initial capital")
+        ui += box_line(f" {CLR_C}▶{CLR_0} Daily Loss Limit: {CLR_R}{params['daily_loss_limit']}%{CLR_0} of initial capital")
     if params.get('start_hour', 0) != 0 or params.get('end_hour', 24) != 24:
-        ui += box_line(f" ▶ Trading Hours   : {params['start_hour']:02d}:00 - {params['end_hour']:02d}:00")
+        ui += box_line(f" {CLR_C}▶{CLR_0} Trading Hours   : {CLR_Y}{params['start_hour']:02d}:00 - {params['end_hour']:02d}:00{CLR_0}")
     if params.get('timezone'):
-        ui += box_line(f" ▶ Data Timezone   : {params['timezone']}")
+        ui += box_line(f" {CLR_C}▶{CLR_0} Data Timezone   : {params['timezone']}")
     ui += box_line("")
-    ui += box_line("[ ACCOUNT SUMMARY ]")
-    ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")
-    ui += box_line(f" ▶ Final Capital   : ${final_capital:,.2f}")
-    ui += box_line(f" ▶ Total Profit    : ${total_profit:,.2f}")
-    ui += box_line(f" ▶ Growth Profit % : {roi_pct:,.2f}%")
-    ui += box_line(f" ▶ Max Drawdown    : {max_drawdown:.2f}%")
+    ui += box_line(f"{CLR_B}[ ACCOUNT SUMMARY ]{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Initial Capital : ${params['capital']:,.2f}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Final Capital   : {CLR_G if final_capital >= params['capital'] else CLR_R}${final_capital:,.2f}{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Total Profit    : {CLR_G if total_profit >= 0 else CLR_R}${total_profit:,.2f}{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Growth Profit % : {CLR_G if roi_pct >= 0 else CLR_R}{roi_pct:,.2f}%{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Max Drawdown    : {CLR_R}{max_drawdown:,.2f}%{CLR_0}")
     ui += box_line("")
-    ui += box_line("[ TRADE STATISTICS ]")
-    ui += box_line(f" ▶ Total Trades    : {total_trades}")
-    ui += box_line(f" ▶ Wins / Losses   : {wins} / {losses}")
-    ui += box_line(f" ▶ Win Rate        : {win_rate:.2f}%")
+    ui += box_line(f"{CLR_B}[ TRADE STATISTICS ]{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Total Trades    : {total_trades}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Wins / Losses   : {CLR_G}{wins}{CLR_0} / {CLR_R}{losses}{CLR_0}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} Win Rate        : {CLR_Y}{win_rate:,.2f}%{CLR_0}")
     ui += box_line("")
-    ui += "╠" + "═" * (width + 2) + "╣\n"
-    ui += box_line("[ YEARLY BREAKDOWN ]")
+    ui += f"{CLR_C}╠" + "═" * (width + 2) + f"╣{CLR_0}\n"
+    ui += box_line(f"{CLR_B}[ YEARLY BREAKDOWN ]{CLR_0}")
     
     for _, y_row in df_yearly.iterrows():
         year = y_row['Year']
-        ui += box_line(f" ▶ {year}             : ${y_row['Profit']:,.2f}")
-        # Get months for this year
+        y_profit = y_row['Profit']
+        y_clr = CLR_G if y_profit >= 0 else CLR_R
+        ui += box_line(f" {CLR_C}▶{CLR_0} {year:<15} : {y_clr}${y_profit:,.2f}{CLR_0}")
+        
+        # Monthly details
         year_months = df_monthly[df_monthly['Month'].str.startswith(year)]
         for _, m_row in year_months.iterrows():
             month_str = m_row['Month'].split('-')[1]
-            stats_str = f"({m_row['Total']} trades, {m_row['Wins']}W/{m_row['Losses']}L, WR: {m_row['WinRate']:.1f}%)"
-            ui += box_line(f"    └─ Month {month_str}      : ${m_row['Profit']:>10,.2f}  {stats_str}")
+            m_profit = m_row['Profit']
+            m_clr = CLR_G if m_profit >= 0 else CLR_R
+            stats_str = f"({m_row['Total']} trades, {CLR_G}{m_row['Wins']}W{CLR_0}/{CLR_R}{m_row['Losses']}L{CLR_0}, WR: {CLR_Y}{m_row['WinRate']:.1f}%{CLR_0})"
+            ui += box_line(f"    {CLR_C}└─{CLR_0} Month {month_str}      : {m_clr}${m_profit:10,.2f}{CLR_0}  {stats_str}")
 
-    ui += "╚" + "═" * (width + 2) + "╝\n"
+    ui += f"{CLR_C}╚" + "═" * (width + 2) + f"╝{CLR_0}\n"
     
     print(ui)
     
-    # Save Report to Text File
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(ui)
-
-        
-    print(f"Report saved to: {output_file}")
+    # Save Report to Text File (strip colors for clean text file)
+    try:
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(strip_ansi(ui))
+        print(f"Report saved to: {output_file}")
+    except Exception as e:
+        print(f"Error saving report: {e}")
     
     # Remove detailed trades CSV save
 

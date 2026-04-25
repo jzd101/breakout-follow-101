@@ -3,7 +3,7 @@
 An automated trading system based on the **Breakout Follow Trend** strategy — trading Bollinger Band breakouts confirmed by Volume and filtered by EMA 200. This system is designed for high-growth assets like Bitcoin (BTC) but is applicable to Forex and Commodities.
 
 > [!NOTE]
-> This strategy is derived from a proven system described in the [.agents/knowledges/transcript_th.md](.agents/knowledges/transcript_th.md). It leverages mathematical statistics rather than predictions.
+> This strategy is derived from a proven system described in the [.agents/knowledges/transcript_th.md](.agents/knowledges/transcript_th.md) (English version [here](.agents/knowledges/transcript_en.md)). It leverages mathematical statistics rather than predictions.
 
 ---
 
@@ -46,6 +46,11 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 ---
 
 ## 🐍 Python Backtest System
+
+### Features
+- **Flexible Data**: Download historical data automatically via `yfinance`.
+- **Colored Reports**: Vibrant Text UI reports in terminal with yearly/monthly performance breakdown.
+- **Accuracy**: 100% logic parity with MetaTrader 5 implementation.
 
 ### Usage
 
