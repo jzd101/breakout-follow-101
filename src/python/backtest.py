@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time="23:50"):
+def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time="23:45"):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
@@ -141,7 +141,7 @@ def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, 
                     'Result': 'WIN' if profit > 0 else 'LOSS',
                     'Profit': profit,
                     'Capital': capital,
-                    'Notes': 'Weekend Close'
+                    'Notes': 'Friday Close'
                 })
                 daily_pnl += profit
                 exited = True
@@ -162,7 +162,13 @@ def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, 
         else: # Overnight window (e.g. 22:00 to 04:00)
             in_time_window = current_hour >= start_hour or current_hour < end_hour
 
-        if len(active_trades) >= max_trades or is_weekend_end or daily_loss_hit or not in_time_window:
+        # 2. Check Entry Conditions
+        # Block entries during weekend (Friday after close until Monday start)
+        is_weekend_block = (current_date.weekday() == 5 or current_date.weekday() == 6 or 
+                           (current_date.weekday() == 4 and (current_date.hour > f_hour or (current_date.hour == f_hour and current_date.minute >= f_min))) or
+                           (current_date.weekday() == 0 and current_date.hour < start_hour))
+
+        if len(active_trades) >= max_trades or is_weekend_end or is_weekend_block or daily_loss_hit or not in_time_window:
             continue
             
         close = current_candle['Close']
@@ -374,7 +380,7 @@ if __name__ == "__main__":
     parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
     parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
     parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
-    parser.add_argument('--friday-close', type=str, default='23:50', help='Friday close time (HH:MM, default: 23:50)')
+    parser.add_argument('--friday-close', type=str, default='23:45', help='Friday close time (HH:MM, default: 23:45)')
     
     args = parser.parse_args()
     
