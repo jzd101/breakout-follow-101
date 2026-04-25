@@ -121,6 +121,15 @@ The system ensures **100% parity** between the backtest engine and the live trad
 - **Indicator Sync**: Identical calculations for BB (15) and EMA (200).
 - **Risk Engine**: Compounding logic matches exactly.
 - **Execution**: Signal is processed at the close of the candle.
+- **Memory**: Long-term context and decisions are persisted in Notion for historical tracking.
+
+---
+
+## 🧠 Notion Persistent Memory
+
+This project uses **Notion** as a long-term context and decision store. This helps maintain continuity across sessions and optimizes token usage.
+- **Rules**: Follows the global Notion Memory policy in `.gemini/GEMINI.md`.
+- **Integration**: The agent automatically logs significant changes and decisions to a dedicated Notion workspace under `Project > breakout-follow-101`.
 
 ---
 
@@ -129,3 +138,4 @@ The system ensures **100% parity** between the backtest engine and the live trad
 1. **Parity First**: Any logic change must be applied to BOTH `backtest.py` and `BreakoutFollowTrend.mq5`.
 2. **Spec Compliance**: refer to `.agents/knowledges/transcript_th.md` for core strategy intent.
 3. **Documentation**: Always update `README.md` after parameter tuning.
+4. **Notion Log**: Log major architectural or logic decisions to Notion as per the global persistent memory rules.
