@@ -13,8 +13,8 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | Indicator | Settings | Purpose |
 |---|---|---|
 | **EMA** | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
-| **Bollinger Bands** | Period = 20, StdDev = 2 | Breakout signal trigger |
-| **Volume MA** | Period = 20 (SMA) | Volume confirmation filter (Volume > SMA 20) |
+| **Bollinger Bands** | Period = 15, StdDev = 2 | Breakout signal trigger |
+| **Volume MA** | Period = 15 (SMA) | Volume confirmation filter (Volume > SMA 15) |
 | **ATR** | Period = 14, RMA smoothing | Dynamic Stop Loss calculation (ATR × 2) |
 
 ### Entry Conditions

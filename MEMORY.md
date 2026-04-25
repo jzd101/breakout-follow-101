@@ -14,8 +14,8 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 | Indicator | Settings | Purpose |
 |---|---|---|
 | EMA | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
-| Bollinger Bands | Period = 20, StdDev = 2 | Breakout signal (close above/below band) |
-| Volume MA | Period = 20 (SMA) | Volume confirmation filter |
+| Bollinger Bands | Period = 15, StdDev = 2 | Breakout signal (close above/below band) |
+| Volume MA | Period = 15 (SMA) | Volume confirmation filter |
 | ATR | Period = 14, Smoothing = RMA | Dynamic Stop Loss calculation |
 
 #### Entry Conditions
@@ -27,7 +27,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Stop Loss** = ATR × ATR_Multiplier (default 2.0), placed below entry for LONG, above for SHORT.
 - **Take Profit** = SL_Distance × Risk_Reward_Ratio (default 2.0).
 - **Weekend Closure**: Force-close all positions on Friday evening (default 23:00). No new entries at end of week.
-- **Trading Hours**: Restricted trading window (default 09:00 - 22:00).
+- **Trading Hours**: Restricted trading window (default 09:00 - 23:00).
 
 #### Risk Management
 - **Compounding**: Risk X% of current balance each trade.
@@ -71,10 +71,11 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] MQL5 RMA stabilization window increased (10× → 50×) for ATR convergence
 - [x] MQL5 weekend check moved inside new-bar gate for bar-level consistency
 - [x] Daily Loss Limit (`--daily-loss-limit` / `InpDailyLossLimit`) — default 0.0%
-- [x] Trading hours updated to 09:00 - 22:00 default
+- [x] Trading hours updated to 09:00 - 23:00 default
 - [x] Fixed risk set as default (Compound off)
 - [x] Risk per trade updated to 2.0% default
 - [x] Replaced `--years` with flexible `--period` (e.g., `1mo`, `2w`, `1y`)
+- [x] Updated indicator defaults: BB Period = 15, Volume MA Period = 15
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.

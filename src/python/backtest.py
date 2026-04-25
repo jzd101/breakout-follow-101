@@ -7,14 +7,14 @@ def calculate_indicators(df):
     # EMA 200
     df['EMA_200'] = df['Close'].ewm(span=200, adjust=False).mean()
     
-    # Bollinger Bands 20, 2
-    df['SMA_20'] = df['Close'].rolling(window=20).mean()
-    df['STD_20'] = df['Close'].rolling(window=20).std(ddof=0)  # population std to match MT5/TradingView
-    df['Upper_BB'] = df['SMA_20'] + 2 * df['STD_20']
-    df['Lower_BB'] = df['SMA_20'] - 2 * df['STD_20']
+    # Bollinger Bands 15, 2
+    df['SMA_15'] = df['Close'].rolling(window=15).mean()
+    df['STD_15'] = df['Close'].rolling(window=15).std(ddof=0)  # population std to match MT5/TradingView
+    df['Upper_BB'] = df['SMA_15'] + 2 * df['STD_15']
+    df['Lower_BB'] = df['SMA_15'] - 2 * df['STD_15']
     
-    # Volume MA 20
-    df['Vol_MA'] = df['Volume'].rolling(window=20).mean()
+    # Volume MA 15
+    df['Vol_MA'] = df['Volume'].rolling(window=15).mean()
     
     # ATR 14 (RMA smoothing like TradingView)
     df['Prev_Close'] = df['Close'].shift(1)
