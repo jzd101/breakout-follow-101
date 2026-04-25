@@ -73,7 +73,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Trading hours updated to 07:00 - 20:00 default
 - [x] Replaced `--years` with flexible `--period`
 - [x] Parameters optimized based on MT5 testing: BB=15, VolMA=15, Risk=1.5%, Capital=10000, DailyLoss=2.0
-- [x] Friday close time updated to 23:50 (supports HH:MM format)
+- [x] Friday close time updated to 23:50 (fixed to work intra-bar in MQL5 and Python)
 - [x] Translated Thai transcript to English (`transcript_en.md`)
 - [x] Added ANSI colors to Text UI report (terminal only)
 

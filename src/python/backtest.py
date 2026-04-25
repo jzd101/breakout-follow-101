@@ -52,14 +52,14 @@ def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, 
     for i in range(200, len(df)-1):
         current_candle = df.iloc[i]
         next_candle = df.iloc[i+1]
-        
         current_date = current_candle['Date']
         next_date = next_candle['Date']
-        
+
         # Friday Time Parsing
         f_t = friday_close_time.replace(":", "")
         f_hour, f_min = int(f_t[:2]), int(f_t[2:])
-        is_friday_close = (current_date.weekday() == 4 and (current_date.hour > f_hour or (current_date.hour == f_hour and current_date.minute >= f_min)))
+        friday_limit = current_date.replace(hour=f_hour, minute=f_min, second=0, microsecond=0)
+        is_friday_close = (current_date.weekday() == 4 and next_date > friday_limit)
 
         # Detect Weekend: Next candle is more than 48 hours away or weekday number drops (e.g. Fri -> Mon)
         is_weekend_end = (next_date.weekday() < current_date.weekday()) or ((next_date - current_date).total_seconds() > 172800) or is_friday_close

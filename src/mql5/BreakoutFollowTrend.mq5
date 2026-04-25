@@ -72,13 +72,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Execute only on new bar
-   static datetime last_time = 0;
-   datetime current_time = iTime(_Symbol, _Period, 0);
-   if(current_time == last_time) return;
-   last_time = current_time;
-   
-   // Check for Weekend Close (at bar open, matching Python's bar-level check)
+   // Check for Weekend Close (Every tick to allow precise HH:MM closing)
    if(InpWeekendClose)
      {
       MqlDateTime dt;
@@ -93,11 +87,21 @@ void OnTick()
       
       if(dt.day_of_week == 5 && current_min >= target_min) // 5 = Friday
         {
-         CloseAllPositions();
+         if(PositionsTotal() > 0)
+           {
+            CloseAllPositions();
+            Print("Weekend Close Triggered at ", dt.hour, ":", dt.min);
+           }
          return; // Don't look for new entries
         }
      }
 
+   // Execute the rest only on new bar
+   static datetime last_time = 0;
+   datetime current_time = iTime(_Symbol, _Period, 0);
+   if(current_time == last_time) return;
+   last_time = current_time;
+   
    // Daily Loss Limit: Reset on new calendar day
    MqlDateTime dt_daily;
    TimeToStruct(TimeCurrent(), dt_daily);
