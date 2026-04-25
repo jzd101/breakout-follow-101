@@ -9,7 +9,7 @@ def main():
     parser = argparse.ArgumentParser(description='Run Breakout Follow Trend Backtest System')
     parser.add_argument('--symbol', type=str, required=True, help='Trading symbol (e.g., GBPUSD, XAUUSD, BTCUSD)')
     parser.add_argument('--timeframe', type=str, default='1h', help='Timeframe (1h, 1d, 15m)')
-    parser.add_argument('--years', type=float, default=1.0, help='Number of years of history')
+    parser.add_argument('--period', type=str, default='1y', help='Period from now backwards (e.g., 1d, 1w, 1mo, 1y)')
     parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital')
     parser.add_argument('--risk', type=float, default=2.0, help='Risk % per trade')
     parser.add_argument('--rr', type=str, default='1:2', help='Risk Reward Ratio (e.g., 2 or 1:2)')
@@ -43,7 +43,7 @@ def main():
     report_txt = os.path.join(reports_dir, f"{symbol_upper}_{args.timeframe}_report.txt")
     
     # 1. Download Data
-    df = download_data(args.symbol, args.timeframe, args.years)
+    df = download_data(args.symbol, args.timeframe, args.period)
     
     if df is None or df.empty:
         print("Failed to download data or data is empty. Exiting.")

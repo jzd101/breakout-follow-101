@@ -50,13 +50,13 @@ Use `run_system.py` to download historical data and run the backtest automatical
 
 ```bash
 # Recommended: BTC 1H, 2 years, $10,000 capital, 2% risk (Fixed)
-python3 src/python/run_system.py --symbol BTCUSD --years 2
+python3 src/python/run_system.py --symbol BTCUSD --period 2y
 
 # Aggressive Demo (Compounding Enabled)
-python3 src/python/run_system.py --symbol BTCUSD --years 2 --risk 3.0 --compound
+python3 src/python/run_system.py --symbol BTCUSD --period 2y --risk 3.0 --compound
 
 # Forex Example (Volume filter auto-disables if data is missing)
-python3 src/python/run_system.py --symbol EURUSD --years 1
+python3 src/python/run_system.py --symbol EURUSD --period 1y
 ```
 
 ### Parameters
@@ -64,7 +64,7 @@ python3 src/python/run_system.py --symbol EURUSD --years 1
 | Parameter | Default | Description |
 |---|---|---|
 | `--symbol` | (req) | Asset symbol, e.g. `BTCUSD`, `XAUUSD`, `EURUSD` |
-| `--years` | `1.0` | Number of years of historical data |
+| `--period` | `1y` | Period from now backwards (e.g. `1d`, `1w`, `1mo`, `1y`) |
 | `--risk` | `2.0` | Risk % per trade |
 | `--rr` | `1:2` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
 | `--compound` | off | Enable compounding risk (reinvest profits) |

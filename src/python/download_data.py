@@ -2,8 +2,34 @@ import yfinance as yf
 import argparse
 import pandas as pd
 from datetime import datetime, timedelta
+import re
 
-def download_data(symbol, timeframe, years):
+def parse_period(period_str):
+    """
+    Parse period string like '1y', '6mo', '1mo', '30d' into number of days.
+    """
+    match = re.match(r'^(\d+)(d|w|mo|y)$', period_str.lower())
+    if not match:
+        # Fallback to years if it's just a number for backward compatibility or simple input
+        try:
+            return float(period_str) * 365
+        except ValueError:
+            raise ValueError(f"Invalid period format: {period_str}. Use e.g., 1d, 1w, 1mo, 1y")
+    
+    value = int(match.group(1))
+    unit = match.group(2)
+    
+    if unit == 'd':
+        return value
+    elif unit == 'w':
+        return value * 7
+    elif unit == 'mo':
+        return value * 30
+    elif unit == 'y':
+        return value * 365
+    return 365
+
+def download_data(symbol, timeframe, period_str):
     # Mapping common symbols to yfinance symbols
     symbol_upper = symbol.upper()
     yf_symbol = symbol_upper
@@ -33,11 +59,14 @@ def download_data(symbol, timeframe, years):
         else:
             yf_symbol = symbol_upper
             
-    print(f"Downloading {symbol_upper} (mapped to {yf_symbol}) data for {timeframe} interval over {years} years...")
+    # Calculate days from period
+    days = parse_period(str(period_str))
+    
+    print(f"Downloading {symbol_upper} (mapped to {yf_symbol}) data for {timeframe} interval over {period_str}...")
     
     # Calculate start and end dates
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=years * 365)
+    start_date = end_date - timedelta(days=days)
     
     # yfinance limits:
     # 1m data is only available for 7 days
@@ -81,9 +110,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download historical data for Forex, Gold, etc.')
     parser.add_argument('--symbol', type=str, required=True, help='Ticker symbol (e.g., EURUSD=X, XAUUSD=X, GC=F)')
     parser.add_argument('--timeframe', type=str, default='1h', help='Timeframe (1h, 1d, 15m)')
-    parser.add_argument('--years', type=float, default=1.0, help='Number of years of history')
+    parser.add_argument('--period', type=str, default='1y', help='Period from now backwards (e.g., 1d, 1w, 1mo, 1y)')
     
     args = parser.parse_args()
-    data = download_data(args.symbol, args.timeframe, args.years)
+    data = download_data(args.symbol, args.timeframe, args.period)
     if data is not None:
         print(data.head())

@@ -74,6 +74,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Trading hours updated to 09:00 - 22:00 default
 - [x] Fixed risk set as default (Compound off)
 - [x] Risk per trade updated to 2.0% default
+- [x] Replaced `--years` with flexible `--period` (e.g., `1mo`, `2w`, `1y`)
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
