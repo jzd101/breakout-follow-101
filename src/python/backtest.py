@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20):
+def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time="23:50"):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
@@ -56,8 +56,13 @@ def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, 
         current_date = current_candle['Date']
         next_date = next_candle['Date']
         
+        # Friday Time Parsing
+        f_t = friday_close_time.replace(":", "")
+        f_hour, f_min = int(f_t[:2]), int(f_t[2:])
+        is_friday_close = (current_date.weekday() == 4 and (current_date.hour > f_hour or (current_date.hour == f_hour and current_date.minute >= f_min)))
+
         # Detect Weekend: Next candle is more than 48 hours away or weekday number drops (e.g. Fri -> Mon)
-        is_weekend_end = (next_date.weekday() < current_date.weekday()) or ((next_date - current_date).total_seconds() > 172800)
+        is_weekend_end = (next_date.weekday() < current_date.weekday()) or ((next_date - current_date).total_seconds() > 172800) or is_friday_close
         
         # Daily Loss Limit: Reset daily P&L on new calendar day
         candle_day = current_date.date()
@@ -369,6 +374,7 @@ if __name__ == "__main__":
     parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
     parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
     parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
+    parser.add_argument('--friday-close', type=str, default='23:50', help='Friday close time (HH:MM, default: 23:50)')
     
     args = parser.parse_args()
     
@@ -385,7 +391,7 @@ if __name__ == "__main__":
     compound = not args.no_compound
     
     print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
+    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour, args.friday_close)
     
     print("Generating report...")
     params = {
@@ -397,6 +403,7 @@ if __name__ == "__main__":
         'compound': compound,
         'daily_loss_limit': args.daily_loss_limit,
         'start_hour': args.start_hour,
-        'end_hour': args.end_hour
+        'end_hour': args.end_hour,
+        'friday_close_time': args.friday_close
     }
     generate_report(trades, params, args.output)

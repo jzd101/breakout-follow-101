@@ -22,7 +22,7 @@ input int    InpATRPeriod = 14;     // ATR Period
 input int    InpVolPeriod = 15;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
-input int    InpFridayHour = 23;     // Friday Hour to close (Broker Time)
+input string InpFridayTime = "23:50"; // Friday Time to close (Broker Time, e.g. 23:59 or 2359)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 7;       // Trading start hour (0-23)
@@ -83,7 +83,15 @@ void OnTick()
      {
       MqlDateTime dt;
       TimeToStruct(TimeCurrent(), dt);
-      if(dt.day_of_week == 5 && dt.hour >= InpFridayHour) // 5 = Friday
+      
+      // Parse Friday Time
+      string t = InpFridayTime;
+      StringReplace(t, ":", "");
+      int val = (int)StringToInteger(t);
+      int target_min = (val / 100) * 60 + (val % 100);
+      int current_min = dt.hour * 60 + dt.min;
+      
+      if(dt.day_of_week == 5 && current_min >= target_min) // 5 = Friday
         {
          CloseAllPositions();
          return; // Don't look for new entries
