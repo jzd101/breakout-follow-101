@@ -26,7 +26,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 #### Exit Conditions
 - **Stop Loss** = ATR × ATR_Multiplier (default 2.0), placed below entry for LONG, above for SHORT.
 - **Take Profit** = SL_Distance × Risk_Reward_Ratio (default 2.0).
-- **Weekend Closure**: Force-close all positions on Friday evening (default 24:00). No new entries at end of week.
+- **Weekend Closure**: Force-close all positions on Friday evening (default None/Disabled). No new entries at end of week.
 - **Trading Hours**: Restricted trading window (default 07:00 - 20:00).
 
 #### Risk Management
@@ -73,6 +73,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Trading hours updated to 07:00 - 20:00 default
 - [x] Replaced `--years` with flexible `--period`
 - [x] Parameters optimized based on MT5 testing: BB=15, VolMA=15, Risk=1.5%, Capital=10000, DailyLoss=2.0
+- [x] Python: Separated market gap from force-exit logic to allow holding over weekends
 - [x] Translated Thai transcript to English (`transcript_en.md`)
 - [x] Added ANSI colors to Text UI report (terminal only)
 

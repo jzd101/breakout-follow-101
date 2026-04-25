@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
     parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
     parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
+    parser.add_argument('--friday-close', type=str, default=None, help='Friday close time (HH:MM, default: None)')
     
     args = parser.parse_args()
     
@@ -56,7 +57,7 @@ def main():
     compound = not args.no_compound
     
     print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour)
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour, args.friday_close)
     
     print("Generating report...")
     params = {
@@ -69,6 +70,7 @@ def main():
         'daily_loss_limit': args.daily_loss_limit,
         'start_hour': args.start_hour,
         'end_hour': args.end_hour,
+        'friday_close_time': args.friday_close,
         'timezone': tz_name
     }
     generate_report(trades, params, report_txt)

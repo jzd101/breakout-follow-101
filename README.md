@@ -86,6 +86,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 | `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `7` | Trading start hour (0-23) |
 | `--end-hour` | `20` | Trading end hour (1-24) |
+| `--friday-close` | `None` | Friday close time (HH:MM) |
 
 ---
 
@@ -108,7 +109,8 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 - `InpMaxTrades`: 1 (Max concurrent positions)
 - `InpStartHour`: 7 (Start hour)
 - `InpEndHour`: 20 (End hour)
-- `InpFridayHour`: 24 (Friday close hour)
+- `InpWeekendClose`: false (Force-close on Friday - disabled by default)
+- `InpFridayTime`: "23:45" (Friday close time, e.g. "23:59")
 
 ---
 

@@ -21,8 +21,8 @@ input double InpBBDev = 2.0;        // Bollinger Bands Deviations
 input int    InpATRPeriod = 14;     // ATR Period
 input int    InpVolPeriod = 15;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
-input bool   InpWeekendClose = true; // Close all trades on Friday evening
-input int    InpFridayHour = 24;     // Friday Hour to close (Broker Time)
+input bool   InpWeekendClose = false; // Close all trades on Friday evening
+input string InpFridayTime = "23:45"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 7;       // Trading start hour (0-23)
@@ -54,6 +54,8 @@ int OnInit()
    // Calculate daily loss max from initial balance
    double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+   // Set Timer for precise weekend closing (even without ticks)
+   EventSetTimer(10);
      
    return(INIT_SUCCEEDED);
   }
@@ -65,6 +67,7 @@ void OnDeinit(const int reason)
   {
    IndicatorRelease(handleEMA);
    IndicatorRelease(handleBB);
+   EventKillTimer();
   }
 
 //+------------------------------------------------------------------+
@@ -72,27 +75,18 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Execute only on new bar
+   // Check for Weekend Close
+   CheckWeekendClose();
+
+   // Execute the rest only on new bar
    static datetime last_time = 0;
    datetime current_time = iTime(_Symbol, _Period, 0);
    if(current_time == last_time) return;
    last_time = current_time;
    
-   // Check for Weekend Close (at bar open, matching Python's bar-level check)
-   if(InpWeekendClose)
-     {
-      MqlDateTime dt;
-      TimeToStruct(TimeCurrent(), dt);
-      if(dt.day_of_week == 5 && dt.hour >= InpFridayHour) // 5 = Friday
-        {
-         CloseAllPositions();
-         return; // Don't look for new entries
-        }
-     }
-
    // Daily Loss Limit: Reset on new calendar day
    MqlDateTime dt_daily;
-   TimeToStruct(TimeCurrent(), dt_daily);
+   TimeToStruct(TimeTradeServer(), dt_daily);
    if(dt_daily.day != g_currentDay)
      {
       g_currentDay = dt_daily.day;
@@ -110,7 +104,7 @@ void OnTick()
    
    // Check Trading Hours
    MqlDateTime dt_time;
-   TimeToStruct(TimeCurrent(), dt_time);
+   TimeToStruct(TimeTradeServer(), dt_time);
    bool in_time_window = true;
    if(InpStartHour < InpEndHour)
       in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
@@ -287,7 +281,7 @@ int CountOpenPositions()
 //+------------------------------------------------------------------+
 //| Close all positions with the magic number                        |
 //+------------------------------------------------------------------+
-void CloseAllPositions()
+void CloseAllPositions(string comment = "")
   {
    for(int i=PositionsTotal()-1; i>=0; i--)
      {
@@ -295,7 +289,12 @@ void CloseAllPositions()
       if(PositionSelectByTicket(ticket))
         {
          if(PositionGetInteger(POSITION_MAGIC) == InpMagic && PositionGetString(POSITION_SYMBOL) == _Symbol)
-            trade.PositionClose(ticket);
+           {
+            if(!trade.PositionClose(ticket))
+              {
+               Print("Failed to close position ", ticket, ". Error: ", GetLastError(), " RetCode: ", trade.ResultRetcode(), " (", trade.ResultRetcodeDescription(), ")");
+              }
+           }
         }
      }
   }
@@ -329,4 +328,58 @@ double CalculateLotSize(double sl_distance)
    if(lot > maxLot) lot = maxLot;
    
    return lot;
+  }
+
+//+------------------------------------------------------------------+
+//| Timer function                                                   |
+//+------------------------------------------------------------------+
+void OnTimer()
+  {
+   CheckWeekendClose();
+  }
+
+//+------------------------------------------------------------------+
+//| Weekend Close Check Logic                                        |
+//+------------------------------------------------------------------+
+void CheckWeekendClose()
+  {
+   if(!InpWeekendClose) return;
+
+   MqlDateTime dt;
+   // TimeTradeServer() returns server time regardless of ticks (calculated from system time + offset)
+   TimeToStruct(TimeTradeServer(), dt);
+   
+   // Parse Friday Time
+   string t = InpFridayTime;
+   StringTrimLeft(t);
+   StringTrimRight(t);
+   int sep = StringFind(t, ":");
+   int h = 0, m = 0;
+   if(sep != -1)
+     {
+      h = (int)StringToInteger(StringSubstr(t, 0, sep));
+      m = (int)StringToInteger(StringSubstr(t, sep + 1));
+     }
+   else
+     {
+      int val = (int)StringToInteger(t);
+      h = val / 100;
+      m = val % 100;
+     }
+   
+   int target_min = h * 60 + m;
+   int current_min = dt.hour * 60 + dt.min;
+   
+   bool is_friday_past = (dt.day_of_week == 5 && current_min >= target_min);
+   bool is_weekend = (dt.day_of_week == 6 || dt.day_of_week == 0);
+   bool is_monday_before = (dt.day_of_week == 1 && dt.hour < InpStartHour);
+   
+   if(is_friday_past || is_weekend || is_monday_before)
+     {
+      if(PositionsTotal() > 0)
+        {
+         CloseAllPositions("Friday Close");
+         Print("Weekend Close Triggered (inclusive) at Day ", dt.day_of_week, " ", dt.hour, ":", dt.min, " (via Timer/ServerTime)");
+        }
+     }
   }
