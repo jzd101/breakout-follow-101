@@ -290,6 +290,8 @@ def generate_report(trades, params, output_file):
         ui += box_line(f" ▶ Daily Loss Limit: {params['daily_loss_limit']}% of initial capital")
     if params.get('start_hour', 0) != 0 or params.get('end_hour', 24) != 24:
         ui += box_line(f" ▶ Trading Hours   : {params['start_hour']:02d}:00 - {params['end_hour']:02d}:00")
+    if params.get('timezone'):
+        ui += box_line(f" ▶ Data Timezone   : {params['timezone']}")
     ui += box_line("")
     ui += box_line("[ ACCOUNT SUMMARY ]")
     ui += box_line(f" ▶ Initial Capital : ${params['capital']:,.2f}")

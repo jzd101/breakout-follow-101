@@ -85,11 +85,16 @@ def download_data(symbol, timeframe, period_str):
         
         if data.empty:
             print(f"No data found for {yf_symbol} with timeframe {timeframe}.")
-            return None
+            return None, None
         
         # Flatten MultiIndex columns if yfinance returns them
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = [c[0] for c in data.columns]
+            
+        # Get Timezone before resetting index
+        tz_name = "UTC"
+        if data.index.tz is not None:
+            tz_name = str(data.index.tz)
             
         data.reset_index(inplace=True)
         # Handle index name, might be Date or Datetime
@@ -100,11 +105,11 @@ def download_data(symbol, timeframe, period_str):
         cols = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
         data = data[cols]
         
-        print(f"Data downloaded successfully. Rows: {len(data)}")
-        return data
+        print(f"Data downloaded successfully. Rows: {len(data)} (Timezone: {tz_name})")
+        return data, tz_name
     except Exception as e:
         print(f"Failed to download data: {e}")
-        return None
+        return None, None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download historical data for Forex, Gold, etc.')
@@ -113,6 +118,7 @@ if __name__ == "__main__":
     parser.add_argument('--period', type=str, default='1y', help='Period from now backwards (e.g., 1d, 1w, 1mo, 1y)')
     
     args = parser.parse_args()
-    data = download_data(args.symbol, args.timeframe, args.period)
+    data, tz = download_data(args.symbol, args.timeframe, args.period)
     if data is not None:
+        print(f"Detected Timezone: {tz}")
         print(data.head())

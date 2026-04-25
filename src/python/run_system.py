@@ -43,7 +43,7 @@ def main():
     report_txt = os.path.join(reports_dir, f"{symbol_upper}_{args.timeframe}_report.txt")
     
     # 1. Download Data
-    df = download_data(args.symbol, args.timeframe, args.period)
+    df, tz_name = download_data(args.symbol, args.timeframe, args.period)
     
     if df is None or df.empty:
         print("Failed to download data or data is empty. Exiting.")
@@ -66,7 +66,8 @@ def main():
         'compound': args.compound,
         'daily_loss_limit': args.daily_loss_limit,
         'start_hour': args.start_hour,
-        'end_hour': args.end_hour
+        'end_hour': args.end_hour,
+        'timezone': tz_name
     }
     generate_report(trades, params, report_txt)
 
