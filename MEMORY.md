@@ -3,7 +3,7 @@
 ## Project Name: Breakout Follow Trend 101
 
 ### Source of Truth
-Strategy rules are derived from a YouTube video transcript stored in `scripts/transcript.txt`. All logic must match the transcript's description exactly.
+Strategy rules are derived from a YouTube video transcript stored in `.agents/knowledges/transcript.md`. All logic must match the transcript's description exactly.
 
 ### Core Objective
 Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maintain a Python backtest engine and an MQL5 Expert Advisor (EA) that are 100% in sync. The system is designed for Crypto (BTC/USDT), Forex, Gold, Commodities, and other tradeable assets.
@@ -14,8 +14,8 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 | Indicator | Settings | Purpose |
 |---|---|---|
 | EMA | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
-| Bollinger Bands | Period = 15, StdDev = 2 | Breakout signal (close above/below band) |
-| Volume MA | Period = 15 (SMA) | Volume confirmation filter |
+| Bollinger Bands | Period = 20, StdDev = 2 | Breakout signal (close above/below band) |
+| Volume MA | Period = 20 (SMA) | Volume confirmation filter |
 | ATR | Period = 14, Smoothing = RMA | Dynamic Stop Loss calculation |
 
 #### Entry Conditions
@@ -30,9 +30,10 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Trading Hours**: Restricted trading window (default 07:00 - 20:00).
 
 #### Risk Management
-- **Compounding**: Risk X% of current balance each trade.
-- **Fixed** (default): Risk X% of initial capital each trade.
-- **Risk %**: Default 2.0% per trade.
+- **Compounding** (default): Risk X% of current balance each trade.
+- **Fixed**: Risk X% of initial capital each trade (use `--no-compound`).
+- **Risk %**: Default 3.0% per trade.
+- **Capital**: Default $3,000.
 - Transcript used: $3,000 capital, 3% risk, compound mode.
 
 ### Current State & Structure
@@ -55,6 +56,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **BB Std Deviation**: Python uses `ddof=0` (population std) to match MT5's `iBands()` exactly.
 - **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 0.0% (disabled).
 - **Trading Window**: Default window 07:00 to 20:00. Start hour is inclusive, end hour is exclusive.
+- **Timezone**: Report displays data timezone detected from yfinance (typically UTC for Forex/Crypto).
 
 ### Completed Tasks
 - [x] Core strategy implementation (Python + MQL5)
@@ -72,14 +74,13 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] MQL5 weekend check moved inside new-bar gate for bar-level consistency
 - [x] Daily Loss Limit (`--daily-loss-limit` / `InpDailyLossLimit`) — default 0.0%
 - [x] Trading hours updated to 07:00 - 20:00 default (Friday close at 24:00)
-- [x] Fixed risk set as default (Compound off)
-- [x] Risk per trade updated to 2.0% default
 - [x] Replaced `--years` with flexible `--period` (e.g., `1mo`, `2w`, `1y`)
-- [x] Updated indicator defaults: BB Period = 15, Volume MA Period = 15
+- [x] Data timezone detection and display in reports
+- [x] Restored defaults to match transcript: BB=20, VolMA=20, Risk=3%, Capital=$3000, Compound=on
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Transcript is the spec**: When in doubt, re-read `scripts/transcript.txt`.
+2. **Transcript is the spec**: When in doubt, re-read `.agents/knowledges/transcript.md`.
 3. **README.md Upkeep**: Update README on every structural or parameter change.
 4. **MEMORY.md Upkeep**: Update this file to reflect latest decisions.
 5. **Data Handling**: Handle missing Volume data gracefully (check if max volume = 0). Yahoo Finance may return zero volume for some Forex pairs.

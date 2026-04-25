@@ -8,18 +8,18 @@
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 2.0;      // Risk % per trade
+input double InpRiskPct = 3.0;      // Risk % per trade
 input double InpRR = 2.0;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
-input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
-input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
+input bool   InpCompound = true;    // Use Compounding Risk (of current balance)
+input double InpFixedBalance = 3000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
-input int    InpBBPeriod = 15;      // Bollinger Bands Period
+input int    InpBBPeriod = 20;      // Bollinger Bands Period
 input double InpBBDev = 2.0;        // Bollinger Bands Deviations
 input int    InpATRPeriod = 14;     // ATR Period
-input int    InpVolPeriod = 15;     // Volume MA Period
+input int    InpVolPeriod = 20;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input int    InpFridayHour = 24;     // Friday Hour to close (Broker Time)
