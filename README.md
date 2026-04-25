@@ -22,13 +22,13 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 **🟢 LONG (Buy)**
 1. Price is **above** EMA 200 (Trend is UP)
 2. Candle closes **above** the Upper Bollinger Band
-3. Candle volume is **greater than** the 20-period Volume MA
+3. Candle volume is **greater than** the 15-period Volume MA
 4. **Action**: Enter at signal candle's close price
 
 **🔴 SHORT (Sell)**
 1. Price is **below** EMA 200 (Trend is DOWN)
 2. Candle closes **below** the Lower Bollinger Band
-3. Candle volume is **greater than** the 20-period Volume MA
+3. Candle volume is **greater than** the 15-period Volume MA
 4. **Action**: Enter at signal candle's close price
 
 ### Risk Management
@@ -38,7 +38,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | **Take Profit** | RR 1:2.0 | TP = SL distance × 2.0 |
 | **Risk Mode** | Fixed | Use initial capital (Risk X% per trade) |
 | **Max Trades** | 1 | Focus on one high-probability setup at a time |
-| **Trading Hours** | 09:00 - 22:00 | Restricted trading window |
+| **Trading Hours** | 09:00 - 23:00 | Restricted trading window |
 
 ---
 
@@ -73,7 +73,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 | `--max-trades` | `1` | Maximum number of concurrent trades |
 | `--daily-loss-limit`| `0.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `9` | Trading start hour (0-23) |
-| `--end-hour` | `22` | Trading end hour (1-24) |
+| `--end-hour` | `23` | Trading end hour (1-24) |
 
 ---
 
@@ -92,7 +92,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 - `InpUseVol`: true (Volume Filter)
 - `InpMaxTrades`: 1 (Max concurrent positions)
 - `InpStartHour`: 9 (Start hour)
-- `InpEndHour`: 22 (End hour)
+- `InpEndHour`: 23 (End hour)
 - `InpFridayHour`: 23 (Friday close hour)
 
 ---
