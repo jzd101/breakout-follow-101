@@ -39,7 +39,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | **Risk Mode** | Compounding | Risk X% of current balance per trade |
 | **Risk %** | 2.0% | Risk per trade |
 | **Capital** | $10,000 | Starting capital |
-| **Daily Loss Limit** | 2.5% | Stop trading if daily loss exceeds this % |
+| **Daily Loss Limit** | 2.0% | Stop trading if daily loss exceeds this % |
 | **Max Trades** | 1 | Focus on one high-probability setup at a time |
 | **Trading Hours** | 07:00 - 20:00 | Restricted trading window (UTC) |
 
@@ -78,7 +78,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 | `--no-ema` | off | Disable EMA 200 trend filter |
 | `--no-vol` | off | Disable Volume filter |
 | `--max-trades` | `1` | Maximum number of concurrent trades |
-| `--daily-loss-limit`| `2.5` | Daily loss limit % (0 = disabled) |
+| `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `7` | Trading start hour (0-23) |
 | `--end-hour` | `20` | Trading end hour (1-24) |
 
@@ -97,7 +97,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 - `InpCompound`: true (Compounding enabled by default)
 - `InpBBPeriod`: 15 (Bollinger Bands period)
 - `InpVolPeriod`: 15 (Volume MA period)
-- `InpDailyLossLimit`: 2.5 (Daily loss limit %)
+- `InpDailyLossLimit`: 2.0 (Daily loss limit %)
 - `InpUseEMA`: true (EMA Trend Filter)
 - `InpUseVol`: true (Volume Filter)
 - `InpMaxTrades`: 1 (Max concurrent positions)

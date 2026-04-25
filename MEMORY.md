@@ -34,7 +34,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Fixed**: Risk X% of initial capital each trade (use `--no-compound`).
 - **Risk %**: Default 2.0% per trade.
 - **Capital**: Default $10,000.
-- **Daily Loss Limit**: 2.5% of initial capital.
+- **Daily Loss Limit**: 2.0% of initial capital.
 
 ### Current State & Structure
 - **Architecture**: In-memory data processing. No CSV files saved; data is fetched fresh via yfinance.
@@ -54,7 +54,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **Concurrent Trades**: Both systems support `max_trades` / `InpMaxTrades` parameter.
 - **SL/TP Check Priority**: When both SL and TP could be hit on the same candle, SL is checked first (conservative/pessimistic).
 - **BB Std Deviation**: Python uses `ddof=0` (population std) to match MT5's `iBands()` exactly.
-- **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 2.5%.
+- **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 2.0%.
 - **Trading Window**: Default window 07:00 to 20:00. Start hour is inclusive, end hour is exclusive.
 - **Timezone**: Report displays data timezone detected from yfinance (typically UTC for Forex/Crypto).
 
@@ -69,10 +69,10 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Entry price corrected to signal candle's Close
 - [x] BB std deviation fixed to ddof=0 matching MT5/TradingView
 - [x] MQL5 RMA stabilization window increased (10× → 50×) for ATR convergence
-- [x] Daily Loss Limit default updated to 2.5%
+- [x] Daily Loss Limit default updated to 2.0%
 - [x] Trading hours updated to 07:00 - 20:00 default
 - [x] Replaced `--years` with flexible `--period`
-- [x] Parameters optimized based on 16-month MT5 test: BB=15, VolMA=15, Risk=2%, Capital=10000
+- [x] Parameters optimized based on 16-month MT5 test: BB=15, VolMA=15, Risk=2%, Capital=10000, DailyLoss=2.0
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
