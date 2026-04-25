@@ -54,7 +54,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - **SL/TP Check Priority**: When both SL and TP could be hit on the same candle, SL is checked first (conservative/pessimistic).
 - **BB Std Deviation**: Python uses `ddof=0` (population std) to match MT5's `iBands()` exactly.
 - **Daily Loss Limit**: Both systems track daily P&L. If losses in a single calendar day exceed X% of initial capital, no new trades are opened. Default 0.0% (disabled).
-- **Trading Window**: Default window 09:00 to 22:00. Start hour is inclusive, end hour is exclusive.
+- **Trading Window**: Default window 09:00 to 23:00. Start hour is inclusive, end hour is exclusive.
 
 ### Completed Tasks
 - [x] Core strategy implementation (Python + MQL5)

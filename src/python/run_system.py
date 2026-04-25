@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--max-trades', type=int, default=1, help='Maximum concurrent trades (default: 1)')
     parser.add_argument('--daily-loss-limit', type=float, default=0.0, help='Daily loss limit as % of initial capital. 0=disabled (default: 0.0)')
     parser.add_argument('--start-hour', type=int, default=9, help='Trading start hour (0-23, default: 9)')
-    parser.add_argument('--end-hour', type=int, default=22, help='Trading end hour (1-24, default: 22)')
+    parser.add_argument('--end-hour', type=int, default=23, help='Trading end hour (1-24, default: 23)')
     
     args = parser.parse_args()
     
