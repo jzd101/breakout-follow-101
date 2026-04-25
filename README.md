@@ -109,6 +109,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 - `InpMaxTrades`: 1 (Max concurrent positions)
 - `InpStartHour`: 7 (Start hour)
 - `InpEndHour`: 20 (End hour)
+- `InpWeekendClose`: false (Force-close on Friday - disabled by default)
 - `InpFridayTime`: "23:45" (Friday close time, e.g. "23:59")
 
 ---

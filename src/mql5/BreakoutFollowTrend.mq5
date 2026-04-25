@@ -21,7 +21,7 @@ input double InpBBDev = 2.0;        // Bollinger Bands Deviations
 input int    InpATRPeriod = 14;     // ATR Period
 input int    InpVolPeriod = 15;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
-input bool   InpWeekendClose = true; // Close all trades on Friday evening
+input bool   InpWeekendClose = false; // Close all trades on Friday evening
 input string InpFridayTime = "23:45"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
