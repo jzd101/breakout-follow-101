@@ -86,7 +86,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 | `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `7` | Trading start hour (0-23) |
 | `--end-hour` | `20` | Trading end hour (1-24) |
-| `--friday-close` | `23:45` | Friday close time (HH:MM) |
+| `--friday-close` | `None` | Friday close time (HH:MM) |
 
 ---
 

@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
     parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
     parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
-    parser.add_argument('--friday-close', type=str, default='23:45', help='Friday close time (HH:MM, default: 23:45)')
+    parser.add_argument('--friday-close', type=str, default=None, help='Friday close time (HH:MM, default: None)')
     
     args = parser.parse_args()
     
