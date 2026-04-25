@@ -3,7 +3,7 @@
 An automated trading system based on the **Breakout Follow Trend** strategy — trading Bollinger Band breakouts confirmed by Volume and filtered by EMA 200. This system is designed for high-growth assets like Bitcoin (BTC) but is applicable to Forex and Commodities.
 
 > [!NOTE]
-> This strategy is derived from a proven system described in the [.agents/knowledges/transcript.md](.agents/knowledges/transcript.md). It leverages mathematical statistics rather than predictions.
+> This strategy is derived from a proven system described in the [.agents/knowledges/transcript_th.md](.agents/knowledges/transcript_th.md) (English version [here](.agents/knowledges/transcript_en.md)). It leverages mathematical statistics rather than predictions.
 
 ---
 
@@ -37,7 +37,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | **Stop Loss** | ATR × 2 | Dynamic SL based on volatility |
 | **Take Profit** | RR 1:2.0 | TP = SL distance × 2.0 |
 | **Risk Mode** | Compounding | Risk X% of current balance per trade |
-| **Risk %** | 2.0% | Risk per trade |
+| **Risk %** | 1.5% | Risk per trade |
 | **Capital** | $10,000 | Starting capital |
 | **Daily Loss Limit** | 2.0% | Stop trading if daily loss exceeds this % |
 | **Max Trades** | 1 | Focus on one high-probability setup at a time |
@@ -47,16 +47,21 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 
 ## 🐍 Python Backtest System
 
+### Features
+- **Flexible Data**: Download historical data automatically via `yfinance`.
+- **Colored Reports**: Vibrant Text UI reports in terminal with yearly/monthly performance breakdown.
+- **Accuracy**: 100% logic parity with MetaTrader 5 implementation.
+
 ### Usage
 
 Use `run_system.py` to download historical data and run the backtest automatically:
 
 ```bash
-# Default: BTC 1H, 1 year, $10,000 capital, 2% risk, Compounding
+# Default: BTC 1H, 1 year, $10,000 capital, 1.5% risk, Compounding
 python3 src/python/run_system.py --symbol BTCUSD --period 2y
 
 # Customized Example
-python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0 --daily-loss-limit 2.5
+python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0 --daily-loss-limit 2.0
 
 # Conservative: Fixed risk mode (no compounding)
 python3 src/python/run_system.py --symbol BTCUSD --period 2y --no-compound
@@ -72,7 +77,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 | `--symbol` | (req) | Asset symbol, e.g. `BTCUSD`, `XAUUSD`, `EURUSD` |
 | `--period` | `1y` | Period from now backwards (e.g. `1d`, `1w`, `1mo`, `1y`) |
 | `--capital` | `10000` | Initial capital |
-| `--risk` | `2.0` | Risk % per trade |
+| `--risk` | `1.5` | Risk % per trade |
 | `--rr` | `1:2` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
 | `--no-compound` | off | Disable compounding (use fixed initial capital) |
 | `--no-ema` | off | Disable EMA 200 trend filter |
@@ -92,7 +97,7 @@ python3 src/python/run_system.py --symbol EURUSD --period 1y
 3. Attach to a **1H** chart.
 
 ### Input Parameters (Parity with Python)
-- `InpRiskPct`: 2.0 (Risk % per trade)
+- `InpRiskPct`: 1.5 (Risk % per trade)
 - `InpRR`: 2.0 (Risk Reward Ratio)
 - `InpCompound`: true (Compounding enabled by default)
 - `InpBBPeriod`: 15 (Bollinger Bands period)
@@ -120,5 +125,5 @@ The system ensures **100% parity** between the backtest engine and the live trad
 ## ⚠️ Development Rules
 
 1. **Parity First**: Any logic change must be applied to BOTH `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Spec Compliance**: refer to `.agents/knowledges/transcript.md` for core strategy intent.
+2. **Spec Compliance**: refer to `.agents/knowledges/transcript_th.md` for core strategy intent.
 3. **Documentation**: Always update `README.md` after parameter tuning.

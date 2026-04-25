@@ -3,7 +3,7 @@
 ## Project Name: Breakout Follow Trend 101
 
 ### Source of Truth
-Strategy rules are derived from a YouTube video transcript stored in `.agents/knowledges/transcript.md`. Optimized parameters were later found through MT5 backtesting over a 16-month period.
+Strategy rules are derived from a YouTube video transcript stored in `.agents/knowledges/transcript_th.md` (and English translation in `transcript_en.md`). Optimized parameters were later found through MT5 backtesting over a 16-month period.
 
 ### Core Objective
 Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maintain a Python backtest engine and an MQL5 Expert Advisor (EA) that are 100% in sync. The system is designed for Crypto (BTC/USDT), Forex, Gold, Commodities, and other tradeable assets.
@@ -32,7 +32,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 #### Risk Management
 - **Compounding** (default): Risk X% of current balance each trade.
 - **Fixed**: Risk X% of initial capital each trade (use `--no-compound`).
-- **Risk %**: Default 2.0% per trade.
+- **Risk %**: Default 1.5% per trade.
 - **Capital**: Default $10,000.
 - **Daily Loss Limit**: 2.0% of initial capital.
 
@@ -43,7 +43,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
   - `src/python/download_data.py` — Fetches OHLCV data from Yahoo Finance.
   - `src/python/backtest.py` — Core backtest engine + report generator.
 - **MQL5 File**: `src/mql5/BreakoutFollowTrend.mq5` — MT5 Expert Advisor for live trading.
-- **Reporting**: Box-drawn Text UI reports saved in `reports/` directory (UTF-8).
+- **Reporting**: Colored Box-drawn Text UI reports (ANSI colors in terminal, plain text in files) saved in `reports/` directory.
 - **Git**: Python caches, report files, and compiled MT5 files (`*.ex5`) are in `.gitignore`.
 
 ### Technical Notes & Limits
@@ -72,11 +72,13 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Daily Loss Limit default updated to 2.0%
 - [x] Trading hours updated to 07:00 - 20:00 default
 - [x] Replaced `--years` with flexible `--period`
-- [x] Parameters optimized based on 16-month MT5 test: BB=15, VolMA=15, Risk=2%, Capital=10000, DailyLoss=2.0
+- [x] Parameters optimized based on MT5 testing: BB=15, VolMA=15, Risk=1.5%, Capital=10000, DailyLoss=2.0
+- [x] Translated Thai transcript to English (`transcript_en.md`)
+- [x] Added ANSI colors to Text UI report (terminal only)
 
 ### Guidelines for Future Modifications
 1. **Rule of Parity**: Any change to trading logic MUST be updated in both `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Transcript is the spec**: Initial intent is from transcript, but optimized defaults take precedence for results.
+2. **Transcript is the spec**: Initial intent is from transcript_th.md, but optimized defaults take precedence for results.
 3. **README.md Upkeep**: Update README on every structural or parameter change.
 4. **MEMORY.md Upkeep**: Update this file to reflect latest decisions.
 5. **Language**: README.md must be written in **English only**.

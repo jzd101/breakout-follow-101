@@ -11,7 +11,7 @@ def main():
     parser.add_argument('--timeframe', type=str, default='1h', help='Timeframe (1h, 1d, 15m)')
     parser.add_argument('--period', type=str, default='1y', help='Period from now backwards (e.g., 1d, 1w, 1mo, 1y)')
     parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital (default: 10000)')
-    parser.add_argument('--risk', type=float, default=2.0, help='Risk %% per trade (default: 2.0)')
+    parser.add_argument('--risk', type=float, default=1.5, help='Risk %% per trade (default: 1.5)')
     parser.add_argument('--rr', type=str, default='1:2', help='Risk Reward Ratio (e.g., 2 or 1:2)')
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')

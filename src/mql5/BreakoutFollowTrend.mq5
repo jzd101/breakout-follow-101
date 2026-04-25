@@ -8,7 +8,7 @@
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 2.0;      // Risk % per trade
+input double InpRiskPct = 1.5;      // Risk % per trade
 input double InpRR = 2.0;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
 input bool   InpCompound = true;    // Use Compounding Risk (of current balance)
