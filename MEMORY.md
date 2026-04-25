@@ -32,7 +32,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 #### Risk Management
 - **Compounding** (default): Risk X% of current balance each trade.
 - **Fixed**: Risk X% of initial capital each trade (use `--no-compound`).
-- **Risk %**: Default 2.0% per trade.
+- **Risk %**: Default 1.5% per trade.
 - **Capital**: Default $10,000.
 - **Daily Loss Limit**: 2.0% of initial capital.
 
@@ -72,7 +72,7 @@ Implement the "Breakout Follow Trend with Volume Filter" trading strategy. Maint
 - [x] Daily Loss Limit default updated to 2.0%
 - [x] Trading hours updated to 07:00 - 20:00 default
 - [x] Replaced `--years` with flexible `--period`
-- [x] Parameters optimized based on 16-month MT5 test: BB=15, VolMA=15, Risk=2%, Capital=10000, DailyLoss=2.0
+- [x] Parameters optimized based on MT5 testing: BB=15, VolMA=15, Risk=1.5%, Capital=10000, DailyLoss=2.0
 - [x] Translated Thai transcript to English (`transcript_en.md`)
 - [x] Added ANSI colors to Text UI report (terminal only)
 

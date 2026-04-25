@@ -30,7 +30,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20):
+def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Backtest Breakout System')
     parser.add_argument('--file', type=str, required=True, help='Path to historical data CSV')
     parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital (default: 10000)')
-    parser.add_argument('--risk', type=float, default=2.0, help='Risk %% per trade (default: 2.0)')
+    parser.add_argument('--risk', type=float, default=1.5, help='Risk %% per trade (default: 1.5)')
     parser.add_argument('--rr', type=float, default=2.0, help='Risk Reward Ratio')
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--output', type=str, default='report.txt', help='Output report file')
