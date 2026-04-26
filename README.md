@@ -7,7 +7,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 
 ---
 
-## 📐 Strategy Rules
+## 📐 Core Logic & Strategy Rules
 
 ### Technical Indicators
 | Indicator | Settings | Purpose |
@@ -31,111 +31,84 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 3. Candle volume is **greater than** the 15-period Volume MA
 4. **Action**: Enter at signal candle's close price
 
-### Risk Management
-| Parameter | Default | Description |
-|---|---|---|
-| **Stop Loss** | ATR × 2 | Dynamic SL based on volatility |
-| **Take Profit** | RR 1:2.0 | TP = SL distance × 2.0 |
-| **Risk Mode** | Compounding | Risk X% of current balance per trade |
-| **Risk %** | 1.5% | Risk per trade |
-| **Capital** | $10,000 | Starting capital |
-| **Daily Loss Limit** | 2.0% | Stop trading if daily loss exceeds this % |
-| **Max Trades** | 1 | Focus on one high-probability setup at a time |
-| **Trading Hours** | 07:00 - 20:00 | Restricted trading window (UTC) |
+### Exit Conditions
+- **Stop Loss**: Set at ATR × 2 from entry price.
+- **Take Profit**: Set at a Risk:Reward ratio of 1:2.0.
+- **Time Filter**: Trading is restricted to specific hours (07:00 - 20:00 UTC).
+- **Weekend Policy**: Positions can be force-closed on Fridays (optional).
 
 ---
 
-## 🐍 Python Backtest System
+## ⚙️ Parameters & Configuration
 
-### Features
-- **Flexible Data**: Download historical data automatically via `yfinance`.
-- **Colored Reports**: Vibrant Text UI reports in terminal with yearly/monthly performance breakdown.
-- **Accuracy**: 100% logic parity with MetaTrader 5 implementation.
-
-### Usage
-
-Use `run_system.py` to download historical data and run the backtest automatically:
-
-```bash
-# Default: BTC 1H, 1 year, $10,000 capital, 1.5% risk, Compounding
-python3 src/python/run_system.py --symbol BTCUSD --period 2y
-
-# Customized Example
-python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0 --daily-loss-limit 2.0
-
-# Conservative: Fixed risk mode (no compounding)
-python3 src/python/run_system.py --symbol BTCUSD --period 2y --no-compound
-
-# Forex Example (Volume filter auto-disables if data is missing)
-python3 src/python/run_system.py --symbol EURUSD --period 1y
-```
-
-### Parameters
-
+### Python Backtest Parameters
 | Parameter | Default | Description |
 |---|---|---|
-| `--symbol` | (req) | Asset symbol, e.g. `BTCUSD`, `XAUUSD`, `EURUSD` |
-| `--period` | `1y` | Period from now backwards (e.g. `1d`, `1w`, `1mo`, `1y`) |
-| `--capital` | `10000` | Initial capital |
+| `--symbol` | (req) | Asset symbol, e.g. `BTCUSD`, `XAUUSD` |
+| `--period` | `1y` | Backtest period (e.g. `1d`, `1w`, `1mo`, `1y`) |
+| `--capital` | `10000` | Initial starting capital |
 | `--risk` | `1.5` | Risk % per trade |
-| `--rr` | `1:2` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
-| `--no-compound` | off | Disable compounding (use fixed initial capital) |
+| `--rr` | `2.0` | Risk:Reward ratio |
+| `--no-compound` | off | Disable compounding (use fixed capital) |
 | `--no-ema` | off | Disable EMA 200 trend filter |
-| `--no-vol` | off | Disable Volume filter |
-| `--max-trades` | `1` | Maximum number of concurrent trades |
+| `--no-vol` | off | Disable Volume confirmation filter |
 | `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
-| `--start-hour` | `7` | Trading start hour (0-23) |
-| `--end-hour` | `20` | Trading end hour (1-24) |
-| `--friday-close` | `None` | Friday close time (HH:MM) |
+| `--start-hour` | `7` | Trading window start (0-23) |
+| `--end-hour` | `20` | Trading window end (1-24) |
 
----
-
-## 🤖 MetaTrader 5 EA (MQL5)
-
-### Installation
-1. Copy `src/mql5/BreakoutFollowTrend.mq5` to your MT5 `MQL5/Experts/` folder.
-2. Compile in MetaEditor.
-3. Attach to a **1H** chart.
-
-### Input Parameters (Parity with Python)
+### MetaTrader 5 Input Parameters
 - `InpRiskPct`: 1.5 (Risk % per trade)
 - `InpRR`: 2.0 (Risk Reward Ratio)
-- `InpCompound`: true (Compounding enabled by default)
+- `InpCompound`: true (Compounding enabled)
 - `InpBBPeriod`: 15 (Bollinger Bands period)
 - `InpVolPeriod`: 15 (Volume MA period)
 - `InpDailyLossLimit`: 2.0 (Daily loss limit %)
 - `InpUseEMA`: true (EMA Trend Filter)
 - `InpUseVol`: true (Volume Filter)
-- `InpMaxTrades`: 1 (Max concurrent positions)
-- `InpStartHour`: 7 (Start hour)
-- `InpEndHour`: 20 (End hour)
-- `InpWeekendClose`: false (Force-close on Friday - disabled by default)
-- `InpFridayTime`: "23:45" (Friday close time, e.g. "23:59")
 
 ---
 
-## 🔄 Python ↔ MQL5 Parity
+## 🛠️ Implementation Features
 
-The system ensures **100% parity** between the backtest engine and the live trading bot:
-- **ATR Smoothing**: Both use RMA (Wilder's) smoothing.
-- **Indicator Sync**: Identical calculations for BB (15) and EMA (200).
-- **Risk Engine**: Compounding logic matches exactly.
-- **Execution**: Signal is processed at the close of the candle.
-- **Memory**: Long-term context and decisions are persisted in Notion for historical tracking.
-
----
-
-## 🧠 Notion Persistent Memory
-
-This project uses **Notion** as a long-term context and decision store. This helps maintain continuity across sessions and optimizes token usage.
-- **Rules**: Follows the global Notion Memory policy in `.gemini/GEMINI.md`.
-- **Integration**: The agent automatically logs significant changes and decisions to a dedicated Notion workspace under `Project > breakout-follow-101`.
+- **Multi-Platform Support**: Python for research/backtesting and MQL5 for live MT5 execution.
+- **Data Automation**: Automatic historical data fetching via `yfinance` in Python.
+- **Reporting Engine**: Vibrant terminal reports with monthly performance stats and ANSI color support.
+- **Risk Control**: Integrated daily loss limits and maximum concurrent trade management.
+- **Accuracy**: Custom RMA smoothing for ATR to match MetaTrader/TradingView exactly.
 
 ---
 
-## ⚠️ Development Rules
+## 🚀 Usage & Operations
+
+### Python System
+Use `run_system.py` to download data and run the backtest:
+```bash
+# Basic run: BTC 1H, 2 years, compounding
+python3 src/python/run_system.py --symbol BTCUSD --period 2y
+
+# Customized: Gold, 16 months, 2.0% risk
+python3 src/python/run_system.py --symbol XAUUSD --period 16mo --risk 2.0
+```
+
+### MetaTrader 5 EA
+1. Copy `src/mql5/BreakoutFollowTrend.mq5` to `MQL5/Experts/`.
+2. Compile and attach to a **1H chart**.
+
+---
+
+## 🔄 Consistency & Parity
+
+The system ensures **100% parity** between the Python backtest engine and the MQL5 EA:
+- **Math Engine**: Identical calculations for Bollinger Bands (ddof=0) and EMA.
+- **Smoothing**: Both systems use RMA (Wilder's) smoothing for ATR convergence.
+- **Execution**: Signals are processed at the close of the candle in both environments.
+- **Memory**: Long-term context and decisions are persisted in **Notion** for historical tracking.
+
+---
+
+## ⚠️ Development Guidelines
 
 1. **Parity First**: Any logic change must be applied to BOTH `backtest.py` and `BreakoutFollowTrend.mq5`.
-2. **Spec Compliance**: refer to `.agents/knowledges/transcript_th.md` for core strategy intent.
-3. **Documentation**: Always update `README.md` after parameter tuning.
-4. **Notion Log**: Log major architectural or logic decisions to Notion as per the global persistent memory rules.
+2. **Spec Compliance**: Refer to `.agents/knowledges/transcript_th.md` for core strategy intent.
+3. **Documentation**: Always update this `README.md` after any structural or parameter change.
+4. **Notion Sync**: Log major architectural or logic decisions to Notion as per the global persistent memory rules in `.gemini/GEMINI.md`.
