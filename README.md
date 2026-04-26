@@ -35,6 +35,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 - **Stop Loss**: Set at ATR × 2 from entry price.
 - **Take Profit**: Set at a Risk:Reward ratio of 1:2.0.
 - **Time Filter**: Trading is restricted to specific hours (07:00 - 20:00 UTC).
+- **Time Exit**: Positions open longer than 48 hours are closed if currently in profit (freeing up capital).
 - **Weekend Policy**: Positions can be force-closed on Fridays (optional).
 
 ---
@@ -52,9 +53,11 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `--no-compound` | off | Disable compounding (use fixed capital) |
 | `--no-ema` | off | Disable EMA 200 trend filter |
 | `--no-vol` | off | Disable Volume confirmation filter |
-| `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
+| `--daily-loss-limit`| `2.0` | Daily loss limit %% (0 = disabled) |
 | `--start-hour` | `7` | Trading window start (0-23) |
 | `--end-hour` | `20` | Trading window end (1-24) |
+| `--time-exit` | off | Enable time-based exit for profitable orders |
+| `--time-exit-hours`| `48` | Hours after which to close profitable orders |
 
 ### MetaTrader 5 Input Parameters
 - `InpRiskPct`: 1.5 (Risk % per trade)
@@ -62,9 +65,11 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 - `InpCompound`: true (Compounding enabled)
 - `InpBBPeriod`: 15 (Bollinger Bands period)
 - `InpVolPeriod`: 15 (Volume MA period)
-- `InpDailyLossLimit`: 2.0 (Daily loss limit %)
+- `InpDailyLossLimit`: 2.0 (Daily loss limit %%)
 - `InpUseEMA`: true (EMA Trend Filter)
 - `InpUseVol`: true (Volume Filter)
+- `InpUseTimeExit`: false (Time-based Profit Exit)
+- `InpTimeExitHours`: 48 (Hours to hold profitable trades)
 
 ---
 
@@ -74,6 +79,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 - **Data Automation**: Automatic historical data fetching via `yfinance` in Python.
 - **Reporting Engine**: Vibrant terminal reports with monthly performance stats and ANSI color support.
 - **Risk Control**: Integrated daily loss limits and maximum concurrent trade management.
+- **Time Protection**: Automatic profit-securing exit for stagnant trades (Time Exit).
 - **Accuracy**: Custom RMA smoothing for ATR to match MetaTrader/TradingView exactly.
 
 ---
