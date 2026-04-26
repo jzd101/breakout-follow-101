@@ -13,7 +13,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | Indicator | Settings (Default) | Purpose |
 |---|---|---|
 | **EMA** | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
-| **Bollinger Bands** | Period = 15, StdDev = 2.0 | Breakout signal trigger |
+| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout signal trigger |
 | **Volume MA** | Period = 15 (SMA) | Volume confirmation filter (Volume > SMA 15) |
 | **ATR** | Period = 14, RMA (Wilder's) | Dynamic Stop Loss calculation (ATR × Multiplier) |
 
@@ -74,7 +74,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpUseVol` | true | Enable Volume MA Filter |
 | `InpEMAPeriod` | 200 | EMA Period |
 | `InpBBPeriod` | 15 | Bollinger Bands Period |
-| `InpBBDev` | 2.0 | Bollinger Bands Deviations |
+| `InpBBDev` | 1.5 | Bollinger Bands Deviations |
 | `InpATRPeriod` | 14 | ATR Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
 | `InpMaxTrades` | 3 | Maximum concurrent trades |
@@ -94,7 +94,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `Use Volume Filter`| true | Enable Volume MA Filter |
 | `EMA Period` | 200 | EMA Period |
 | `Bollinger Bands Period`| 15 | Bollinger Bands Period |
-| `Bollinger Bands Deviation`| 2.0 | Bollinger Bands Deviations |
+| `Bollinger Bands Deviation`| 1.5 | Bollinger Bands Deviations |
 | `ATR Period` | 14 | ATR Period |
 | `Volume MA Period` | 15 | Volume MA Period |
 | `Weekend Close` | false | Enable Friday evening close |
