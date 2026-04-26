@@ -51,13 +51,13 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `1d`, `15m`) |
 | `--period` | `1y` | Backtest history length (e.g. `1mo`, `1y`, `max`) |
 | `--capital` | `10000` | Initial starting capital |
-| `--risk` | `1.5` | Risk % per trade |
+| `--risk` | `0.9` | Risk % per trade |
 | `--rr` | `1:2` | Risk:Reward ratio (supports `2.0` or `1:2` format) |
 | `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
 | `--no-compound` | off | Disable compounding (uses initial capital for all trades) |
 | `--no-ema` | off | Disable EMA 200 trend filter |
 | `--no-vol` | off | Disable Volume confirmation filter |
-| `--max-trades` | `1` | Maximum number of concurrent open positions |
+| `--max-trades` | `3` | Maximum number of concurrent open positions |
 | `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `7` | Trading window start (0-23) |
 | `--end-hour` | `20` | Trading window end (1-24) |
@@ -66,7 +66,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 ### MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
 | Input Name | Default | Description |
 |---|---|---|
-| `InpRiskPct` | 1.5 | Risk % per trade |
+| `InpRiskPct` | 0.9 | Risk % per trade |
 | `InpRR` | 2.0 | Risk Reward Ratio |
 | `InpATRMult` | 2.0 | ATR Multiplier for Stop Loss |
 | `InpCompound` | true | Use Compounding Risk (of current balance) |
@@ -78,7 +78,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpBBDev` | 2.0 | Bollinger Bands Deviations |
 | `InpATRPeriod` | 14 | ATR Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
-| `InpMaxTrades` | 1 | Maximum concurrent trades |
+| `InpMaxTrades` | 3 | Maximum concurrent trades |
 | `InpDailyLossLimit`| 2.0 | Daily loss limit % (0 = disabled) |
 | `InpStartHour` | 7 | Trading start hour |
 | `InpEndHour` | 20 | Trading end hour |
