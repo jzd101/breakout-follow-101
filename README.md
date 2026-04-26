@@ -1,6 +1,6 @@
 # Breakout Follow Trend 101
 
-An automated trading system based on the **Breakout Follow Trend** strategy — trading Bollinger Band breakouts confirmed by Volume and filtered by EMA 200. This system is designed for high-growth assets like Bitcoin (BTC) and Gold (XAU), leveraging pure mathematical statistics for rule-based execution.
+An automated trading system based on the **Breakout Follow Trend** strategy — specifically optimized for **Gold (XAUUSD)**. This system trades Bollinger Band breakouts confirmed by Volume and filtered by EMA 200, leveraging pure mathematical statistics for rule-based execution.
 
 > [!NOTE]
 > This strategy is derived from the core principles described in the [.agents/knowledges/transcript_en.md](.agents/knowledges/transcript_en.md). It focuses on catching momentum when "big players" enter the market, signaled by price breakouts with volume confirmation.
@@ -46,7 +46,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 ### Python Backtest (`run_system.py`)
 | Parameter | Default | Description |
 |---|---|---|
-| `--symbol` | (req) | Asset symbol, e.g. `BTC-USD`, `GC=F` (Yahoo Finance format) |
+| `--symbol` | (req) | Asset symbol, e.g. `XAUUSD` (mapped to `GC=F`), `BTCUSD` |
 | `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `1d`, `15m`) |
 | `--period` | `1y` | Backtest history length (e.g. `1mo`, `1y`, `max`) |
 | `--capital` | `10000` | Initial starting capital |
@@ -107,6 +107,9 @@ python3 src/python/run_system.py --symbol XAUUSD --period 1y
 
 # Custom settings: BTC 1H, 2 years, 2% risk, no volume filter
 python3 src/python/run_system.py --symbol BTCUSD --period 2y --risk 2.0 --no-vol
+
+# Optimized Config
+python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 0.9 --rr 2 --atr-mult 2.0 --max-trades 3 --daily-loss-limit 2.0 --start-hour 7 --end-hour 20
 ```
 
 ### 2. MetaTrader 5 Deployment
