@@ -9,8 +9,11 @@ indicator("Breakout Follow Trend [Indicator]", overlay=true)
 // ==========================================
 // Risk Management
 grp_risk = "Risk Management"
+inpRiskPct    = input.float(0.9, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk)
 inpRR         = input.float(2.0, "Risk:Reward Ratio", minval=0.1, step=0.1, group=grp_risk)
 inpATRMult    = input.float(2.0, "ATR Multiplier (SL)", minval=0.1, step=0.1, group=grp_risk)
+inpMaxTrades  = input.int(3, "Max Concurrent Trades", minval=1, group=grp_risk)
+inpDailyLoss  = input.float(2.0, "Daily Loss Limit %", minval=0.0, group=grp_risk)
 
 // Indicators
 grp_ind = "Indicators"
@@ -29,6 +32,8 @@ inpVolPeriod  = input.int(15, "Volume MA Period", minval=1, group=grp_vol)
 grp_time = "Time Filters"
 inpStartHour  = input.int(7, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
 inpEndHour    = input.int(20, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpWeekendCl  = input.bool(false, "Weekend Close (Friday)", group=grp_time)
+inpFridayTime = input.string("2345", "Friday Close Time (HHMM)", group=grp_time)
 
 // Visuals
 grp_viz = "Visual Settings"
@@ -50,12 +55,15 @@ atrVal = ta.atr(inpATRPeriod)
 // Volume MA
 volMA = ta.sma(volume, inpVolPeriod)
 
-// Time Filter
-isInTimeWindow = hour >= inpStartHour and hour < inpEndHour
+// Time Filter - Matches MQL5's overnight support
+isInTimeWindow = inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour)
 
 // ==========================================
 // Signal Logic
 // ==========================================
+// Using crossover/crossunder to identify the 'Breakout' event specifically.
+// MQL5 triggers on every new bar if close > BB, but entry is limited by MaxTrades.
+// In an indicator, crossover is cleaner for the user.
 longCondition  = (not inpUseEMA or close > emaVal) and ta.crossover(close, upperBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
 shortCondition = (not inpUseEMA or close < emaVal) and ta.crossunder(close, lowerBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
 
@@ -68,10 +76,8 @@ if (inpShowTool)
         slPrice = close - slDist
         tpPrice = close + (slDist * inpRR)
         
-        // TP Box (Green)
         box.new(left=bar_index, top=tpPrice, right=bar_index + inpToolLength, bottom=close, 
                  bgcolor=color.new(color.green, 80), border_color=color.green, border_width=1)
-        // SL Box (Red)
         box.new(left=bar_index, top=close, right=bar_index + inpToolLength, bottom=slPrice, 
                  bgcolor=color.new(color.red, 80), border_color=color.red, border_width=1)
 
@@ -80,10 +86,8 @@ if (inpShowTool)
         slPrice = close + slDist
         tpPrice = close - (slDist * inpRR)
         
-        // TP Box (Green)
         box.new(left=bar_index, top=close, right=bar_index + inpToolLength, bottom=tpPrice, 
                  bgcolor=color.new(color.green, 80), border_color=color.green, border_width=1)
-        // SL Box (Red)
         box.new(left=bar_index, top=slPrice, right=bar_index + inpToolLength, bottom=close, 
                  bgcolor=color.new(color.red, 80), border_color=color.red, border_width=1)
 
@@ -95,7 +99,6 @@ p1 = plot(upperBB, color=color.new(color.gray, 50), title="Upper BB")
 p2 = plot(lowerBB, color=color.new(color.gray, 50), title="Lower BB")
 fill(p1, p2, color=color.new(color.gray, 90), title="BB Background")
 
-// Plot Entry Signals
 plotshape(longCondition, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="Long Signal")
 plotshape(shortCondition, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="Short Signal")
 
