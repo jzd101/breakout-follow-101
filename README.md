@@ -37,7 +37,6 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 - **Daily Loss Limit**: Trading stops for the day if the realized loss exceeds a % of starting capital (Default 2.0%).
 - **Compounding**: Risk is calculated based on current account balance/equity (optional).
 - **Trading Window**: System only opens new trades during specified hours (Default 07:00 - 20:00).
-- **Time Exit**: (Optional) Close profitable positions held longer than a specific duration (e.g., 48 hours).
 - **Weekend Policy**: (Optional) Force-close all positions on Friday evenings to avoid weekend gaps.
 
 ---
