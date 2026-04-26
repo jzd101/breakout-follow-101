@@ -13,7 +13,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | Indicator | Settings (Default) | Purpose |
 |---|---|---|
 | **EMA** | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
-| **Bollinger Bands** | Period = 15, StdDev = 2.0 | Breakout signal trigger |
+| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout signal trigger |
 | **Volume MA** | Period = 15 (SMA) | Volume confirmation filter (Volume > SMA 15) |
 | **ATR** | Period = 14, RMA (Wilder's) | Dynamic Stop Loss calculation (ATR × Multiplier) |
 
@@ -74,7 +74,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpUseVol` | true | Enable Volume MA Filter |
 | `InpEMAPeriod` | 200 | EMA Period |
 | `InpBBPeriod` | 15 | Bollinger Bands Period |
-| `InpBBDev` | 2.0 | Bollinger Bands Deviations |
+| `InpBBDev` | 1.5 | Bollinger Bands Deviations |
 | `InpATRPeriod` | 14 | ATR Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
 | `InpMaxTrades` | 3 | Maximum concurrent trades |
@@ -83,6 +83,22 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpEndHour` | 20 | Trading end hour |
 | `InpWeekendClose` | false | Enable Friday evening close |
 | `InpFridayTime` | "2345" | Friday close time (Broker Time) |
+
+### TradingView Pine Script (`BreakoutFollowTrend.pine`)
+| Input Name | Default | Description |
+|---|---|---|
+| `Risk % per Trade` | 0.9 | Risk % per trade |
+| `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
+| `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
+| `Use EMA Trend Filter`| true | Enable EMA 200 Trend Filter |
+| `Use Volume Filter`| true | Enable Volume MA Filter |
+| `EMA Period` | 200 | EMA Period |
+| `Bollinger Bands Period`| 15 | Bollinger Bands Period |
+| `Bollinger Bands Deviation`| 1.5 | Bollinger Bands Deviations |
+| `ATR Period` | 14 | ATR Period |
+| `Volume MA Period` | 15 | Volume MA Period |
+| `Weekend Close` | false | Enable Friday evening close |
+| `Friday Close Time`| "2345" | Friday close time (HHMM) |
 
 ---
 
@@ -118,11 +134,19 @@ python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 0.9 --rr 2 -
 3. Attach the Expert Advisor to a **1H chart**.
 4. Adjust Input Parameters as needed in the "Inputs" tab.
 
+### 3. TradingView Pine Script
+1. Open **TradingView** and go to the **Pine Editor** tab at the bottom.
+2. Click **New** -> **Indicator**.
+3. Copy the content of `src/pine/BreakoutFollowTrend.pine` and paste it into the editor.
+4. Click **Save** and then **Add to Chart**.
+5. The indicator will automatically draw **Long/Short Visual Tools** (Green/Red boxes) at each breakout point, showing the target TP and SL levels based on your ATR settings.
+6. Use the **Settings** icon on the chart to adjust parameters or toggle the visual tools.
+
 ---
 
 ## ⚠️ Development Guidelines
 
-1. **Maintain Parity**: Any logic update must be implemented in both Python and MQL5 files simultaneously.
-2. **Indicator Validation**: When changing indicator math, verify that Python outputs match MT5 values exactly.
+1. **Maintain Parity**: Any logic update must be implemented in Python, MQL5, and Pine Script (TradingView) files simultaneously to ensure consistency across all platforms.
+2. **Indicator Validation**: When changing indicator math, verify that Python outputs match both MT5 and TradingView values exactly.
 3. **Report Documentation**: Save and track backtest results in the `reports/` directory.
 4. **Notion Synchronization**: Log all major architectural decisions and milestones in the project's Notion page to ensure long-term continuity.

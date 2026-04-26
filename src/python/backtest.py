@@ -9,8 +9,8 @@ def calculate_indicators(df):
     # Bollinger Bands 15, 2
     df['SMA_15'] = df['Close'].rolling(window=15).mean()
     df['STD_15'] = df['Close'].rolling(window=15).std(ddof=0)  # population std to match MT5/TradingView
-    df['Upper_BB'] = df['SMA_15'] + 2 * df['STD_15']
-    df['Lower_BB'] = df['SMA_15'] - 2 * df['STD_15']
+    df['Upper_BB'] = df['SMA_15'] + 1.5 * df['STD_15']
+    df['Lower_BB'] = df['SMA_15'] - 1.5 * df['STD_15']
     
     # Volume MA 15
     df['Vol_MA'] = df['Volume'].rolling(window=15).mean()
@@ -29,7 +29,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=10000, risk_pct=1.5, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time=None):
+def run_backtest(df, initial_capital=10000, risk_pct=0.9, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=3, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time=None):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
