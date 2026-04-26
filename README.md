@@ -136,10 +136,11 @@ python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 0.9 --rr 2 -
 
 ### 3. TradingView Pine Script
 1. Open **TradingView** and go to the **Pine Editor** tab at the bottom.
-2. Click **New** -> **Strategy**.
+2. Click **New** -> **Indicator**.
 3. Copy the content of `src/pine/BreakoutFollowTrend.pine` and paste it into the editor.
 4. Click **Save** and then **Add to Chart**.
-5. Use the **Strategy Tester** tab to view performance and the **Settings** icon on the chart to adjust parameters.
+5. The indicator will automatically draw **Long/Short Visual Tools** (Green/Red boxes) at each breakout point, showing the target TP and SL levels based on your ATR settings.
+6. Use the **Settings** icon on the chart to adjust parameters or toggle the visual tools.
 
 ---
 

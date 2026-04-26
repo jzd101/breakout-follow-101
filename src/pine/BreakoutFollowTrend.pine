@@ -2,14 +2,13 @@
 // © Antigravity
 
 //@version=5
-strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=0.9, currency=currency.USD)
+indicator("Breakout Follow Trend [Indicator]", overlay=true)
 
 // ==========================================
 // Inputs
 // ==========================================
 // Risk Management
 grp_risk = "Risk Management"
-inpRiskPct    = input.float(0.9, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk)
 inpRR         = input.float(2.0, "Risk:Reward Ratio", minval=0.1, step=0.1, group=grp_risk)
 inpATRMult    = input.float(2.0, "ATR Multiplier (SL)", minval=0.1, step=0.1, group=grp_risk)
 
@@ -30,8 +29,11 @@ inpVolPeriod  = input.int(15, "Volume MA Period", minval=1, group=grp_vol)
 grp_time = "Time Filters"
 inpStartHour  = input.int(7, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
 inpEndHour    = input.int(20, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
-inpWeekendCl  = input.bool(false, "Weekend Close (Friday)", group=grp_time)
-inpFridayTime = input.string("2345", "Friday Close Time (HHMM)", group=grp_time)
+
+// Visuals
+grp_viz = "Visual Settings"
+inpShowTool   = input.bool(true, "Show Long/Short Visual Tool", group=grp_viz)
+inpToolLength = input.int(20, "Visual Tool Extend (Bars)", minval=1, group=grp_viz)
 
 // ==========================================
 // Calculations
@@ -51,47 +53,42 @@ volMA = ta.sma(volume, inpVolPeriod)
 // Time Filter
 isInTimeWindow = hour >= inpStartHour and hour < inpEndHour
 
-// Weekend Close Logic
-isFriday = dayofweek == dayofweek.friday
-fridayCloseHour = str.tonumber(str.substring(inpFridayTime, 0, 2))
-fridayCloseMin  = str.tonumber(str.substring(inpFridayTime, 2, 4))
-isWeekendCloseTime = isFriday and (hour > fridayCloseHour or (hour == fridayCloseHour and minute >= fridayCloseMin))
-
 // ==========================================
-// Trading Logic
+// Signal Logic
 // ==========================================
-// Conditions (on close of previous bar)
 longCondition  = (not inpUseEMA or close > emaVal) and ta.crossover(close, upperBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
 shortCondition = (not inpUseEMA or close < emaVal) and ta.crossunder(close, lowerBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
 
-// Position Sizing
-// Calculation of quantity based on Risk % and ATR-based SL
-slDist = atrVal * inpATRMult
-riskAmount = strategy.equity * (inpRiskPct / 100)
-// For Forex/CFDs, we use the distance. TradingView's strategy.percent_of_equity 
-// in the header handles the 'lot size' roughly, but for precise risk-based 
-// quantity we calculate it here:
-qty = riskAmount / slDist
+// ==========================================
+// Visual Tool (Long/Short Box)
+// ==========================================
+if (inpShowTool)
+    if (longCondition)
+        slDist = atrVal * inpATRMult
+        slPrice = close - slDist
+        tpPrice = close + (slDist * inpRR)
+        
+        // TP Box (Green)
+        box.new(left=bar_index, top=tpPrice, right=bar_index + inpToolLength, bottom=close, 
+                 bgcolor=color.new(color.green, 80), border_color=color.green, border_width=1)
+        // SL Box (Red)
+        box.new(left=bar_index, top=close, right=bar_index + inpToolLength, bottom=slPrice, 
+                 bgcolor=color.new(color.red, 80), border_color=color.red, border_width=1)
 
-// Entries
-if (longCondition)
-    slPrice = close - slDist
-    tpPrice = close + (slDist * inpRR)
-    strategy.entry("Long", strategy.long, comment="BB Breakout Long")
-    strategy.exit("Exit Long", "Long", stop=slPrice, limit=tpPrice, comment_loss="SL", comment_profit="TP")
-
-if (shortCondition)
-    slPrice = close + slDist
-    tpPrice = close - (slDist * inpRR)
-    strategy.entry("Short", strategy.short, comment="BB Breakout Short")
-    strategy.exit("Exit Short", "Short", stop=slPrice, limit=tpPrice, comment_loss="SL", comment_profit="TP")
-
-// Weekend Close Execution
-if (inpWeekendCl and isWeekendCloseTime)
-    strategy.close_all(comment="Weekend Close")
+    if (shortCondition)
+        slDist = atrVal * inpATRMult
+        slPrice = close + slDist
+        tpPrice = close - (slDist * inpRR)
+        
+        // TP Box (Green)
+        box.new(left=bar_index, top=close, right=bar_index + inpToolLength, bottom=tpPrice, 
+                 bgcolor=color.new(color.green, 80), border_color=color.green, border_width=1)
+        // SL Box (Red)
+        box.new(left=bar_index, top=slPrice, right=bar_index + inpToolLength, bottom=close, 
+                 bgcolor=color.new(color.red, 80), border_color=color.red, border_width=1)
 
 // ==========================================
-// Visuals
+// Plots
 // ==========================================
 plot(inpUseEMA ? emaVal : na, color=color.new(color.blue, 0), title="EMA Trend")
 p1 = plot(upperBB, color=color.new(color.gray, 50), title="Upper BB")
@@ -101,3 +98,7 @@ fill(p1, p2, color=color.new(color.gray, 90), title="BB Background")
 // Plot Entry Signals
 plotshape(longCondition, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="Long Signal")
 plotshape(shortCondition, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="Short Signal")
+
+// Alerts
+alertcondition(longCondition, title="Long Breakout", message="Breakout Follow Trend: LONG Signal on {{symbol}}")
+alertcondition(shortCondition, title="Short Breakout", message="Breakout Follow Trend: SHORT Signal on {{symbol}}")
