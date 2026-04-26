@@ -111,14 +111,3 @@ def download_data(symbol, timeframe, period_str):
         print(f"Failed to download data: {e}")
         return None, None
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Download historical data for Forex, Gold, etc.')
-    parser.add_argument('--symbol', type=str, required=True, help='Ticker symbol (e.g., EURUSD=X, XAUUSD=X, GC=F)')
-    parser.add_argument('--timeframe', type=str, default='1h', help='Timeframe (1h, 1d, 15m)')
-    parser.add_argument('--period', type=str, default='1y', help='Period from now backwards (e.g., 1d, 1w, 1mo, 1y)')
-    
-    args = parser.parse_args()
-    data, tz = download_data(args.symbol, args.timeframe, args.period)
-    if data is not None:
-        print(f"Detected Timezone: {tz}")
-        print(data.head())

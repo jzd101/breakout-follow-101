@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import argparse
 import os
 
 def calculate_indicators(df):
@@ -377,51 +376,3 @@ def generate_report(trades, params, output_file="report.txt"):
     
     # Remove detailed trades CSV save
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Backtest Breakout System')
-    parser.add_argument('--file', type=str, required=True, help='Path to historical data CSV')
-    parser.add_argument('--capital', type=float, default=10000.0, help='Initial Capital (default: 10000)')
-    parser.add_argument('--risk', type=float, default=1.5, help='Risk %% per trade (default: 1.5)')
-    parser.add_argument('--rr', type=float, default=2.0, help='Risk Reward Ratio')
-    parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
-    parser.add_argument('--output', type=str, default='report.txt', help='Output report file')
-    parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
-    parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
-    parser.add_argument('--no-compound', action='store_true', help='Disable compounding risk (use fixed initial capital)')
-    parser.add_argument('--max-trades', type=int, default=1, help='Maximum concurrent trades (default: 1)')
-    parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
-    parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
-    parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
-    parser.add_argument('--friday-close', type=str, default=None, help='Friday close time (HH:MM, default: None)')
-    
-    args = parser.parse_args()
-    
-    if not os.path.exists(args.file):
-        print(f"Error: File {args.file} not found.")
-        exit(1)
-        
-    print(f"Loading data from {args.file}...")
-    df = pd.read_csv(args.file)
-    
-    print("Calculating indicators...")
-    df = calculate_indicators(df)
-    
-    compound = not args.no_compound
-    
-    print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{args.rr}, ATR Mult: {args.atr_mult}, Compound: {compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, args.rr, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour, args.friday_close)
-    
-    print("Generating report...")
-    params = {
-        'symbol': os.path.basename(args.file).split('_')[0],
-        'timeframe': os.path.basename(args.file).split('_')[1].split('.')[0] if '_' in args.file else 'Unknown',
-        'capital': args.capital,
-        'risk': args.risk,
-        'rr': args.rr,
-        'compound': compound,
-        'daily_loss_limit': args.daily_loss_limit,
-        'start_hour': args.start_hour,
-        'end_hour': args.end_hour,
-        'friday_close_time': args.friday_close
-    }
-    generate_report(trades, params, args.output)
