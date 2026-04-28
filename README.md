@@ -84,12 +84,13 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpWeekendClose` | false | Enable Friday evening close |
 | `InpFridayTime` | "2345" | Friday close time (Broker Time) |
 
-### TradingView Pine Script (`BreakoutFollowTrend.pine`)
+### TradingView Pine Script (`src/pine/BreakoutFollowTrend_*.pine`)
 | Input Name | Default | Description |
 |---|---|---|
 | `Risk % per Trade` | 0.9 | Risk % per trade |
 | `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
 | `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
+| `Max Concurrent Trades`| 3 | Max number of open positions |
 | `Use EMA Trend Filter`| true | Enable EMA 200 Trend Filter |
 | `Use Volume Filter`| true | Enable Volume MA Filter |
 | `EMA Period` | 200 | EMA Period |
@@ -99,6 +100,8 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `Volume MA Period` | 15 | Volume MA Period |
 | `Weekend Close` | false | Enable Friday evening close |
 | `Friday Close Time`| "2345" | Friday close time (HHMM) |
+| **Header Setting** | **Value** | **Description** |
+| `pyramiding` | 3 | Allowed concurrent entries in same direction |
 
 ---
 
@@ -135,12 +138,20 @@ python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 0.9 --rr 2 -
 4. Adjust Input Parameters as needed in the "Inputs" tab.
 
 ### 3. TradingView Pine Script
+The project provides two versions for TradingView:
+- **Indicator** (`BreakoutFollowTrend_Indicator.pine`): Best for manual trading alerts and visual analysis.
+- **Strategy** (`BreakoutFollowTrend_Strategy.pine`): Best for backtesting performance and automated trading.
+
+**How to Use:**
 1. Open **TradingView** and go to the **Pine Editor** tab at the bottom.
-2. Click **New** -> **Indicator**.
-3. Copy the content of `src/pine/BreakoutFollowTrend.pine` and paste it into the editor.
+2. Click **New** -> **Indicator** (for the indicator version) or **Strategy** (for the strategy version).
+3. Copy the content from the corresponding file in `src/pine/` and paste it into the editor.
 4. Click **Save** and then **Add to Chart**.
-5. The indicator will automatically draw **Long/Short Visual Tools** (Green/Red boxes) at each breakout point, showing the target TP and SL levels based on your ATR settings.
-6. Use the **Settings** icon on the chart to adjust parameters or toggle the visual tools.
+5. **Indicator**: Draws **Long/Short Visual Tools** (boxes) at breakout points showing target SL/TP.
+6. **Strategy**: Displays the **Strategy Tester** panel with full performance metrics. Includes **Minimalist TradingView Style** Long/Short tools (TP/SL boxes, borders, and entry lines) for every order, with zero chart clutter (text labels removed for a cleaner visual experience).
+
+
+7. Use the **Settings** icon on the chart to adjust parameters or toggle features.
 
 ---
 
