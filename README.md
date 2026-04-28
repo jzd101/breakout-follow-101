@@ -37,7 +37,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 - **Risk Sizing**: 
   - **Compounding**: Risk % is calculated based on current account equity (Pine/MQ5) or current capital (Python).
   - **Fixed Balance**: Risk % is calculated based on a user-defined fixed balance.
-- **Pyramiding**: Supports up to **3 concurrent entries** in the same direction.
+- **Max Concurrent Trades**: Supports up to **1 open position** at a time.
 - **Daily Loss Limit**: Realized P&L tracked daily. Entries are blocked if the day's realized loss exceeds the specified percentage of the base balance (Default 2.0%).
 - **Trading Window**: System only opens new trades during specified hours (Default 07:00 - 20:00).
 - **Weekend Policy**: Robust weekend block covering Friday evening (Default 23:45) through Monday morning (before Start Hour). Closes all positions and blocks new entries.
@@ -53,14 +53,14 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `15m`) |
 | `--period` | `1y` | Backtest history length (e.g. `1mo`, `1y`) |
 | `--capital` | `10000` | Initial starting capital |
-| `--risk` | `0.9` | Risk % per trade |
+| `--risk` | `2.0` | Risk % per trade |
 | `--rr` | `1:2.0` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
 | `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
 | `--no-ema` | `False` | Disable EMA 200 trend filter |
 | `--no-vol` | `False` | Disable Volume confirmation filter |
 | `--no-compound`| `False` | Disable compounding (use fixed balance) |
 | `--fixed-balance`| `10000`| Fixed balance for risk sizing when compounding is off |
-| `--max-trades` | `3` | Maximum number of concurrent open positions |
+| `--max-trades` | `1` | Maximum number of concurrent open positions |
 | `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
 | `--start-hour` | `7` | Trading start hour (0-23) |
 | `--end-hour` | `20` | Trading end hour (1-24) |
@@ -69,7 +69,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 ### MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
 | Input Name | Default | Description |
 |---|---|---|
-| `InpRiskPct` | 0.9 | Risk % per trade |
+| `InpRiskPct` | 2.0 | Risk % per trade |
 | `InpRR` | 2.0 | Risk Reward Ratio |
 | `InpATRMult` | 2.0 | ATR Multiplier for Stop Loss |
 | `InpCompound` | true | Use Compounding Risk (of current balance) |
@@ -81,7 +81,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
 | `InpATRPeriod` | 14 | ATR Smoothing Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
-| `InpMaxTrades` | 3 | Maximum concurrent trades |
+| `InpMaxTrades` | 1 | Maximum concurrent trades |
 | `InpDailyLossLimit`| 2.0 | Daily loss limit % |
 | `InpStartHour` | 7 | Trading start hour |
 | `InpEndHour` | 20 | Trading end hour |
@@ -91,7 +91,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 ### TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
 | Input Name | Default | Description |
 |---|---|---|
-| `Risk % per Trade` | 0.9 | Risk % per trade |
+| `Risk % per Trade` | 2.0 | Risk % per trade |
 | `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
 | `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
 | `Use Compounding Risk`| true | If false, uses Fixed Balance |
@@ -104,7 +104,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `Use Volume Filter`| true | Enable Volume Filter |
 | `Volume MA Period`| 15 | Volume MA Filter Period |
 | `Daily Loss Limit %`| 2.0 | Daily loss limit % |
-| `Max Concurrent Trades`| 3 | Max number of open positions |
+| `Max Concurrent Trades`| 1 | Max number of open positions |
 | `Start Hour (0-23)`| 7 | Trading start hour |
 | `End Hour (0-23)` | 20 | Trading end hour |
 | `Weekend Close` | false | Enable Friday evening close |
@@ -125,7 +125,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 
 ### 1. Python Backtesting
 ```bash
-python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 0.9 --rr 1:2.0
+python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 1:2.0
 ```
 
 ### 2. MetaTrader 5 Deployment
