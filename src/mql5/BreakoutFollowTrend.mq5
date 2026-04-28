@@ -52,7 +52,7 @@ int OnInit()
       return(INIT_FAILED);
      }
    // Calculate daily loss max from initial balance
-   double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
+   double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
@@ -91,8 +91,8 @@ void OnTick()
      {
       g_currentDay = dt_daily.day;
       g_dailyPnL = 0.0;
-      // Recalculate daily loss max with current balance if compounding
-      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
+      // Recalculate daily loss max with current equity if compounding (matches Pine strategy.equity)
+      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
       g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
      }
 
@@ -305,7 +305,7 @@ void CloseAllPositions(string comment = "")
 //+------------------------------------------------------------------+
 double CalculateLotSize(double sl_distance)
   {
-   double baseBalance = InpCompound ? AccountInfoDouble(ACCOUNT_BALANCE) : InpFixedBalance;
+   double baseBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    double riskAmount = baseBalance * (InpRiskPct / 100.0);
    
    double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
