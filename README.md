@@ -145,7 +145,9 @@ The project provides two versions for TradingView:
 3. Copy the content from the corresponding file in `src/pine/` and paste it into the editor.
 4. Click **Save** and then **Add to Chart**.
 5. **Indicator**: Draws **Long/Short Visual Tools** (boxes) at breakout points showing target SL/TP.
-6. **Strategy**: Displays the **Strategy Tester** panel with full performance metrics, drawdowns, and trade list.
+6. **Strategy**: Displays the **Strategy Tester** panel with full performance metrics. Includes **Minimalist TradingView Style** Long/Short tools (TP/SL boxes, borders, and entry lines) for every order, with ultra-clean "BB TP [Price]" labels and zero chart clutter.
+
+
 7. Use the **Settings** icon on the chart to adjust parameters or toggle features.
 
 ---

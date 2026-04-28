@@ -1,5 +1,5 @@
 // This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © Antigravity
+// © jzd101
 
 //@version=5
 strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=1, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0)
@@ -69,30 +69,94 @@ posSize = riskAmount / slDist
 longCondition  = (not inpUseEMA or close > emaVal) and ta.crossover(close, upperBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
 shortCondition = (not inpUseEMA or close < emaVal) and ta.crossunder(close, lowerBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
 
-// Entry
+// Capture TP/SL levels for the next bar's entry
+float signal_tp = na
+float signal_sl = na
+if longCondition
+    signal_sl := close - slDist
+    signal_tp := close + (slDist * inpRR)
+if shortCondition
+    signal_sl := close + slDist
+    signal_tp := close - (slDist * inpRR)
+
+// Store levels in series to access them on the entry bar [1]
+var float target_tp = na
+var float target_sl = na
+target_tp := signal_tp
+target_sl := signal_sl
+
+// Entry Execution
 if (longCondition and strategy.opentrades < inpMaxTrades)
-    slPrice = close - slDist
-    tpPrice = close + (slDist * inpRR)
-    strategy.entry("Long", strategy.long, qty=posSize, comment="Long BB Breakout")
-    strategy.exit("Exit Long", "Long", stop=slPrice, limit=tpPrice, comment_loss="SL", comment_profit="TP")
+    strategy.entry("Long", strategy.long, qty=posSize, comment="")
+    strategy.exit("Exit Long", "Long", stop=signal_sl, limit=signal_tp, comment_loss="", comment_profit="")
 
 if (shortCondition and strategy.opentrades < inpMaxTrades)
-    slPrice = close + slDist
-    tpPrice = close - (slDist * inpRR)
-    strategy.entry("Short", strategy.short, qty=posSize, comment="Short BB Breakout")
-    strategy.exit("Exit Short", "Short", stop=slPrice, limit=tpPrice, comment_loss="SL", comment_profit="TP")
+    strategy.entry("Short", strategy.short, qty=posSize, comment="")
+    strategy.exit("Exit Short", "Short", stop=signal_sl, limit=signal_tp, comment_loss="", comment_profit="")
 
 // Weekend Close
 if (isFridayClose)
-    strategy.close_all(comment="Weekend Close")
+    strategy.close_all(comment="")
 
 // ==========================================
-// Visuals
+// Visuals & Position Tools
 // ==========================================
 plot(inpUseEMA ? emaVal : na, color=color.new(color.blue, 0), title="EMA Trend")
 p1 = plot(upperBB, color=color.new(color.gray, 50), title="Upper BB")
 p2 = plot(lowerBB, color=color.new(color.gray, 50), title="Lower BB")
 fill(p1, p2, color=color.new(color.gray, 90), title="BB Background")
 
-plotshape(longCondition, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="Long Entry Signal")
-plotshape(shortCondition, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="Short Entry Signal")
+// Colors for Long/Short Tools (100% TradingView Style)
+color_tp_fill = color.new(#089981, 80)
+color_sl_fill = color.new(#f23645, 80)
+color_tp_border = color.new(#089981, 30)
+color_sl_border = color.new(#f23645, 30)
+color_entry_line = color.new(color.gray, 20)
+
+// Persistent Arrays for Active Tools
+var box[] active_tp_boxes = array.new_box()
+var box[] active_sl_boxes = array.new_box()
+var line[] active_entry_lines = array.new_line()
+
+// 1. Extend all active tools to the current bar
+if array.size(active_tp_boxes) > 0
+    for i = 0 to array.size(active_tp_boxes) - 1
+        box.set_right(array.get(active_tp_boxes, i), bar_index)
+        box.set_right(array.get(active_sl_boxes, i), bar_index)
+        line.set_x2(array.get(active_entry_lines, i), bar_index)
+
+// 2. Handle New Entry detection
+if strategy.opentrades > strategy.opentrades[1]
+    // A new trade opened at the 'open' of this bar (Market Order from previous bar signal)
+    float tp = target_tp[1]
+    float sl = target_sl[1]
+    float en = open
+    bool is_long = strategy.position_size > strategy.position_size[1]
+    
+    // Create Visual Tools
+    box b_tp = box.new(bar_index-1, is_long ? tp : en, bar_index, is_long ? en : tp, bgcolor=color_tp_fill, border_color=color_tp_border, border_width=1)
+    box b_sl = box.new(bar_index-1, is_long ? en : sl, bar_index, is_long ? sl : en, bgcolor=color_sl_fill, border_color=color_sl_border, border_width=1)
+    line l_en = line.new(bar_index-1, en, bar_index, en, color=color_entry_line, width=1)
+    
+    // Clean Label
+    label.new(bar_index, is_long ? low : high, text="BB TP " + str.tostring(tp, "#.##"), color=color.new(color.black, 100), textcolor=is_long ? color.new(#089981, 20) : color.new(#f23645, 20), style=is_long ? label.style_label_up : label.style_label_down, size=size.small)
+    
+    array.push(active_tp_boxes, b_tp)
+    array.push(active_sl_boxes, b_sl)
+    array.push(active_entry_lines, l_en)
+
+// 3. Handle Exit detection (Prune active arrays)
+if strategy.closedtrades > strategy.closedtrades[1]
+    int num_closed = strategy.closedtrades - strategy.closedtrades[1]
+    for i = 1 to num_closed
+        if array.size(active_tp_boxes) > 0
+            array.remove(active_tp_boxes, 0)
+            array.remove(active_sl_boxes, 0)
+            array.remove(active_entry_lines, 0)
+
+// 4. Emergency Reset if flat
+if strategy.position_size == 0 and array.size(active_tp_boxes) > 0
+    array.clear(active_tp_boxes)
+    array.clear(active_sl_boxes)
+    array.clear(active_entry_lines)
+
