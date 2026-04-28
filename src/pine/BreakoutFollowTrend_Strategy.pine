@@ -2,7 +2,7 @@
 // © jzd101
 
 //@version=5
-strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=1, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0)
+strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=1, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=3)
 
 // ==========================================
 // Inputs
@@ -138,8 +138,6 @@ if strategy.opentrades > strategy.opentrades[1]
     box b_sl = box.new(bar_index-1, is_long ? en : sl, bar_index, is_long ? sl : en, bgcolor=color_sl_fill, border_color=color_sl_border, border_width=1)
     line l_en = line.new(bar_index-1, en, bar_index, en, color=color_entry_line, width=1)
     
-    // Clean Label
-    label.new(bar_index, is_long ? low : high, text="BB TP " + str.tostring(tp, "#.##"), color=color.new(color.black, 100), textcolor=is_long ? color.new(#089981, 20) : color.new(#f23645, 20), style=is_long ? label.style_label_up : label.style_label_down, size=size.small)
     
     array.push(active_tp_boxes, b_tp)
     array.push(active_sl_boxes, b_sl)

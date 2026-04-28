@@ -90,6 +90,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `Risk % per Trade` | 0.9 | Risk % per trade |
 | `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
 | `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
+| `Max Concurrent Trades`| 3 | Max number of open positions |
 | `Use EMA Trend Filter`| true | Enable EMA 200 Trend Filter |
 | `Use Volume Filter`| true | Enable Volume MA Filter |
 | `EMA Period` | 200 | EMA Period |
@@ -99,6 +100,8 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `Volume MA Period` | 15 | Volume MA Period |
 | `Weekend Close` | false | Enable Friday evening close |
 | `Friday Close Time`| "2345" | Friday close time (HHMM) |
+| **Header Setting** | **Value** | **Description** |
+| `pyramiding` | 3 | Allowed concurrent entries in same direction |
 
 ---
 
@@ -145,7 +148,7 @@ The project provides two versions for TradingView:
 3. Copy the content from the corresponding file in `src/pine/` and paste it into the editor.
 4. Click **Save** and then **Add to Chart**.
 5. **Indicator**: Draws **Long/Short Visual Tools** (boxes) at breakout points showing target SL/TP.
-6. **Strategy**: Displays the **Strategy Tester** panel with full performance metrics. Includes **Minimalist TradingView Style** Long/Short tools (TP/SL boxes, borders, and entry lines) for every order, with ultra-clean "BB TP [Price]" labels and zero chart clutter.
+6. **Strategy**: Displays the **Strategy Tester** panel with full performance metrics. Includes **Minimalist TradingView Style** Long/Short tools (TP/SL boxes, borders, and entry lines) for every order, with zero chart clutter (text labels removed for a cleaner visual experience).
 
 
 7. Use the **Settings** icon on the chart to adjust parameters or toggle features.
