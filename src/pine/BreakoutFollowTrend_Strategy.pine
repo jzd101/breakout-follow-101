@@ -2,17 +2,20 @@
 // © jzd101
 
 //@version=5
-strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=1, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=3)
+strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=3)
 
 // ==========================================
 // Inputs
 // ==========================================
 // Risk Management
 grp_risk = "Risk Management"
-inpRiskPct    = input.float(0.9, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk, tooltip="Percentage of equity to risk based on SL distance")
+inpRiskPct    = input.float(0.9, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk, tooltip="Percentage of base balance to risk based on SL distance")
 inpRR         = input.float(2.0, "Risk:Reward Ratio", minval=0.1, step=0.1, group=grp_risk)
 inpATRMult    = input.float(2.0, "ATR Multiplier (SL)", minval=0.1, step=0.1, group=grp_risk)
 inpMaxTrades  = input.int(3, "Max Concurrent Trades", minval=1, group=grp_risk)
+inpCompound   = input.bool(true, "Use Compounding Risk", group=grp_risk, tooltip="If true, risk = current equity * risk%. If false, risk = fixed balance * risk%.")
+inpFixedBal   = input.float(10000.0, "Fixed Balance (when compounding off)", minval=0.0, group=grp_risk)
+inpDailyLoss  = input.float(2.0, "Daily Loss Limit %", minval=0.0, step=0.1, group=grp_risk, tooltip="0 = disabled. Blocks new entries once realized daily P&L drops below this % of base balance.")
 
 // Indicators
 grp_ind = "Indicators"
@@ -52,22 +55,41 @@ volMA = ta.sma(volume, inpVolPeriod)
 // Time Filter
 isInTimeWindow = inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour)
 
-// Friday Close Logic
-isFridayClose = inpWeekendCl and dayofweek == dayofweek.friday and time >= timestamp(year, month, dayofmonth, int(str.tonumber(str.substring(inpFridayTime, 0, 2))), int(str.tonumber(str.substring(inpFridayTime, 2, 4))))
+// Weekend Block (matches MQ5 CheckWeekendClose: Friday past time, full Sat/Sun, Monday before StartHour)
+fHour = int(str.tonumber(str.substring(inpFridayTime, 0, 2)))
+fMin  = int(str.tonumber(str.substring(inpFridayTime, 2, 4)))
+fridayMin   = fHour * 60 + fMin
+nowMin      = hour * 60 + minute
+isFridayPast    = dayofweek == dayofweek.friday and nowMin >= fridayMin
+isWeekend       = dayofweek == dayofweek.saturday or dayofweek == dayofweek.sunday
+isMondayBefore  = dayofweek == dayofweek.monday and hour < inpStartHour
+isWeekendBlock  = inpWeekendCl and (isFridayPast or isWeekend or isMondayBefore)
 
 // ==========================================
 // Strategy Execution
 // ==========================================
-// Position Sizing based on ATR Risk
-// Risk Amount = Equity * (RiskPct / 100)
-// Qty = Risk Amount / (SL Distance in Price)
-slDist = atrVal * inpATRMult
-riskAmount = strategy.equity * (inpRiskPct / 100)
-posSize = riskAmount / slDist
+// Risk base — matches MQ5: compound uses live equity, otherwise fixed balance input
+baseBal    = inpCompound ? strategy.equity : inpFixedBal
+slDist     = atrVal * inpATRMult
+riskAmount = baseBal * (inpRiskPct / 100)
+posSize    = slDist > 0 ? riskAmount / slDist : 0.0
 
-// Signal Conditions
-longCondition  = (not inpUseEMA or close > emaVal) and ta.crossover(close, upperBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
-shortCondition = (not inpUseEMA or close < emaVal) and ta.crossunder(close, lowerBB) and (not inpUseVol or volume > volMA) and isInTimeWindow
+// Daily Loss Limit tracking (realized P&L) — matches MQ5
+var float dailyPnL     = 0.0
+var int   currentDay   = -1
+var float dailyLossMax = 0.0
+if dayofmonth != currentDay
+    currentDay   := dayofmonth
+    dailyPnL     := 0.0
+    dailyLossMax := baseBal * (inpDailyLoss / 100)
+if strategy.closedtrades > nz(strategy.closedtrades[1])
+    dailyPnL := dailyPnL + strategy.closedtrades.profit(strategy.closedtrades - 1)
+dailyLossHit = inpDailyLoss > 0 and dailyPnL <= -dailyLossMax
+
+// Signal Conditions — plain comparison on closed bar (matches MQ5: close1 > upperBB / close1 < lowerBB)
+volCond        = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
+longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
+shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
 
 // Capture TP/SL levels for the next bar's entry
 float signal_tp = na
@@ -85,17 +107,22 @@ var float target_sl = na
 target_tp := signal_tp
 target_sl := signal_sl
 
-// Entry Execution
+// Entry Execution — unique IDs per entry so each position has its own SL/TP (matches MQ5 hedge-like behavior within Pine's netted model)
+var int entryCounter = 0
 if (longCondition and strategy.opentrades < inpMaxTrades)
-    strategy.entry("Long", strategy.long, qty=posSize, comment="")
-    strategy.exit("Exit Long", "Long", stop=signal_sl, limit=signal_tp, comment_loss="", comment_profit="")
+    entryCounter += 1
+    id = "L" + str.tostring(entryCounter)
+    strategy.entry(id, strategy.long, qty=posSize, comment="Long")
+    strategy.exit("X" + id, id, stop=signal_sl, limit=signal_tp, comment_loss="SL", comment_profit="TP")
 
 if (shortCondition and strategy.opentrades < inpMaxTrades)
-    strategy.entry("Short", strategy.short, qty=posSize, comment="")
-    strategy.exit("Exit Short", "Short", stop=signal_sl, limit=signal_tp, comment_loss="", comment_profit="")
+    entryCounter += 1
+    id = "S" + str.tostring(entryCounter)
+    strategy.entry(id, strategy.short, qty=posSize, comment="Short")
+    strategy.exit("X" + id, id, stop=signal_sl, limit=signal_tp, comment_loss="SL", comment_profit="TP")
 
-// Weekend Close
-if (isFridayClose)
+// Weekend Close — close all positions while inside the weekend block
+if (isWeekendBlock)
     strategy.close_all(comment="")
 
 // ==========================================
