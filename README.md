@@ -74,7 +74,7 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
 | `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
 | `Max Concurrent Trades`| 3 | Max number of open positions |
-| `pyramiding` | 3 | (Header) Allowed concurrent entries |
+| `Pyramiding` | 3 | (Header) Allowed concurrent entries |
 
 ---
 
