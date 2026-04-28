@@ -35,12 +35,12 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 - **Stop Loss (SL)**: Set at `Entry Price ± (ATR × Multiplier)`. Default multiplier is 2.0.
 - **Take Profit (TP)**: Set at a specific Risk:Reward ratio. Default is 1:2.0.
 - **Risk Sizing**: 
-  - **Compounding**: Risk % is calculated based on current account equity.
+  - **Compounding**: Risk % is calculated based on current account equity (Pine/MQ5) or current capital (Python).
   - **Fixed Balance**: Risk % is calculated based on a user-defined fixed balance.
 - **Pyramiding**: Supports up to **3 concurrent entries** in the same direction.
 - **Daily Loss Limit**: Realized P&L tracked daily. Entries are blocked if the day's realized loss exceeds the specified percentage of the base balance (Default 2.0%).
 - **Trading Window**: System only opens new trades during specified hours (Default 07:00 - 20:00).
-- **Weekend Policy**: Robust weekend block covering Friday evening (e.g., 23:45) through Monday morning (before Start Hour). Closes all positions and blocks new entries.
+- **Weekend Policy**: Robust weekend block covering Friday evening (Default 23:45) through Monday morning (before Start Hour). Closes all positions and blocks new entries.
 
 ---
 
@@ -56,6 +56,8 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `--risk` | `0.9` | Risk % per trade |
 | `--rr` | `1:2.0` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
 | `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
+| `--no-ema` | `False` | Disable EMA 200 trend filter |
+| `--no-vol` | `False` | Disable Volume confirmation filter |
 | `--no-compound`| `False` | Disable compounding (use fixed balance) |
 | `--fixed-balance`| `10000`| Fixed balance for risk sizing when compounding is off |
 | `--max-trades` | `3` | Maximum number of concurrent open positions |
@@ -72,6 +74,13 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `InpATRMult` | 2.0 | ATR Multiplier for Stop Loss |
 | `InpCompound` | true | Use Compounding Risk (of current balance) |
 | `InpFixedBalance`| 10000 | Fixed balance if Compounding is false |
+| `InpUseEMA` | true | Enable EMA 200 Filter |
+| `InpUseVol` | true | Enable Volume Filter |
+| `InpEMAPeriod` | 200 | EMA Trend Filter Period |
+| `InpBBPeriod` | 15 | Bollinger Bands Period |
+| `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
+| `InpATRPeriod` | 14 | ATR Smoothing Period |
+| `InpVolPeriod` | 15 | Volume MA Period |
 | `InpMaxTrades` | 3 | Maximum concurrent trades |
 | `InpDailyLossLimit`| 2.0 | Daily loss limit % |
 | `InpStartHour` | 7 | Trading start hour |
@@ -87,6 +96,13 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 | `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
 | `Use Compounding Risk`| true | If false, uses Fixed Balance |
 | `Fixed Balance` | 10000 | Base balance for risk if compounding off |
+| `Use EMA Trend Filter`| true | Enable EMA 200 Filter |
+| `EMA Period` | 200 | EMA Trend Filter Period |
+| `Bollinger Bands Period`| 15 | BB Smoothing Period |
+| `Bollinger Bands Deviation`| 1.5 | BB Standard Deviation |
+| `ATR Period` | 14 | ATR Smoothing Period |
+| `Use Volume Filter`| true | Enable Volume Filter |
+| `Volume MA Period`| 15 | Volume MA Filter Period |
 | `Daily Loss Limit %`| 2.0 | Daily loss limit % |
 | `Max Concurrent Trades`| 3 | Max number of open positions |
 | `Start Hour (0-23)`| 7 | Trading start hour |
@@ -130,6 +146,7 @@ To maintain system integrity, any logic update **MUST** be implemented across al
 - **Math**: Use RMA smoothing for ATR (Wilder's Smoothing).
 - **Logic**: Signal is confirmed only on the **close** of the breakout candle.
 - **Execution**: Market orders only, triggered on the bar following the signal.
+- **Risk**: Calculations must account for either live equity (compounding) or fixed balance.
 
 ---
 
@@ -138,3 +155,4 @@ To maintain system integrity, any logic update **MUST** be implemented across al
 1. **Language**: All code comments and documentation must be in English.
 2. **Verification**: Always verify Python backtest results against TradingView Strategy Tester before MT5 deployment.
 3. **Notion**: Log all architectural changes and milestones in the project's Notion memory (Project: `breakout-follow-101`).
+4. **Sync**: Ensure parity between `README.md` and the `Context & Constraints` section in Notion.
