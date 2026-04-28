@@ -29,15 +29,16 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=10000, risk_pct=0.9, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=3, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time=None):
+def run_backtest(df, initial_capital=10000, risk_pct=0.9, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=3, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time=None, fixed_balance=10000.0):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
-    
-    # Daily Loss Limit tracking
+
+    # Daily Loss Limit tracking — base recalculated on each new day when compounding (matches MQ5)
     daily_pnl = 0.0
     current_trading_day = None
-    max_daily_loss = initial_capital * (daily_loss_limit / 100)  # Absolute $ amount
+    init_base = capital if compound else fixed_balance
+    max_daily_loss = init_base * (daily_loss_limit / 100)
     
     # Check if volume data exists
     has_volume = df['Volume'].max() > 0
@@ -74,6 +75,8 @@ def run_backtest(df, initial_capital=10000, risk_pct=0.9, rr=2.0, use_ema=True, 
         if candle_day != current_trading_day:
             current_trading_day = candle_day
             daily_pnl = 0.0
+            day_base = capital if compound else fixed_balance
+            max_daily_loss = day_base * (daily_loss_limit / 100)
         
         # 1. Check for exits on all active trades
         still_active = []
@@ -194,46 +197,55 @@ def run_backtest(df, initial_capital=10000, risk_pct=0.9, rr=2.0, use_ema=True, 
         ema_long_cond = close > ema if use_ema else True
         ema_short_cond = close < ema if use_ema else True
         
-        # Volume Filter
-        vol_cond = True
-        if use_vol and has_volume:
-            vol_cond = vol > vol_ma
+        # Volume Filter — matches MQ5: pass when disabled, no volume data, vol_ma is NaN/0, or vol > vol_ma
+        vol_cond = (not use_vol) or (not has_volume) or pd.isna(vol_ma) or vol_ma == 0 or (vol > vol_ma)
         
-        # LONG Condition
+        # Entry executes at next bar's open (matches MQ5 market order on new bar)
+        base_for_risk = capital if compound else fixed_balance
+        risk_amount = base_for_risk * (risk_pct / 100)
+
+        new_trade = None
         if ema_long_cond and close > upper_bb and vol_cond:
-            entry_price = close  # Enter at signal candle's close (per transcript)
+            entry_price = next_candle['Open']
             sl_price = entry_price - (atr * atr_mult)
             tp_price = entry_price + (atr * atr_mult * rr)
-            
-            # Risk calculation
-            base_for_risk = capital if compound else initial_capital
-            risk_amount = base_for_risk * (risk_pct / 100)
-            
-            active_trades.append({
-                'type': 'LONG',
-                'entry': entry_price,
-                'sl': sl_price,
-                'tp': tp_price,
-                'risk': risk_amount
-            })
-            
-        # SHORT Condition
+            new_trade = {'type': 'LONG', 'entry': entry_price, 'sl': sl_price, 'tp': tp_price, 'risk': risk_amount}
         elif ema_short_cond and close < lower_bb and vol_cond:
-            entry_price = close  # Enter at signal candle's close (per transcript)
+            entry_price = next_candle['Open']
             sl_price = entry_price + (atr * atr_mult)
             tp_price = entry_price - (atr * atr_mult * rr)
-            
-            # Risk calculation
-            base_for_risk = capital if compound else initial_capital
-            risk_amount = base_for_risk * (risk_pct / 100)
-            
-            active_trades.append({
-                'type': 'SHORT',
-                'entry': entry_price,
-                'sl': sl_price,
-                'tp': tp_price,
-                'risk': risk_amount
-            })
+            new_trade = {'type': 'SHORT', 'entry': entry_price, 'sl': sl_price, 'tp': tp_price, 'risk': risk_amount}
+
+        if new_trade is not None:
+            # Check SL/TP on the entry bar itself (same bar as next_candle's Open fill)
+            exited_now = False
+            if new_trade['type'] == 'LONG':
+                if next_candle['Low'] <= new_trade['sl']:
+                    capital -= new_trade['risk']
+                    trades.append({'Exit_Date': next_candle['Date'], 'Type': 'LONG', 'Result': 'LOSS', 'Profit': -new_trade['risk'], 'Capital': capital})
+                    daily_pnl -= new_trade['risk']
+                    exited_now = True
+                elif next_candle['High'] >= new_trade['tp']:
+                    profit = new_trade['risk'] * rr
+                    capital += profit
+                    trades.append({'Exit_Date': next_candle['Date'], 'Type': 'LONG', 'Result': 'WIN', 'Profit': profit, 'Capital': capital})
+                    daily_pnl += profit
+                    exited_now = True
+            else:
+                if next_candle['High'] >= new_trade['sl']:
+                    capital -= new_trade['risk']
+                    trades.append({'Exit_Date': next_candle['Date'], 'Type': 'SHORT', 'Result': 'LOSS', 'Profit': -new_trade['risk'], 'Capital': capital})
+                    daily_pnl -= new_trade['risk']
+                    exited_now = True
+                elif next_candle['Low'] <= new_trade['tp']:
+                    profit = new_trade['risk'] * rr
+                    capital += profit
+                    trades.append({'Exit_Date': next_candle['Date'], 'Type': 'SHORT', 'Result': 'WIN', 'Profit': profit, 'Capital': capital})
+                    daily_pnl += profit
+                    exited_now = True
+
+            if not exited_now:
+                active_trades.append(new_trade)
             
     return trades, capital
 

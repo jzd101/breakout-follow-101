@@ -16,7 +16,8 @@ def main():
     parser.add_argument('--atr-mult', type=float, default=2.0, help='ATR Multiplier for Stop Loss')
     parser.add_argument('--no-ema', action='store_true', help='Disable EMA 200 filter')
     parser.add_argument('--no-vol', action='store_true', help='Disable Volume filter')
-    parser.add_argument('--no-compound', action='store_true', help='Disable compounding risk (use fixed initial capital)')
+    parser.add_argument('--no-compound', action='store_true', help='Disable compounding risk (use fixed balance)')
+    parser.add_argument('--fixed-balance', type=float, default=10000.0, help='Fixed balance for risk sizing when compounding is disabled (default: 10000)')
     parser.add_argument('--max-trades', type=int, default=3, help='Maximum concurrent trades (default: 3)')
     parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
     parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
@@ -57,7 +58,7 @@ def main():
     compound = not args.no_compound
     
     print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour, args.friday_close)
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour, args.friday_close, fixed_balance=args.fixed_balance)
     
     print("Generating report...")
     params = {
