@@ -1,6 +1,6 @@
 # Breakout Follow Trend 101
 
-An automated trading system based on the **Breakout Follow Trend** strategy — specifically optimized for **Gold (XAUUSD)**. This system trades Bollinger Band breakouts confirmed by Volume and filtered by EMA 200, leveraging pure mathematical statistics for rule-based execution.
+An automated trading system based on the **Breakout Follow Trend** strategy — specifically optimized for **Gold (XAUUSD)** on the **1H** timeframe and **Bitcoin (BTCUSD)** on the **4H** timeframe. This system trades Bollinger Band breakouts confirmed by Volume and filtered by EMA 200, leveraging pure mathematical statistics for rule-based execution.
 
 > [!NOTE]
 > This strategy is derived from the core principles of momentum breakout trading. It focuses on catching price action when "big players" enter the market, signaled by price breakouts with volume confirmation.
@@ -8,6 +8,13 @@ An automated trading system based on the **Breakout Follow Trend** strategy — 
 ---
 
 ## 📐 Core Logic & Strategy Rules
+
+### 🚀 Optimized Assets & Timeframes
+The strategy is mathematically tuned for the following asset-timeframe combinations:
+| Asset | Timeframe | Recommendation |
+|---|---|---|
+| **Gold (XAUUSD)** | **1H** | Core optimization target |
+| **Bitcoin (BTCUSD)** | **4H** | Secondary optimization target |
 
 ### Technical Indicators
 | Indicator | Settings (Default) | Purpose |
