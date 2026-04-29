@@ -44,7 +44,7 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 - **Risk Sizing**: 
   - **Compounding**: Risk % is calculated based on current account equity (Pine/MQ5) or current capital (Python).
   - **Fixed Balance**: Risk % is calculated based on a user-defined fixed balance.
-- **Max Concurrent Trades**: Supports up to **1 open position** at a time.
+- **Max Concurrent Trades**: Supports up to **10 open position** at a time.
 - **Daily Loss Limit**: Realized P&L tracked daily. Entries are blocked if the day's realized loss exceeds the specified percentage of the base balance (Default 2.0%).
 - **Trading Window**: System only opens new trades during specified hours (Default 07:00 - 20:00).
 - **Weekend Policy**: Robust weekend block covering Friday evening (Default 23:45) through Monday morning (before Start Hour). Closes all positions and blocks new entries.
