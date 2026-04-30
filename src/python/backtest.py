@@ -29,7 +29,7 @@ def calculate_indicators(df):
     
     return df
 
-def run_backtest(df, initial_capital=10000, risk_pct=0.9, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=3, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time=None, fixed_balance=10000.0):
+def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, use_vol=True, atr_mult=2.0, compound=True, max_trades=1, daily_loss_limit=2.0, start_hour=7, end_hour=20, friday_close_time=None, fixed_balance=10000.0):
     capital = initial_capital
     active_trades = []  # List of dicts: {'type': 'LONG'/'SHORT', 'entry': price, 'sl': price, 'tp': price, 'risk': amount}
     trades = []
