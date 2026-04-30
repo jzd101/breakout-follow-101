@@ -2,7 +2,7 @@
 // © jzd101
 
 //@version=5
-strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=1)
+strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=10)
 
 // ==========================================
 // Inputs
@@ -20,10 +20,10 @@ inpDailyLoss  = input.float(2.0, "Daily Loss Limit %", minval=0.0, step=0.1, gro
 // Indicators
 grp_ind = "Indicators"
 inpUseEMA     = input.bool(true, "Use EMA Trend Filter", group=grp_ind)
-inpEMAPeriod  = input.int(200, "EMA Period", minval=1, group=grp_ind)
+inpEMAPeriod  = input.int(300, "EMA Period", minval=1, group=grp_ind)
 inpBBPeriod   = input.int(15, "Bollinger Bands Period", minval=1, group=grp_ind)
 inpBBDev      = input.float(1.5, "Bollinger Bands Deviation", minval=0.1, step=0.1, group=grp_ind)
-inpATRPeriod  = input.int(14, "ATR Period", minval=1, group=grp_ind)
+inpATRPeriod  = input.int(20, "ATR Period", minval=1, group=grp_ind)
 
 // Volume Filter
 grp_vol = "Volume Filter"
@@ -46,7 +46,7 @@ emaVal = ta.ema(close, inpEMAPeriod)
 // Bollinger Bands
 [basis, upperBB, lowerBB] = ta.bb(close, inpBBPeriod, inpBBDev)
 
-// ATR (Wilder's / RMA)
+// ATR (Wilder's / RMA) — ta.atr uses same RMA formula as MQL5 CalculateRMA_ATR
 atrVal = ta.atr(inpATRPeriod)
 
 // Volume MA
@@ -55,71 +55,78 @@ volMA = ta.sma(volume, inpVolPeriod)
 // Time Filter
 isInTimeWindow = inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour)
 
-// Weekend Block (matches MQ5 CheckWeekendClose: Friday past time, full Sat/Sun, Monday before StartHour)
+// Weekend Block (matches MQL5 CheckWeekendClose: Friday past time, full Sat/Sun, Monday before StartHour)
 fHour = int(str.tonumber(str.substring(inpFridayTime, 0, 2)))
 fMin  = int(str.tonumber(str.substring(inpFridayTime, 2, 4)))
-fridayMin   = fHour * 60 + fMin
-nowMin      = hour * 60 + minute
-isFridayPast    = dayofweek == dayofweek.friday and nowMin >= fridayMin
-isWeekend       = dayofweek == dayofweek.saturday or dayofweek == dayofweek.sunday
-isMondayBefore  = dayofweek == dayofweek.monday and hour < inpStartHour
-isWeekendBlock  = inpWeekendCl and (isFridayPast or isWeekend or isMondayBefore)
+fridayMin      = fHour * 60 + fMin
+nowMin         = hour * 60 + minute
+isFridayPast   = dayofweek == dayofweek.friday and nowMin >= fridayMin
+isWeekend      = dayofweek == dayofweek.saturday or dayofweek == dayofweek.sunday
+isMondayBefore = dayofweek == dayofweek.monday and hour < inpStartHour
+isWeekendBlock = inpWeekendCl and (isFridayPast or isWeekend or isMondayBefore)
 
 // ==========================================
-// Strategy Execution
+// Risk Calculations
 // ==========================================
-// Risk base — matches MQ5: compound uses live equity, otherwise fixed balance input
+// Matches MQL5: compound uses live equity, otherwise fixed balance input
 baseBal    = inpCompound ? strategy.equity : inpFixedBal
 slDist     = atrVal * inpATRMult
 riskAmount = baseBal * (inpRiskPct / 100)
 posSize    = slDist > 0 ? riskAmount / slDist : 0.0
 
-// Daily Loss Limit tracking (realized P&L) — matches MQ5
+// SL/TP in ticks relative to fill price — matches MQL5 which anchors SL/TP to market entry price (ASK/BID)
+// Using loss/profit ticks means Pine will compute: SL = entryPrice ± slDist, TP = entryPrice ± slDist*RR
+lossTicks   = slDist > 0 ? math.round(slDist / syminfo.mintick) : 0
+profitTicks = slDist > 0 ? math.round(slDist * inpRR / syminfo.mintick) : 0
+
+// ==========================================
+// Daily Loss Limit tracking (realized P&L) — matches MQL5 OnTradeTransaction
+// ==========================================
 var float dailyPnL     = 0.0
 var int   currentDay   = -1
 var float dailyLossMax = 0.0
 if dayofmonth != currentDay
     currentDay   := dayofmonth
     dailyPnL     := 0.0
+    // Recalculate daily loss max with current equity/balance (matches MQL5 daily reset)
     dailyLossMax := baseBal * (inpDailyLoss / 100)
+// Sum ALL trades closed this bar (MQL5 OnTradeTransaction fires per-deal; loop covers simultaneous exits)
 if strategy.closedtrades > nz(strategy.closedtrades[1])
-    dailyPnL := dailyPnL + strategy.closedtrades.profit(strategy.closedtrades - 1)
+    for i = int(nz(strategy.closedtrades[1])) to strategy.closedtrades - 1
+        dailyPnL := dailyPnL + strategy.closedtrades.profit(i)
 dailyLossHit = inpDailyLoss > 0 and dailyPnL <= -dailyLossMax
 
-// Signal Conditions — plain comparison on closed bar (matches MQ5: close1 > upperBB / close1 < lowerBB)
+// ==========================================
+// Signal Conditions — plain comparison on closed bar (matches MQL5: close1 > upperBB / close1 < lowerBB)
+// ==========================================
 volCond        = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
 longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
 shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
 
-// Capture TP/SL levels for the next bar's entry
-float signal_tp = na
-float signal_sl = na
-if longCondition
-    signal_sl := close - slDist
-    signal_tp := close + (slDist * inpRR)
-if shortCondition
-    signal_sl := close + slDist
-    signal_tp := close - (slDist * inpRR)
+// Store signal bar's slDist for visual box construction on the entry bar
+var float sig_slDist = na
+if longCondition or shortCondition
+    sig_slDist := slDist
 
-// Store levels in series to access them on the entry bar [1]
-var float target_tp = na
-var float target_sl = na
-target_tp := signal_tp
-target_sl := signal_sl
-
-// Entry Execution — unique IDs per entry so each position has its own SL/TP (matches MQ5 hedge-like behavior within Pine's netted model)
+// ==========================================
+// Strategy Execution
+// ==========================================
+// Entry IDs are unique so each position carries its own SL/TP (matches MQL5 hedge-like per-position management)
 var int entryCounter = 0
-if (longCondition and strategy.opentrades < inpMaxTrades)
+
+// Matches MQL5: if(lotSize > 0) guard prevents zero-size entries when ATR is unavailable
+if (longCondition and strategy.opentrades < inpMaxTrades and posSize > 0)
     entryCounter += 1
     id = "L" + str.tostring(entryCounter)
     strategy.entry(id, strategy.long, qty=posSize, comment="Long")
-    strategy.exit("X" + id, id, stop=signal_sl, limit=signal_tp, comment_loss="SL", comment_profit="TP")
+    // loss/profit in ticks → SL/TP anchored to actual fill price, matching MQL5 entryPrice ± slDist
+    strategy.exit("X" + id, id, loss=lossTicks, profit=profitTicks, comment_loss="SL", comment_profit="TP")
 
-if (shortCondition and strategy.opentrades < inpMaxTrades)
+if (shortCondition and strategy.opentrades < inpMaxTrades and posSize > 0)
     entryCounter += 1
     id = "S" + str.tostring(entryCounter)
     strategy.entry(id, strategy.short, qty=posSize, comment="Short")
-    strategy.exit("X" + id, id, stop=signal_sl, limit=signal_tp, comment_loss="SL", comment_profit="TP")
+    strategy.exit("X" + id, id, loss=lossTicks, profit=profitTicks, comment_loss="SL", comment_profit="TP")
 
 // Weekend Close — close all positions while inside the weekend block
 if (isWeekendBlock)
@@ -134,15 +141,15 @@ p2 = plot(lowerBB, color=color.new(color.gray, 50), title="Lower BB")
 fill(p1, p2, color=color.new(color.gray, 90), title="BB Background")
 
 // Colors for Long/Short Tools (100% TradingView Style)
-color_tp_fill = color.new(#089981, 80)
-color_sl_fill = color.new(#f23645, 80)
-color_tp_border = color.new(#089981, 30)
-color_sl_border = color.new(#f23645, 30)
+color_tp_fill    = color.new(#089981, 80)
+color_sl_fill    = color.new(#f23645, 80)
+color_tp_border  = color.new(#089981, 30)
+color_sl_border  = color.new(#f23645, 30)
 color_entry_line = color.new(color.gray, 20)
 
 // Persistent Arrays for Active Tools
-var box[] active_tp_boxes = array.new_box()
-var box[] active_sl_boxes = array.new_box()
+var box[]  active_tp_boxes    = array.new_box()
+var box[]  active_sl_boxes    = array.new_box()
 var line[] active_entry_lines = array.new_line()
 
 // 1. Extend all active tools to the current bar
@@ -152,20 +159,19 @@ if array.size(active_tp_boxes) > 0
         box.set_right(array.get(active_sl_boxes, i), bar_index)
         line.set_x2(array.get(active_entry_lines, i), bar_index)
 
-// 2. Handle New Entry detection
+// 2. New entry detection — compute SL/TP from open (actual fill price) + signal bar's slDist
+//    This matches MQL5: SL = entryPrice ± slDist, TP = entryPrice ± slDist * RR
 if strategy.opentrades > strategy.opentrades[1]
-    // A new trade opened at the 'open' of this bar (Market Order from previous bar signal)
-    float tp = target_tp[1]
-    float sl = target_sl[1]
-    float en = open
+    float sd     = sig_slDist[1]
     bool is_long = strategy.position_size > strategy.position_size[1]
-    
-    // Create Visual Tools
-    box b_tp = box.new(bar_index-1, is_long ? tp : en, bar_index, is_long ? en : tp, bgcolor=color_tp_fill, border_color=color_tp_border, border_width=1)
-    box b_sl = box.new(bar_index-1, is_long ? en : sl, bar_index, is_long ? sl : en, bgcolor=color_sl_fill, border_color=color_sl_border, border_width=1)
+    float en     = open
+    float tp     = is_long ? en + sd * inpRR : en - sd * inpRR
+    float sl     = is_long ? en - sd : en + sd
+
+    box b_tp  = box.new(bar_index-1, is_long ? tp : en, bar_index, is_long ? en : tp, bgcolor=color_tp_fill,  border_color=color_tp_border, border_width=1)
+    box b_sl  = box.new(bar_index-1, is_long ? en : sl, bar_index, is_long ? sl : en, bgcolor=color_sl_fill,  border_color=color_sl_border, border_width=1)
     line l_en = line.new(bar_index-1, en, bar_index, en, color=color_entry_line, width=1)
-    
-    
+
     array.push(active_tp_boxes, b_tp)
     array.push(active_sl_boxes, b_sl)
     array.push(active_entry_lines, l_en)
@@ -184,4 +190,3 @@ if strategy.position_size == 0 and array.size(active_tp_boxes) > 0
     array.clear(active_tp_boxes)
     array.clear(active_sl_boxes)
     array.clear(active_entry_lines)
-
