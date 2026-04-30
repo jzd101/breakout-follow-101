@@ -20,10 +20,10 @@ inpDailyLoss  = input.float(2.0, "Daily Loss Limit %", minval=0.0, step=0.1, gro
 // Indicators
 grp_ind = "Indicators"
 inpUseEMA     = input.bool(true, "Use EMA Trend Filter", group=grp_ind)
-inpEMAPeriod  = input.int(300, "EMA Period", minval=1, group=grp_ind)
+inpEMAPeriod  = input.int(200, "EMA Period", minval=1, group=grp_ind)
 inpBBPeriod   = input.int(15, "Bollinger Bands Period", minval=1, group=grp_ind)
 inpBBDev      = input.float(1.5, "Bollinger Bands Deviation", minval=0.1, step=0.1, group=grp_ind)
-inpATRPeriod  = input.int(20, "ATR Period", minval=1, group=grp_ind)
+inpATRPeriod  = input.int(14, "ATR Period", minval=1, group=grp_ind)
 
 // Volume Filter
 grp_vol = "Volume Filter"

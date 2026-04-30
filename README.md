@@ -19,21 +19,24 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 ### Technical Indicators
 | Indicator | Settings (Default) | Purpose |
 |---|---|---|
-| **EMA** | Period = 300 | Trend direction filter (above = LONG zone, below = SHORT zone) |
+| **EMA** | Period = 200 | Trend direction filter (above = LONG zone, below = SHORT zone) |
 | **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout signal trigger |
 | **Volume MA** | Period = 15 (SMA) | Volume confirmation filter (Volume > SMA 15) |
-| **ATR** | Period = 20, RMA (Wilder's) | Dynamic Stop Loss calculation (ATR × Multiplier) |
+| **ATR** | Period = 14, RMA (Wilder's) | Dynamic Stop Loss calculation (ATR × Multiplier) |
+
+> [!TIP]
+> Setting **EMA Period = 300** and **ATR Period = 20** typically yields a higher **Profit Factor** in backtests compared to the default values, though it may result in fewer trade opportunities.
 
 ### Entry Conditions
 
 **🟢 LONG (Buy)**
-1. Price is **above** EMA 300 (Trend is UP).
+1. Price is **above** EMA 200 (Trend is UP).
 2. Candle **closes above** the Upper Bollinger Band (Plain comparison: `close > upperBB`).
 3. Candle volume is **greater than** the 15-period Volume MA (or Volume MA is 0/NaN).
 4. **Action**: Enter at signal candle's close price (Market Order on next open).
 
 **🔴 SHORT (Sell)**
-1. Price is **below** EMA 300 (Trend is DOWN).
+1. Price is **below** EMA 200 (Trend is DOWN).
 2. Candle **closes below** the Lower Bollinger Band (Plain comparison: `close < lowerBB`).
 3. Candle volume is **greater than** the 15-period Volume MA (or Volume MA is 0/NaN).
 4. **Action**: Enter at signal candle's close price (Market Order on next open).
@@ -63,8 +66,8 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | `--risk` | `2.0` | Risk % per trade |
 | `--rr` | `2.0` | Risk:Reward ratio (e.g., `2.0`) |
 | `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
-| `--ema-period` | `300` | EMA Trend Filter Period |
-| `--atr-period` | `20` | ATR Smoothing Period |
+| `--ema-period` | `200` | EMA Trend Filter Period |
+| `--atr-period` | `14` | ATR Smoothing Period |
 | `--no-ema` | `False` | Disable EMA trend filter |
 | `--no-vol` | `False` | Disable Volume confirmation filter |
 | `--no-compound`| `False` | Disable compounding (use fixed balance) |
@@ -85,10 +88,10 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | `InpFixedBalance`| 10000 | Fixed balance if Compounding is false |
 | `InpUseEMA` | true | Enable EMA Filter |
 | `InpUseVol` | true | Enable Volume Filter |
-| `InpEMAPeriod` | 300 | EMA Trend Filter Period |
+| `InpEMAPeriod` | 200 | EMA Trend Filter Period |
 | `InpBBPeriod` | 15 | Bollinger Bands Period |
 | `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
-| `InpATRPeriod` | 20 | ATR Smoothing Period |
+| `InpATRPeriod` | 14 | ATR Smoothing Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
 | `InpMaxTrades` | 1 | Maximum concurrent trades |
 | `InpDailyLossLimit`| 2.0 | Daily loss limit % |
@@ -106,10 +109,10 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | `Use Compounding Risk`| true | If false, uses Fixed Balance |
 | `Fixed Balance` | 10000 | Base balance for risk if compounding off |
 | `Use EMA Trend Filter`| true | Enable EMA Filter |
-| `EMA Period` | 300 | EMA Trend Filter Period |
+| `EMA Period` | 200 | EMA Trend Filter Period |
 | `Bollinger Bands Period`| 15 | BB Smoothing Period |
 | `Bollinger Bands Deviation`| 1.5 | BB Standard Deviation |
-| `ATR Period` | 20 | ATR Smoothing Period |
+| `ATR Period` | 14 | ATR Smoothing Period |
 | `Use Volume Filter`| true | Enable Volume Filter |
 | `Volume MA Period`| 15 | Volume MA Filter Period |
 | `Daily Loss Limit %`| 2.0 | Daily loss limit % |
