@@ -19,9 +19,9 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 
 > [!TIP]
 > **Best Settings for Highest Profit Factor:**
-> - **XAUUSD**: Timeframe = **H1**, Volume MA = **17**
-> - **ETHUSD**: Timeframe = **H1**, Volume MA = **20**
-> - **XRPUSD**: Timeframe = **H4**, Volume MA = **17**
+> - **XAUUSD**: Timeframe = **1H**, Volume MA = **15**
+> - **ETHUSD**: Timeframe = **1H**, Volume MA = **20**
+> - **XRPUSD**: Timeframe = **4H**, Volume MA = **17**
 
 ### Technical Indicators
 | Indicator | Settings (Default) | Purpose |
