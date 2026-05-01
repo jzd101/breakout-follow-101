@@ -1,6 +1,6 @@
 # Breakout Follow Trend 101
 
-An automated trading system based on the **Breakout Follow Trend** strategy — specifically optimized for **Gold (XAUUSD)** on the **1H** timeframe and **Bitcoin (BTCUSD)** on the **4H** timeframe. This system trades Bollinger Band breakouts confirmed by Volume and filtered by EMA, leveraging pure mathematical statistics for rule-based execution.
+An automated trading system based on the **Breakout Follow Trend** strategy — specifically optimized for **Gold (XAUUSD)** on the **1H** timeframe. This system trades Bollinger Band breakouts confirmed by Volume and filtered by EMA, leveraging pure mathematical statistics for rule-based execution.
 
 > [!NOTE]
 > This strategy is derived from the core principles of momentum breakout trading. It focuses on catching price action when "big players" enter the market, signaled by price breakouts with volume confirmation.
@@ -14,7 +14,6 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | Asset | Timeframe | Recommendation |
 |---|---|---|
 | **Gold (XAUUSD)** | **1H** | Core optimization target |
-| **Bitcoin (BTCUSD)** | **4H** | Secondary optimization target |
 | **Ethereum (ETHUSD)** | **1H** | Altcoin optimization target |
 | **Ripple (XRPUSD)** | **4H** | Altcoin optimization target |
 
@@ -31,9 +30,6 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout signal trigger |
 | **Volume MA** | Period = 15 (SMA) | Volume confirmation filter (Volume > SMA 15) |
 | **ATR** | Period = 14, RMA (Wilder's) | Dynamic Stop Loss calculation (ATR × Multiplier) |
-
-> [!TIP]
-> Setting **EMA Period = 300** and **ATR Period = 20** typically yields a higher **Profit Factor** in backtests compared to the default values, though it may result in fewer trade opportunities.
 
 ### Entry Conditions
 
