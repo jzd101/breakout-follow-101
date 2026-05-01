@@ -15,6 +15,14 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 |---|---|---|
 | **Gold (XAUUSD)** | **1H** | Core optimization target |
 | **Bitcoin (BTCUSD)** | **4H** | Secondary optimization target |
+| **Ethereum (ETHUSD)** | **1H** | Altcoin optimization target |
+| **Ripple (XRPUSD)** | **4H** | Altcoin optimization target |
+
+> [!TIP]
+> **Best Settings for Highest Profit Factor:**
+> - **XAUUSD**: Timeframe = **H1**, Volume MA = **17**
+> - **ETHUSD**: Timeframe = **H1**, Volume MA = **20**
+> - **XRPUSD**: Timeframe = **H4**, Volume MA = **17**
 
 ### Technical Indicators
 | Indicator | Settings (Default) | Purpose |
