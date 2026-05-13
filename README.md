@@ -64,14 +64,12 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | Parameter | Default | Description |
 |---|---|---|
 | `--symbol` | (req) | Asset symbol, e.g. `XAUUSD`, `GBPUSD` |
-| `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `15m`) |
+| `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `1d`, `15m`) |
 | `--period` | `1y` | Backtest history length (e.g. `1mo`, `1y`) |
 | `--capital` | `10000` | Initial starting capital |
 | `--risk` | `2.0` | Risk % per trade |
-| `--rr` | `2.0` | Risk:Reward ratio (e.g., `2.0`) |
+| `--rr` | `1:2` | Risk:Reward ratio (supports `X.X` or `1:X` format) |
 | `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
-| `--ema-period` | `200` | EMA Trend Filter Period |
-| `--atr-period` | `14` | ATR Smoothing Period |
 | `--no-ema` | `False` | Disable EMA trend filter |
 | `--no-vol` | `False` | Disable Volume confirmation filter |
 | `--no-compound`| `False` | Disable compounding (use fixed balance) |
@@ -97,6 +95,7 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
 | `InpATRPeriod` | 14 | ATR Smoothing Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
+| `InpMagic` | 123456 | Unique ID for the Expert Advisor |
 | `InpMaxTrades` | 1 | Maximum concurrent trades |
 | `InpDailyLossLimit`| 2.0 | Daily loss limit % |
 | `InpStartHour` | 7 | Trading start hour |
@@ -131,7 +130,7 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 ## 🛠️ Implementation Features
 
 - **100% Logic Parity**: Mathematical alignment between Python (Research), MQL5 (Execution), and Pine Script (Visualization).
-- **Tick-Based SL/TP Anchoring**: Pine Script uses `strategy.exit` with tick-based distances to ensure SL/TP levels are anchored to the *actual fill price* of the market order, matching MQL5's real-time execution.
+- **Tick-Based SL/TP Anchoring**: Pine Script uses tick-based distances to ensure SL/TP levels are anchored to the *actual fill price* of the market order, matching MQL5's real-time execution.
 - **Robust Daily Loss Tracking**: Aggregates all closed trades per bar to accurately block entries when the daily loss limit is hit (parity with MQL5 `OnTradeTransaction`).
 - **RMA ATR Smoothing**: Uses Wilder's Smoothing for ATR calculations across all platforms.
 - **Premium Visuals**: TradingView version includes **minimalist TP/SL boxes** and entry lines that match native platform aesthetics, using actual fill prices for perfect visual parity.
@@ -143,7 +142,7 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 
 ### 1. Python Backtesting
 ```bash
-python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
+python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 1:2
 ```
 
 ### 2. MetaTrader 5 Deployment
