@@ -93,6 +93,7 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 | `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
 | `InpATRPeriod` | 14 | ATR Smoothing Period |
 | `InpVolPeriod` | 15 | Volume MA Period |
+| `InpMagic` | 123456 | Unique ID for the Expert Advisor |
 | `InpMaxTrades` | 1 | Maximum concurrent trades |
 | `InpDailyLossLimit`| 2.0 | Daily loss limit % |
 | `InpStartHour` | 7 | Trading start hour |
