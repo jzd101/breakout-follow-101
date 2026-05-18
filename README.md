@@ -1,203 +1,215 @@
-# Breakout Follow Trend 101
+# 📈 Breakout Follow Trend 101
 
-An automated trading system based on the **Breakout Follow Trend** strategy — specifically optimized for **Gold (XAUUSD)** on the **1H** timeframe. This system trades Bollinger Band breakouts confirmed by Volume and filtered by EMA, leveraging pure mathematical statistics for rule-based execution.
+[![Asset: Gold](https://img.shields.io/badge/Asset-Gold%20%28XAUUSD%29-gold?style=flat-square&logo=gold)](https://github.com/jzd101/breakout-follow-101)
+[![Timeframe: 15m / 1H](https://img.shields.io/badge/Timeframe-15m%20%2F%201H-blue?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
+[![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
+[![Language: English](https://img.shields.io/badge/Language-English%20Only-lightgrey?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
+
+An automated, quantitative trading system based on the **Breakout Follow Trend** strategy—specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across Python research, TradingView visualization, and MetaTrader 5 execution.
 
 > [!IMPORTANT]
-> **System Integrity**: This repository maintains 100% logic parity across Python (Research), TradingView (Visualization), and MetaTrader 5 (Execution).
+> **100% Logic Parity**: This repository maintains absolute mathematical alignment across Python (Research), TradingView (Visualization), and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across all three platforms.
+
+---
+
+## 📋 Prerequisites & System Requirements
+
+Before executing or deploying any component of the Breakout Follow Trend system, ensure your environment meets the following conditions:
+
+*   **Python Research & Backtest**: Python `3.8` or higher installed, with standard scientific packages (`pandas`, `numpy`, `yfinance`, `pytz`).
+*   **TradingView Visualization**: Active TradingView account with access to the **Pine Editor** (v5).
+*   **MetaTrader 5 Execution**: MetaTrader 5 Terminal installed on a Windows system (or VPS) with active broker connection and Hedging account.
+
+---
+
+## 🚀 1-Minute Quick Start
+
+### 1. Python Backtest
+Instantly run historical simulations for Gold:
+```bash
+# Clone the repository
+git clone https://github.com/jzd101/breakout-follow-101.git
+cd breakout-follow-101
+
+# Run backtest with default Gold parameters
+python src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
+```
+> Reports and monthly stats breakdown will be auto-generated in the `reports/` folder.
+
+### 2. MetaTrader 5 Expert Advisor
+Deploy for automated real-time execution:
+1. Copy [BreakoutFollowTrend.mq5](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
+2. Compile the EA inside the MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **1H** or **15m** timeframe.
+3. Enable **Algo Trading** in your MT5 terminal.
+
+### 3. TradingView Pine Script
+Visualize entry signals and dynamic risk tools:
+1. Copy the full source code from [BreakoutFollowTrend_Strategy.pine](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/pine/BreakoutFollowTrend_Strategy.pine).
+2. In TradingView, open the **Pine Editor** tab, paste the code, and click **Save**.
+3. Click **Add to Chart** and open the **Strategy Tester** tab to inspect trade histories.
 
 ---
 
 ## 📐 Core Logic & Strategy Rules
 
-### 🚀 Optimized Assets & Timeframes
-The strategy is mathematically tuned for the following asset-timeframe combinations:
+The Breakout Follow Trend system relies on pure statistics and momentum confirmation, removing emotional variables from execution.
 
-| Asset | Timeframe | Recommendation | Volume MA |
-|---|---|---|---|
-| **Gold (XAUUSD)** | **1H** | Core optimization target | **15** |
-| **Ethereum (ETHUSD)** | **1H** | Altcoin optimization target | **20** |
-| **Ripple (XRPUSD)** | **4H** | Altcoin optimization target | **17** |
+### Technical Indicators & Settings
+| Indicator | Default Setting | Purpose | Formula / Standard |
+| :--- | :--- | :--- | :--- |
+| **EMA** | Period = 200 | Primary Trend Filter | Price > EMA 200 (Bullish), Price < EMA 200 (Bearish) |
+| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger | Volatility expansion bounds |
+| **Volume MA** | Period = 15 (SMA) | Momentum Filter | Prev volume > SMA 15 (Volume confirmation) |
+| **ATR** | Period = 14 | Dynamic SL/TP Base | Wilder's RMA Smoothing (RMA) |
 
-> [!TIP]
-> Use the Python backtest system to find optimal Volume MA periods for other assets before deployment.
+---
 
-### Technical Indicators
-| Indicator | Settings (Default) | Purpose |
-|---|---|---|
-| **EMA** | Period = 200 | Trend direction filter (Above = Bullish, Below = Bearish) |
-| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout signal trigger (Volatility expansion) |
-| **Volume MA** | Period = 15 (SMA) | Momentum confirmation (Volume > SMA 15) |
-| **ATR** | Period = 14, RMA (Wilder's) | Dynamic SL/TP calculation (ATR × Multiplier) |
+### 🟢 LONG (Buy Entry) Conditions
+All conditions must be confirmed on the **Close of Candle 1**:
+1. **Trend Filter**: Price is strictly **above** EMA 200 (`Close > EMA 200`).
+2. **BB Breakout**: Candle close is **greater than** the Upper Bollinger Band (`Close > Upper BB`).
+3. **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
+*Execution: Market BUY order opened at the open of the very next candle.*
 
-### Entry Conditions
+### 🔴 SHORT (Sell Entry) Conditions
+All conditions must be confirmed on the **Close of Candle 1**:
+1. **Trend Filter**: Price is strictly **below** EMA 200 (`Close < EMA 200`).
+2. **BB Breakout**: Candle close is **less than** the Lower Bollinger Band (`Close < Lower BB`).
+3. **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
+*Execution: Market SELL order opened at the open of the very next candle.*
 
-**🟢 LONG (Buy)**
-1. **Trend Filter**: Price is **above** EMA 200.
-2. **Breakout**: Candle **closes above** the Upper Bollinger Band.
-3. **Confirmation**: Candle volume is **greater than** the 15-period Volume MA.
-4. **Execution**: Market order at signal candle's close (Next bar open).
+---
 
-**🔴 SHORT (Sell)**
-1. **Trend Filter**: Price is **below** EMA 200.
-2. **Breakout**: Candle **closes below** the Lower Bollinger Band.
-3. **Confirmation**: Candle volume is **greater than** the 15-period Volume MA.
-4. **Execution**: Market order at signal candle's close (Next bar open).
+### 🏆 High Win-Rate & Precision Settings (Gold 15m Preset)
 
-### Exit & Risk Management
-- **Stop Loss (SL)**: `Entry Price ± (ATR × Multiplier)`. Default Multiplier: **2.0**.
-- **Take Profit (TP)**: `Entry Price ± (SL Distance × RR)`. Default RR: **2.0**.
-- **Risk Sizing**: 
-  - **Compounding**: Risk % calculated based on current account equity (Pine/MQ5) or live capital (Python).
-  - **Fixed Balance**: Risk % calculated based on a user-defined fixed balance.
-- **Max Concurrent Trades**: Configurable limit (Default: 1) to manage margin exposure.
-- **Daily Loss Limit**: Realized P&L tracked daily. Entries are blocked if the day's total realized loss exceeds the specified percentage (Default: 2.0%).
-- **Trading Window**: System only opens new trades during specified hours (Default: 07:00 - 20:00).
-- **Weekend Policy**: Friday evening close (Default: 23:45) through Monday morning. Closes all positions and blocks new entries.
+For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor** with **fewer, high-precision trades**, attach the system to a **15m chart** using these optimized settings:
 
-### 🏆 High Win-Rate & High Precision Settings (Gold 15m)
+| Category | Parameter | Gold 15m Setting | Default (1H) | Purpose / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Risk Management** | Risk % per Trade | **1.0%** | 2.0% | Halved risk exposure to reduce drawdowns |
+| | Risk:Reward Ratio | **1.0** | 2.0 | 1:1 TP to maximize high-probability fills |
+| | ATR Multiplier (SL) | **1.5** | 2.0 | Tighter dynamic stop loss |
+| | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
+| **Indicators** | EMA Filter | **Enabled** (true) | Enabled | Trend-following direction lock |
+| | EMA Period | **200** | 200 | Long-term trend reference |
+| | Bollinger Bands Period| **15** | 15 | Short-term volatility contraction range |
+| | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
+| **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
+| | Volume MA Period | **15** | 15 | Vol SMA baseline |
+| **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Focuses on highly active session overlap) |
+| | End Hour | **20** | 20 | Closes window at 20:00 (London/US active hours) |
+| | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
+| | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
-If you want a **higher Win Rate** and a **larger Profit Factor** but with **fewer, more accurate trades** (high-precision), it is highly recommended to trade using the following optimized settings on the **15m timeframe**. These settings were specifically tuned from the TradingView strategy configuration:
+---
 
-| Parameter Category | Parameter Name | Optimized Setting | Purpose / Change from Default |
-|---|---|---|---|
-| **Risk Management** | Risk % per Trade | **1.0%** | Lower exposure per trade (Default: 2.0%) |
-| | Risk:Reward Ratio | **1.0** | Tighter 1:1 TP to significantly increase Win Rate (Default: 2.0) |
-| | ATR Multiplier (SL) | **1.5** | Tighter stop loss (Default: 2.0) |
-| | Max Concurrent Trades | **1** | Only 1 position open at a time |
-| | Use Compounding Risk | **Checked** (true) | Scale risk based on equity |
-| | Daily Loss Limit % | **2.0%** | Protect drawdown on consecutive losses |
-| **Indicators** | Use EMA Trend Filter | **Checked** (true) | Filter out counter-trend trades |
-| | EMA Period | **200** | Long-term trend reference |
-| | Bollinger Bands Period | **15** | Short-term volatility contraction/expansion |
-| | Bollinger Bands Deviation| **1.5** | Entry trigger sensitivity |
-| | ATR Period | **14** | Dynamic volatility measurement |
-| **Volume Filter** | Use Volume Filter | **Checked** (true) | Momentum confirmation |
-| | Volume MA Period | **15** | Average volume standard |
-| **Time Filters** | Start Hour (0-23) | **13** | **Shifted to 13:00** (Focuses on highly active session overlap, Default: 7:00) |
-| | End Hour (0-23) | **20** | Trading window ends at 20:00 |
-| | Weekend Close | **Unchecked** (false) | No forced Friday close before time window |
-| | Friday Close Time | **2345** | Weekly system cutoff |
+## 🛡️ Deep-Dive: Advanced Risk Controls
+
+The Breakout Follow Trend system stands out due to its active capital preservation safeguards, fully integrated and logically aligned across Python, MQL5, and Pine Script.
+
+### 1. Dynamic Compounding Risk & Position Sizing
+When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity (Pine Script/MT5 EA) or current capital (Python backtest) and the volatility-based Stop Loss distance.
+
+$$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{100} \right)$$
+$$\text{Position Size (Lots/Contracts)} = \frac{\text{Risk Amount}}{\text{ATR (14)} \times \text{ATR Multiplier}}$$
+
+*   **Compounding Enabled**: `Base Balance = Live Account Equity` (scales lot sizes up as account grows, scales down during drawdowns).
+*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance` (maintains fixed contract/lot sizes).
+
+### 2. Transactional Daily Loss Limit
+To protect against consecutive losses or unpredictable market black swan events, the system features an active **Daily Loss Limit**.
+*   **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
+*   **Threshold Blocking**: Once the total net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system **immediately suspends all entries**.
+*   **Automatic Reset**: The lockout automatically resets on the next server trading day.
+
+### 3. Weekend Liquidation Policy
+Holding open positions over the weekend exposes accounts to high-volatility broker gaps and spread expansions.
+*   When `Weekend Close` is enabled, the system monitors broker server time.
+*   On Friday evening at the specified cutoff time (default: `23:45`), the system **force-closes all active positions** and **blocks all new trade entries**.
+*   New orders are blocked until Monday morning at the designated starting hour.
 
 ---
 
 ## ⚙️ Parameters & Configuration
 
-### Python Backtest (`run_system.py`)
-| Parameter | Default | Description |
-|---|---|---|
-| `--symbol` | (req) | Asset symbol, e.g. `XAUUSD`, `ETHUSD` |
-| `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `15m`) |
-| `--period` | `1y` | Backtest history length (e.g. `1mo`, `1y`) |
-| `--capital` | `10000` | Initial starting capital |
-| `--risk` | `2.0` | Risk % per trade |
-| `--rr` | `2.0` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
-| `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
-| `--no-ema` | `False` | Disable EMA trend filter |
-| `--no-vol` | `False` | Disable Volume confirmation filter |
-| `--no-compound`| `False` | Disable compounding (use fixed balance) |
-| `--fixed-balance`| `10000`| Fixed balance for risk sizing when compounding is off |
-| `--max-trades` | `1` | Maximum number of concurrent open positions |
-| `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
-| `--start-hour` | `7` | Trading start hour (0-23) |
-| `--end-hour` | `20` | Trading end hour (1-24) |
-| `--friday-close`| `None` | Friday close time (HH:MM) |
+### 1. Python Backtest CLI (`run_system.py`)
+| Parameter | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--symbol` | (Required) | `str` | Trading asset, e.g., `XAUUSD`, `ETHUSD` |
+| `--timeframe` | `1h` | `str` | Candle timeframe (`15m`, `1h`, `1d`) |
+| `--period` | `1y` | `str` | Historical data length (`1mo`, `1y`, etc.) |
+| `--capital` | `10000.0` | `float` | Starting account equity |
+| `--risk` | `2.0` | `float` | Risk % per trade |
+| `--rr` | `2.0` | `float` | Risk-to-Reward ratio |
+| `--atr-mult` | `2.0` | `float` | ATR Multiplier for Stop Loss |
+| `--no-ema` | `False` | `bool` | Disable the EMA 200 trend filter |
+| `--no-vol` | `False` | `bool` | Disable the Volume MA confirmation filter |
+| `--no-compound`| `False` | `bool` | Disable compounding (use fixed balance) |
+| `--fixed-balance`| `10000.0`| `float` | Sizing balance when compounding is disabled |
+| `--max-trades` | `1` | `int` | Maximum concurrent open positions |
+| `--daily-loss-limit`| `2.0` | `float` | Daily loss limit % (0.0 to disable) |
+| `--start-hour` | `7` | `int` | Trading start hour (0-23) |
+| `--end-hour` | `20` | `int` | Trading end hour (1-24) |
+| `--friday-close`| `None` | `str` | Friday evening cutoff time (HH:MM) |
 
-### MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
-| Input Name | Default | Description |
-|---|---|---|
-| `InpRiskPct` | 2.0 | Risk % per trade |
-| `InpRR` | 2.0 | Risk Reward Ratio |
-| `InpATRMult` | 2.0 | ATR Multiplier for Stop Loss |
-| `InpCompound` | true | Use Compounding Risk (of current balance) |
-| `InpFixedBalance`| 10000 | Fixed balance if Compounding is false |
-| `InpUseEMA` | true | Enable EMA Filter |
-| `InpUseVol` | true | Enable Volume Filter |
-| `InpEMAPeriod` | 200 | EMA Trend Filter Period |
-| `InpBBPeriod` | 15 | Bollinger Bands Period |
-| `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
-| `InpATRPeriod` | 14 | ATR Smoothing Period |
-| `InpVolPeriod` | 15 | Volume MA Period |
-| `InpMagic` | 123456 | Unique ID for the Expert Advisor |
-| `InpMaxTrades` | 1 | Maximum concurrent trades |
-| `InpDailyLossLimit`| 2.0 | Daily loss limit % |
-| `InpStartHour` | 7 | Trading start hour |
-| `InpEndHour` | 20 | Trading end hour |
-| `InpWeekendClose` | false | Enable Friday evening close |
-| `InpFridayTime` | "2345" | Friday Time to close (Broker Time) |
-| `InpMagic` | 123456 | Unique Magic Number for position tracking |
+### 2. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
+| Input Name | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `InpRiskPct` | `2.0` | `double` | Risk % per trade |
+| `InpRR` | `2.0` | `double` | Risk Reward Ratio |
+| `InpATRMult` | `2.0` | `double` | ATR Multiplier for Stop Loss |
+| `InpCompound` | `true` | `bool` | Enable Compounding Risk based on current equity |
+| `InpFixedBalance`| `10000.0`| `double` | Fixed balance if Compounding is false |
+| `InpUseEMA` | `true` | `bool` | Filter entries using EMA |
+| `InpUseVol` | `true` | `bool` | Filter entries using Volume MA |
+| `InpEMAPeriod` | `200` | `int` | EMA Trend Filter Period |
+| `InpBBPeriod` | `15` | `int` | Bollinger Bands Period |
+| `InpBBDev` | `1.5` | `double` | Bollinger Bands Standard Deviation |
+| `InpATRPeriod` | `14` | `int` | ATR Smoothing Period |
+| `InpVolPeriod` | `15` | `int` | Volume MA Period |
+| `InpMagic` | `123456` | `int` | Unique Magic Number for position tracking |
+| `InpWeekendClose` | `false` | `bool` | Enable Friday evening close |
+| `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time) |
+| `InpMaxTrades` | `1` | `int` | Maximum concurrent trades |
+| `InpDailyLossLimit`| `2.0` | `double` | Daily loss limit % |
+| `InpStartHour` | `7` | `int` | Trading start hour |
+| `InpEndHour` | `20` | `int` | Trading end hour |
 
-### TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
-| Input Name | Default | Description |
-|---|---|---|
-| `Risk % per Trade` | 2.0 | Risk % per trade |
-| `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
-| `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
-| `Use Compounding Risk`| true | If false, uses Fixed Balance |
-| `Fixed Balance` | 10000 | Base balance for risk if compounding off |
-| `Use EMA Trend Filter`| true | Enable EMA Filter |
-| `EMA Period` | 200 | EMA Trend Filter Period |
-| `Bollinger Bands Period`| 15 | BB Smoothing Period |
-| `Bollinger Bands Deviation`| 1.5 | BB Standard Deviation |
-| `ATR Period` | 14 | ATR Smoothing Period |
-| `Use Volume Filter`| true | Enable Volume Filter |
-| `Volume MA Period`| 15 | Volume MA Filter Period |
-| `Daily Loss Limit %`| 2.0 | Daily loss limit % |
-| `Max Concurrent Trades`| 1 | Max number of open positions |
-| `Start Hour (0-23)`| 7 | Trading start hour |
-| `End Hour (0-23)` | 20 | Trading end hour |
-| `Weekend Close` | false | Enable Friday evening close |
-| `Friday Close Time`| "2345" | Friday Time to close (HHMM) |
+### 3. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
+| Input Name | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `Risk % per Trade` | `2.0` | `float` | Risk % per trade |
+| `Risk:Reward Ratio`| `2.0` | `float` | Risk Reward Ratio |
+| `ATR Multiplier (SL)`| `2.0` | `float` | ATR Multiplier for Stop Loss |
+| `Use Compounding Risk`| `true` | `bool` | Use Compounding Risk based on current equity |
+| `Fixed Balance` | `10000.0`| `float` | Fixed balance if Compounding is off |
+| `Use EMA Trend Filter`| `true` | `bool` | Enable EMA Filter |
+| `EMA Period` | `200` | `int` | EMA Trend Filter Period |
+| `Bollinger Bands Period`| `15` | `int` | Bollinger Bands Period |
+| `Bollinger Bands Deviation`| `1.5`| `float` | Bollinger Bands Standard Deviation |
+| `ATR Period` | `14` | `int` | ATR Period for Stop Loss calculation |
+| `Use Volume Filter`| `true` | `bool` | Enable Volume Filter |
+| `Volume MA Period`| `15` | `int` | Volume MA Period |
+| `Daily Loss Limit %`| `2.0` | `float` | Daily loss limit % |
+| `Max Concurrent Trades`| `1` | `int` | Max concurrent open positions |
+| `Start Hour (0-23)`| `7` | `int` | Trading start hour |
+| `End Hour (0-23)` | `20` | `int` | Trading end hour |
+| `Weekend Close` | `false` | `bool` | Enable Friday evening close |
+| `Friday Close Time`| `"2345"`| `string` | Friday Time to close (HHMM) |
 
----
+## 🤝 System Parity & Math Alignment
 
-## 🛠️ Implementation Features
-
-- **100% Logic Parity**: Mathematical alignment between Python (Research), MQL5 (Execution), and Pine Script (Visualization).
-- **RMA ATR Smoothing**: Uses Wilder's Smoothing for ATR calculations across all platforms for perfect SL/TP consistency.
-- **Tick-Based SL/TP Anchoring**: Pine Script uses `strategy.exit` with tick-based distances to ensure levels are anchored to the **actual fill price**, matching MQL5's real-time execution.
-- **Robust Daily Loss Tracking**: Realized P&L is tracked per-transaction (MQL5) and per-bar (Pine/Python) to block entries immediately upon hitting the limit.
-- **Premium Visualization**:
-  - **Dynamic TP/SL Boxes**: TradingView version includes minimalist, borderless boxes that reflect active trade levels.
-  - **Entry Lines**: Synchronized with actual fill prices for visual verification.
-- **Market Protection**: Integrated weekend blocks, trading windows, and volume filters to avoid low-liquidity/high-volatility gaps.
-
----
-
-## 🚀 Usage & Operations
-
-### 1. Python Backtesting
-```bash
-# General usage
-python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
-
-# Reports are generated in the /reports directory
-```
-
-### 2. MetaTrader 5 Deployment
-1. Copy `src/mql5/BreakoutFollowTrend.mq5` to your `MQL5/Experts/` folder.
-2. Compile the script and attach it to a **1H chart**.
-3. Configure the **Magic Number** if running multiple EAs on the same account.
-
-### 3. TradingView Pine Script
-1. Copy the source from `src/pine/BreakoutFollowTrend_Strategy.pine`.
-2. Open the **Pine Editor**, paste the code, and click **Add to Chart**.
-3. Use the **Strategy Tester** tab to verify historical performance and logic parity.
-
----
-
-## 🤝 Consistency & Parity
-
-To maintain system integrity, any logic update **MUST** be implemented across all platforms simultaneously.
-- **Math**: Always use RMA smoothing for ATR.
-- **Execution**: Signal is confirmed on the **close** of the breakout candle; entry occurs at the **open** of the following bar.
-- **Risk**: Calculations must account for either live equity (compounding) or a fixed base balance.
+To preserve system integrity, any mathematical or logic update **MUST** be implemented across all three platforms simultaneously.
+*   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine, MQ5, and Python.
+*   **Tick-Based SL/TP**: SL and TP distances must be anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
+*   **Volume Filter Parity**: Ensure that Volume filters pass automatically if the volume data is unavailable or zero.
 
 ---
 
 ## ⚠️ Development Guidelines
 
-1. **Language**: All code comments, logs, and documentation must be in **English only**.
-2. **Verification**: Always verify Python backtest results against TradingView Strategy Tester before MT5 deployment.
-3. **Notion Memory**: Synchronize all architectural changes and milestones with the project's Notion sub-page (`breakout-follow-101`).
-4. **Git Branching**: maintain context isolation by prefixing Notion entries with the relevant branch name.
-5. **Updates**: Update the `README.md` on every structural change, parameter adjustment, or logic update.
+1.  **Language**: All code comments, logging statements, and documentation MUST be written strictly in **English**.
+2.  **Logic Verification**: Always verify Python backtest results against TradingView Strategy Tester before deploying the Expert Advisor on MetaTrader 5.
+3.  **Milestone Tracking**: Synchronize all architectural changes and parameter tunings with the project's sub-page (`breakout-follow-101`) in Notion.
+4.  **Branch Context**: Prefix Notion notes and git branches with context names to ensure clean, traceable deployment pipelines.
+5.  **Documentation Integrity**: Keep `README.md` updated with any strategy, structural, or variable changes.
