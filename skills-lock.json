@@ -5,6 +5,62 @@
       "source": "jeremylongshore/claude-code-plugins-plus-skills",
       "sourceType": "github",
       "computedHash": "d3d31dfb5a2234936d56f9097f5f5636a0a2469b7a21ce1cfc2909f9cafbf699"
+    },
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "dispatching-parallel-agents": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "executing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "finishing-a-development-branch": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "receiving-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "requesting-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "subagent-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "using-git-worktrees": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "using-superpowers": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
+    },
+    "writing-skills": {
+      "source": "obra/superpowers",
+      "sourceType": "github"
     }
   }
 }
