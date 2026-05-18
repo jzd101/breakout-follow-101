@@ -103,6 +103,33 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 
 ---
 
+## 🛡️ Deep-Dive: Advanced Risk Controls
+
+The Breakout Follow Trend system stands out due to its active capital preservation safeguards, fully integrated and logically aligned across Python, MQL5, and Pine Script.
+
+### 1. Dynamic Compounding Risk & Position Sizing
+When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity (Pine Script/MT5 EA) or current capital (Python backtest) and the volatility-based Stop Loss distance.
+
+$$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{100} \right)$$
+$$\text{Position Size (Lots/Contracts)} = \frac{\text{Risk Amount}}{\text{ATR (14)} \times \text{ATR Multiplier}}$$
+
+*   **Compounding Enabled**: `Base Balance = Live Account Equity` (scales lot sizes up as account grows, scales down during drawdowns).
+*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance` (maintains fixed contract/lot sizes).
+
+### 2. Transactional Daily Loss Limit
+To protect against consecutive losses or unpredictable market black swan events, the system features an active **Daily Loss Limit**.
+*   **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
+*   **Threshold Blocking**: Once the total net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system **immediately suspends all entries**.
+*   **Automatic Reset**: The lockout automatically resets on the next server trading day.
+
+### 3. Weekend Liquidation Policy
+Holding open positions over the weekend exposes accounts to high-volatility broker gaps and spread expansions.
+*   When `Weekend Close` is enabled, the system monitors broker server time.
+*   On Friday evening at the specified cutoff time (default: `23:45`), the system **force-closes all active positions** and **blocks all new trade entries**.
+*   New orders are blocked until Monday morning at the designated starting hour.
+
+---
+
 ## ⚙️ Parameters & Configuration
 
 ### Python Backtest (`run_system.py`)
