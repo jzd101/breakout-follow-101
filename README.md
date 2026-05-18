@@ -78,15 +78,6 @@ If you want a **higher Win Rate** and a **larger Profit Factor** but with **fewe
 | | Weekend Close | **Unchecked** (false) | No forced Friday close before time window |
 | | Friday Close Time | **2345** | Weekly system cutoff |
 
-#### 📸 Settings Screenshots
-Here are the direct inputs from the TradingView strategy configuration panel:
-
-![Risk Management & Indicators Settings](assets/high_winrate_settings_1.png)
-*Figure 1: Risk Management & Indicators Settings*
-
-![Volume & Time Filters Settings](assets/high_winrate_settings_2.png)
-*Figure 2: Volume & Time Filters Settings*
-
 ---
 
 ## ⚙️ Parameters & Configuration
