@@ -54,6 +54,39 @@ The strategy is mathematically tuned for the following asset-timeframe combinati
 - **Trading Window**: System only opens new trades during specified hours (Default: 07:00 - 20:00).
 - **Weekend Policy**: Friday evening close (Default: 23:45) through Monday morning. Closes all positions and blocks new entries.
 
+### 🏆 High Win-Rate & High Precision Settings (Gold 15m)
+
+If you want a **higher Win Rate** and a **larger Profit Factor** but with **fewer, more accurate trades** (high-precision), it is highly recommended to trade using the following optimized settings on the **15m timeframe**. These settings were specifically tuned from the TradingView strategy configuration:
+
+| Parameter Category | Parameter Name | Optimized Setting | Purpose / Change from Default |
+|---|---|---|---|
+| **Risk Management** | Risk % per Trade | **1.0%** | Lower exposure per trade (Default: 2.0%) |
+| | Risk:Reward Ratio | **1.0** | Tighter 1:1 TP to significantly increase Win Rate (Default: 2.0) |
+| | ATR Multiplier (SL) | **1.5** | Tighter stop loss (Default: 2.0) |
+| | Max Concurrent Trades | **1** | Only 1 position open at a time |
+| | Use Compounding Risk | **Checked** (true) | Scale risk based on equity |
+| | Daily Loss Limit % | **2.0%** | Protect drawdown on consecutive losses |
+| **Indicators** | Use EMA Trend Filter | **Checked** (true) | Filter out counter-trend trades |
+| | EMA Period | **200** | Long-term trend reference |
+| | Bollinger Bands Period | **15** | Short-term volatility contraction/expansion |
+| | Bollinger Bands Deviation| **1.5** | Entry trigger sensitivity |
+| | ATR Period | **14** | Dynamic volatility measurement |
+| **Volume Filter** | Use Volume Filter | **Checked** (true) | Momentum confirmation |
+| | Volume MA Period | **15** | Average volume standard |
+| **Time Filters** | Start Hour (0-23) | **13** | **Shifted to 13:00** (Focuses on highly active session overlap, Default: 7:00) |
+| | End Hour (0-23) | **20** | Trading window ends at 20:00 |
+| | Weekend Close | **Unchecked** (false) | No forced Friday close before time window |
+| | Friday Close Time | **2345** | Weekly system cutoff |
+
+#### 📸 Settings Screenshots
+Here are the direct inputs from the TradingView strategy configuration panel:
+
+![Risk Management & Indicators Settings](assets/high_winrate_settings_1.png)
+*Figure 1: Risk Management & Indicators Settings*
+
+![Volume & Time Filters Settings](assets/high_winrate_settings_2.png)
+*Figure 2: Volume & Time Filters Settings*
+
 ---
 
 ## ⚙️ Parameters & Configuration
