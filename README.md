@@ -12,6 +12,44 @@ An automated, quantitative trading system based on the **Breakout Follow Trend**
 
 ---
 
+## 📋 Prerequisites & System Requirements
+
+Before executing or deploying any component of the Breakout Follow Trend system, ensure your environment meets the following conditions:
+
+*   **Python Research & Backtest**: Python `3.8` or higher installed, with standard scientific packages (`pandas`, `numpy`, `yfinance`, `pytz`).
+*   **TradingView Visualization**: Active TradingView account with access to the **Pine Editor** (v5).
+*   **MetaTrader 5 Execution**: MetaTrader 5 Terminal installed on a Windows system (or VPS) with active broker connection and Hedging account.
+
+---
+
+## 🚀 1-Minute Quick Start
+
+### 1. Python Backtest
+Instantly run historical simulations for Gold:
+```bash
+# Clone the repository
+git clone https://github.com/jzd101/breakout-follow-101.git
+cd breakout-follow-101
+
+# Run backtest with default Gold parameters
+python src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
+```
+> Reports and monthly stats breakdown will be auto-generated in the `reports/` folder.
+
+### 2. MetaTrader 5 Expert Advisor
+Deploy for automated real-time execution:
+1. Copy [BreakoutFollowTrend.mq5](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
+2. Compile the EA inside the MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **1H** or **15m** timeframe.
+3. Enable **Algo Trading** in your MT5 terminal.
+
+### 3. TradingView Pine Script
+Visualize entry signals and dynamic risk tools:
+1. Copy the full source code from [BreakoutFollowTrend_Strategy.pine](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/pine/BreakoutFollowTrend_Strategy.pine).
+2. In TradingView, open the **Pine Editor** tab, paste the code, and click **Save**.
+3. Click **Add to Chart** and open the **Strategy Tester** tab to inspect trade histories.
+
+---
+
 ## 📐 Core Logic & Strategy Rules
 
 ### 🚀 Optimized Assets & Timeframes
@@ -165,28 +203,6 @@ If you want a **higher Win Rate** and a **larger Profit Factor** but with **fewe
   - **Dynamic TP/SL Boxes**: TradingView version includes minimalist, borderless boxes that reflect active trade levels.
   - **Entry Lines**: Synchronized with actual fill prices for visual verification.
 - **Market Protection**: Integrated weekend blocks, trading windows, and volume filters to avoid low-liquidity/high-volatility gaps.
-
----
-
-## 🚀 Usage & Operations
-
-### 1. Python Backtesting
-```bash
-# General usage
-python3 src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
-
-# Reports are generated in the /reports directory
-```
-
-### 2. MetaTrader 5 Deployment
-1. Copy `src/mql5/BreakoutFollowTrend.mq5` to your `MQL5/Experts/` folder.
-2. Compile the script and attach it to a **1H chart**.
-3. Configure the **Magic Number** if running multiple EAs on the same account.
-
-### 3. TradingView Pine Script
-1. Copy the source from `src/pine/BreakoutFollowTrend_Strategy.pine`.
-2. Open the **Pine Editor**, paste the code, and click **Add to Chart**.
-3. Use the **Strategy Tester** tab to verify historical performance and logic parity.
 
 ---
 
