@@ -197,34 +197,19 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `Weekend Close` | `false` | `bool` | Enable Friday evening close |
 | `Friday Close Time`| `"2345"`| `string` | Friday Time to close (HHMM) |
 
----
+## 🤝 System Parity & Math Alignment
 
-## 🛠️ Implementation Features
-
-- **100% Logic Parity**: Mathematical alignment between Python (Research), MQL5 (Execution), and Pine Script (Visualization).
-- **RMA ATR Smoothing**: Uses Wilder's Smoothing for ATR calculations across all platforms for perfect SL/TP consistency.
-- **Tick-Based SL/TP Anchoring**: Pine Script uses `strategy.exit` with tick-based distances to ensure levels are anchored to the **actual fill price**, matching MQL5's real-time execution.
-- **Robust Daily Loss Tracking**: Realized P&L is tracked per-transaction (MQL5) and per-bar (Pine/Python) to block entries immediately upon hitting the limit.
-- **Premium Visualization**:
-  - **Dynamic TP/SL Boxes**: TradingView version includes minimalist, borderless boxes that reflect active trade levels.
-  - **Entry Lines**: Synchronized with actual fill prices for visual verification.
-- **Market Protection**: Integrated weekend blocks, trading windows, and volume filters to avoid low-liquidity/high-volatility gaps.
-
----
-
-## 🤝 Consistency & Parity
-
-To maintain system integrity, any logic update **MUST** be implemented across all platforms simultaneously.
-- **Math**: Always use RMA smoothing for ATR.
-- **Execution**: Signal is confirmed on the **close** of the breakout candle; entry occurs at the **open** of the following bar.
-- **Risk**: Calculations must account for either live equity (compounding) or a fixed base balance.
+To preserve system integrity, any mathematical or logic update **MUST** be implemented across all three platforms simultaneously.
+*   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine, MQ5, and Python.
+*   **Tick-Based SL/TP**: SL and TP distances must be anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
+*   **Volume Filter Parity**: Ensure that Volume filters pass automatically if the volume data is unavailable or zero.
 
 ---
 
 ## ⚠️ Development Guidelines
 
-1. **Language**: All code comments, logs, and documentation must be in **English only**.
-2. **Verification**: Always verify Python backtest results against TradingView Strategy Tester before MT5 deployment.
-3. **Notion Memory**: Synchronize all architectural changes and milestones with the project's Notion sub-page (`breakout-follow-101`).
-4. **Git Branching**: maintain context isolation by prefixing Notion entries with the relevant branch name.
-5. **Updates**: Update the `README.md` on every structural change, parameter adjustment, or logic update.
+1.  **Language**: All code comments, logging statements, and documentation MUST be written strictly in **English**.
+2.  **Logic Verification**: Always verify Python backtest results against TradingView Strategy Tester before deploying the Expert Advisor on MetaTrader 5.
+3.  **Milestone Tracking**: Synchronize all architectural changes and parameter tunings with the project's sub-page (`breakout-follow-101`) in Notion.
+4.  **Branch Context**: Prefix Notion notes and git branches with context names to ensure clean, traceable deployment pipelines.
+5.  **Documentation Integrity**: Keep `README.md` updated with any strategy, structural, or variable changes.
