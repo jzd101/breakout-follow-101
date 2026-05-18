@@ -52,74 +52,54 @@ Visualize entry signals and dynamic risk tools:
 
 ## 📐 Core Logic & Strategy Rules
 
-### 🚀 Optimized Assets & Timeframes
-The strategy is mathematically tuned for the following asset-timeframe combinations:
+The Breakout Follow Trend system relies on pure statistics and momentum confirmation, removing emotional variables from execution.
 
-| Asset | Timeframe | Recommendation | Volume MA |
-|---|---|---|---|
-| **Gold (XAUUSD)** | **1H** | Core optimization target | **15** |
-| **Ethereum (ETHUSD)** | **1H** | Altcoin optimization target | **20** |
-| **Ripple (XRPUSD)** | **4H** | Altcoin optimization target | **17** |
+### Technical Indicators & Settings
+| Indicator | Default Setting | Purpose | Formula / Standard |
+| :--- | :--- | :--- | :--- |
+| **EMA** | Period = 200 | Primary Trend Filter | Price > EMA 200 (Bullish), Price < EMA 200 (Bearish) |
+| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger | Volatility expansion bounds |
+| **Volume MA** | Period = 15 (SMA) | Momentum Filter | Prev volume > SMA 15 (Volume confirmation) |
+| **ATR** | Period = 14 | Dynamic SL/TP Base | Wilder's RMA Smoothing (RMA) |
 
-> [!TIP]
-> Use the Python backtest system to find optimal Volume MA periods for other assets before deployment.
+---
 
-### Technical Indicators
-| Indicator | Settings (Default) | Purpose |
-|---|---|---|
-| **EMA** | Period = 200 | Trend direction filter (Above = Bullish, Below = Bearish) |
-| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout signal trigger (Volatility expansion) |
-| **Volume MA** | Period = 15 (SMA) | Momentum confirmation (Volume > SMA 15) |
-| **ATR** | Period = 14, RMA (Wilder's) | Dynamic SL/TP calculation (ATR × Multiplier) |
+### 🟢 LONG (Buy Entry) Conditions
+All conditions must be confirmed on the **Close of Candle 1**:
+1. **Trend Filter**: Price is strictly **above** EMA 200 (`Close > EMA 200`).
+2. **BB Breakout**: Candle close is **greater than** the Upper Bollinger Band (`Close > Upper BB`).
+3. **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
+*Execution: Market BUY order opened at the open of the very next candle.*
 
-### Entry Conditions
+### 🔴 SHORT (Sell Entry) Conditions
+All conditions must be confirmed on the **Close of Candle 1**:
+1. **Trend Filter**: Price is strictly **below** EMA 200 (`Close < EMA 200`).
+2. **BB Breakout**: Candle close is **less than** the Lower Bollinger Band (`Close < Lower BB`).
+3. **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
+*Execution: Market SELL order opened at the open of the very next candle.*
 
-**🟢 LONG (Buy)**
-1. **Trend Filter**: Price is **above** EMA 200.
-2. **Breakout**: Candle **closes above** the Upper Bollinger Band.
-3. **Confirmation**: Candle volume is **greater than** the 15-period Volume MA.
-4. **Execution**: Market order at signal candle's close (Next bar open).
+---
 
-**🔴 SHORT (Sell)**
-1. **Trend Filter**: Price is **below** EMA 200.
-2. **Breakout**: Candle **closes below** the Lower Bollinger Band.
-3. **Confirmation**: Candle volume is **greater than** the 15-period Volume MA.
-4. **Execution**: Market order at signal candle's close (Next bar open).
+### 🏆 High Win-Rate & Precision Settings (Gold 15m Preset)
 
-### Exit & Risk Management
-- **Stop Loss (SL)**: `Entry Price ± (ATR × Multiplier)`. Default Multiplier: **2.0**.
-- **Take Profit (TP)**: `Entry Price ± (SL Distance × RR)`. Default RR: **2.0**.
-- **Risk Sizing**: 
-  - **Compounding**: Risk % calculated based on current account equity (Pine/MQ5) or live capital (Python).
-  - **Fixed Balance**: Risk % calculated based on a user-defined fixed balance.
-- **Max Concurrent Trades**: Configurable limit (Default: 1) to manage margin exposure.
-- **Daily Loss Limit**: Realized P&L tracked daily. Entries are blocked if the day's total realized loss exceeds the specified percentage (Default: 2.0%).
-- **Trading Window**: System only opens new trades during specified hours (Default: 07:00 - 20:00).
-- **Weekend Policy**: Friday evening close (Default: 23:45) through Monday morning. Closes all positions and blocks new entries.
+For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor** with **fewer, high-precision trades**, attach the system to a **15m chart** using these optimized settings:
 
-### 🏆 High Win-Rate & High Precision Settings (Gold 15m)
-
-If you want a **higher Win Rate** and a **larger Profit Factor** but with **fewer, more accurate trades** (high-precision), it is highly recommended to trade using the following optimized settings on the **15m timeframe**. These settings were specifically tuned from the TradingView strategy configuration:
-
-| Parameter Category | Parameter Name | Optimized Setting | Purpose / Change from Default |
-|---|---|---|---|
-| **Risk Management** | Risk % per Trade | **1.0%** | Lower exposure per trade (Default: 2.0%) |
-| | Risk:Reward Ratio | **1.0** | Tighter 1:1 TP to significantly increase Win Rate (Default: 2.0) |
-| | ATR Multiplier (SL) | **1.5** | Tighter stop loss (Default: 2.0) |
-| | Max Concurrent Trades | **1** | Only 1 position open at a time |
-| | Use Compounding Risk | **Checked** (true) | Scale risk based on equity |
-| | Daily Loss Limit % | **2.0%** | Protect drawdown on consecutive losses |
-| **Indicators** | Use EMA Trend Filter | **Checked** (true) | Filter out counter-trend trades |
-| | EMA Period | **200** | Long-term trend reference |
-| | Bollinger Bands Period | **15** | Short-term volatility contraction/expansion |
-| | Bollinger Bands Deviation| **1.5** | Entry trigger sensitivity |
-| | ATR Period | **14** | Dynamic volatility measurement |
-| **Volume Filter** | Use Volume Filter | **Checked** (true) | Momentum confirmation |
-| | Volume MA Period | **15** | Average volume standard |
-| **Time Filters** | Start Hour (0-23) | **13** | **Shifted to 13:00** (Focuses on highly active session overlap, Default: 7:00) |
-| | End Hour (0-23) | **20** | Trading window ends at 20:00 |
-| | Weekend Close | **Unchecked** (false) | No forced Friday close before time window |
-| | Friday Close Time | **2345** | Weekly system cutoff |
+| Category | Parameter | Gold 15m Setting | Default (1H) | Purpose / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Risk Management** | Risk % per Trade | **1.0%** | 2.0% | Halved risk exposure to reduce drawdowns |
+| | Risk:Reward Ratio | **1.0** | 2.0 | 1:1 TP to maximize high-probability fills |
+| | ATR Multiplier (SL) | **1.5** | 2.0 | Tighter dynamic stop loss |
+| | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
+| **Indicators** | EMA Filter | **Enabled** (true) | Enabled | Trend-following direction lock |
+| | EMA Period | **200** | 200 | Long-term trend reference |
+| | Bollinger Bands Period| **15** | 15 | Short-term volatility contraction range |
+| | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
+| **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
+| | Volume MA Period | **15** | 15 | Vol SMA baseline |
+| **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Focuses on highly active session overlap) |
+| | End Hour | **20** | 20 | Closes window at 20:00 (London/US active hours) |
+| | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
+| | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
 ---
 
