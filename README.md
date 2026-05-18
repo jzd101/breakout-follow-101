@@ -132,71 +132,70 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 
 ## ⚙️ Parameters & Configuration
 
-### Python Backtest (`run_system.py`)
-| Parameter | Default | Description |
-|---|---|---|
-| `--symbol` | (req) | Asset symbol, e.g. `XAUUSD`, `ETHUSD` |
-| `--timeframe` | `1h` | Data timeframe (e.g., `1h`, `15m`) |
-| `--period` | `1y` | Backtest history length (e.g. `1mo`, `1y`) |
-| `--capital` | `10000` | Initial starting capital |
-| `--risk` | `2.0` | Risk % per trade |
-| `--rr` | `2.0` | Risk:Reward ratio (e.g., `2.0` or `1:2`) |
-| `--atr-mult` | `2.0` | ATR multiplier for Stop Loss distance |
-| `--no-ema` | `False` | Disable EMA trend filter |
-| `--no-vol` | `False` | Disable Volume confirmation filter |
-| `--no-compound`| `False` | Disable compounding (use fixed balance) |
-| `--fixed-balance`| `10000`| Fixed balance for risk sizing when compounding is off |
-| `--max-trades` | `1` | Maximum number of concurrent open positions |
-| `--daily-loss-limit`| `2.0` | Daily loss limit % (0 = disabled) |
-| `--start-hour` | `7` | Trading start hour (0-23) |
-| `--end-hour` | `20` | Trading end hour (1-24) |
-| `--friday-close`| `None` | Friday close time (HH:MM) |
+### 1. Python Backtest CLI (`run_system.py`)
+| Parameter | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--symbol` | (Required) | `str` | Trading asset, e.g., `XAUUSD`, `ETHUSD` |
+| `--timeframe` | `1h` | `str` | Candle timeframe (`15m`, `1h`, `1d`) |
+| `--period` | `1y` | `str` | Historical data length (`1mo`, `1y`, etc.) |
+| `--capital` | `10000.0` | `float` | Starting account equity |
+| `--risk` | `2.0` | `float` | Risk % per trade |
+| `--rr` | `2.0` | `float` | Risk-to-Reward ratio |
+| `--atr-mult` | `2.0` | `float` | ATR Multiplier for Stop Loss |
+| `--no-ema` | `False` | `bool` | Disable the EMA 200 trend filter |
+| `--no-vol` | `False` | `bool` | Disable the Volume MA confirmation filter |
+| `--no-compound`| `False` | `bool` | Disable compounding (use fixed balance) |
+| `--fixed-balance`| `10000.0`| `float` | Sizing balance when compounding is disabled |
+| `--max-trades` | `1` | `int` | Maximum concurrent open positions |
+| `--daily-loss-limit`| `2.0` | `float` | Daily loss limit % (0.0 to disable) |
+| `--start-hour` | `7` | `int` | Trading start hour (0-23) |
+| `--end-hour` | `20` | `int` | Trading end hour (1-24) |
+| `--friday-close`| `None` | `str` | Friday evening cutoff time (HH:MM) |
 
-### MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
-| Input Name | Default | Description |
-|---|---|---|
-| `InpRiskPct` | 2.0 | Risk % per trade |
-| `InpRR` | 2.0 | Risk Reward Ratio |
-| `InpATRMult` | 2.0 | ATR Multiplier for Stop Loss |
-| `InpCompound` | true | Use Compounding Risk (of current balance) |
-| `InpFixedBalance`| 10000 | Fixed balance if Compounding is false |
-| `InpUseEMA` | true | Enable EMA Filter |
-| `InpUseVol` | true | Enable Volume Filter |
-| `InpEMAPeriod` | 200 | EMA Trend Filter Period |
-| `InpBBPeriod` | 15 | Bollinger Bands Period |
-| `InpBBDev` | 1.5 | Bollinger Bands Standard Deviation |
-| `InpATRPeriod` | 14 | ATR Smoothing Period |
-| `InpVolPeriod` | 15 | Volume MA Period |
-| `InpMagic` | 123456 | Unique ID for the Expert Advisor |
-| `InpMaxTrades` | 1 | Maximum concurrent trades |
-| `InpDailyLossLimit`| 2.0 | Daily loss limit % |
-| `InpStartHour` | 7 | Trading start hour |
-| `InpEndHour` | 20 | Trading end hour |
-| `InpWeekendClose` | false | Enable Friday evening close |
-| `InpFridayTime` | "2345" | Friday Time to close (Broker Time) |
-| `InpMagic` | 123456 | Unique Magic Number for position tracking |
+### 2. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
+| Input Name | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `InpRiskPct` | `2.0` | `double` | Risk % per trade |
+| `InpRR` | `2.0` | `double` | Risk Reward Ratio |
+| `InpATRMult` | `2.0` | `double` | ATR Multiplier for Stop Loss |
+| `InpCompound` | `true` | `bool` | Enable Compounding Risk based on current equity |
+| `InpFixedBalance`| `10000.0`| `double` | Fixed balance if Compounding is false |
+| `InpUseEMA` | `true` | `bool` | Filter entries using EMA |
+| `InpUseVol` | `true` | `bool` | Filter entries using Volume MA |
+| `InpEMAPeriod` | `200` | `int` | EMA Trend Filter Period |
+| `InpBBPeriod` | `15` | `int` | Bollinger Bands Period |
+| `InpBBDev` | `1.5` | `double` | Bollinger Bands Standard Deviation |
+| `InpATRPeriod` | `14` | `int` | ATR Smoothing Period |
+| `InpVolPeriod` | `15` | `int` | Volume MA Period |
+| `InpMagic` | `123456` | `int` | Unique Magic Number for position tracking |
+| `InpWeekendClose` | `false` | `bool` | Enable Friday evening close |
+| `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time) |
+| `InpMaxTrades` | `1` | `int` | Maximum concurrent trades |
+| `InpDailyLossLimit`| `2.0` | `double` | Daily loss limit % |
+| `InpStartHour` | `7` | `int` | Trading start hour |
+| `InpEndHour` | `20` | `int` | Trading end hour |
 
-### TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
-| Input Name | Default | Description |
-|---|---|---|
-| `Risk % per Trade` | 2.0 | Risk % per trade |
-| `Risk:Reward Ratio`| 2.0 | Risk Reward Ratio |
-| `ATR Multiplier (SL)`| 2.0 | ATR Multiplier for Stop Loss |
-| `Use Compounding Risk`| true | If false, uses Fixed Balance |
-| `Fixed Balance` | 10000 | Base balance for risk if compounding off |
-| `Use EMA Trend Filter`| true | Enable EMA Filter |
-| `EMA Period` | 200 | EMA Trend Filter Period |
-| `Bollinger Bands Period`| 15 | BB Smoothing Period |
-| `Bollinger Bands Deviation`| 1.5 | BB Standard Deviation |
-| `ATR Period` | 14 | ATR Smoothing Period |
-| `Use Volume Filter`| true | Enable Volume Filter |
-| `Volume MA Period`| 15 | Volume MA Filter Period |
-| `Daily Loss Limit %`| 2.0 | Daily loss limit % |
-| `Max Concurrent Trades`| 1 | Max number of open positions |
-| `Start Hour (0-23)`| 7 | Trading start hour |
-| `End Hour (0-23)` | 20 | Trading end hour |
-| `Weekend Close` | false | Enable Friday evening close |
-| `Friday Close Time`| "2345" | Friday Time to close (HHMM) |
+### 3. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
+| Input Name | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `Risk % per Trade` | `2.0` | `float` | Risk % per trade |
+| `Risk:Reward Ratio`| `2.0` | `float` | Risk Reward Ratio |
+| `ATR Multiplier (SL)`| `2.0` | `float` | ATR Multiplier for Stop Loss |
+| `Use Compounding Risk`| `true` | `bool` | Use Compounding Risk based on current equity |
+| `Fixed Balance` | `10000.0`| `float` | Fixed balance if Compounding is off |
+| `Use EMA Trend Filter`| `true` | `bool` | Enable EMA Filter |
+| `EMA Period` | `200` | `int` | EMA Trend Filter Period |
+| `Bollinger Bands Period`| `15` | `int` | Bollinger Bands Period |
+| `Bollinger Bands Deviation`| `1.5`| `float` | Bollinger Bands Standard Deviation |
+| `ATR Period` | `14` | `int` | ATR Period for Stop Loss calculation |
+| `Use Volume Filter`| `true` | `bool` | Enable Volume Filter |
+| `Volume MA Period`| `15` | `int` | Volume MA Period |
+| `Daily Loss Limit %`| `2.0` | `float` | Daily loss limit % |
+| `Max Concurrent Trades`| `1` | `int` | Max concurrent open positions |
+| `Start Hour (0-23)`| `7` | `int` | Trading start hour |
+| `End Hour (0-23)` | `20` | `int` | Trading end hour |
+| `Weekend Close` | `false` | `bool` | Enable Friday evening close |
+| `Friday Close Time`| `"2345"`| `string` | Friday Time to close (HHMM) |
 
 ---
 
