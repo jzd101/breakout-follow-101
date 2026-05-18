@@ -203,13 +203,3 @@ To preserve system integrity, any mathematical or logic update **MUST** be imple
 *   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine, MQ5, and Python.
 *   **Tick-Based SL/TP**: SL and TP distances must be anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
 *   **Volume Filter Parity**: Ensure that Volume filters pass automatically if the volume data is unavailable or zero.
-
----
-
-## ⚠️ Development Guidelines
-
-1.  **Language**: All code comments, logging statements, and documentation MUST be written strictly in **English**.
-2.  **Logic Verification**: Always verify Python backtest results against TradingView Strategy Tester before deploying the Expert Advisor on MetaTrader 5.
-3.  **Milestone Tracking**: Synchronize all architectural changes and parameter tunings with the project's sub-page (`breakout-follow-101`) in Notion.
-4.  **Branch Context**: Prefix Notion notes and git branches with context names to ensure clean, traceable deployment pipelines.
-5.  **Documentation Integrity**: Keep `README.md` updated with any strategy, structural, or variable changes.
