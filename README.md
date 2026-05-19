@@ -103,6 +103,29 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 
 ---
 
+### 🕒 Trading Time Calculation: TradingView (GMT+7) to MT5 (Broker Server Time)
+
+If your **TradingView** chart is configured to Thailand Time (GMT+7) with a trading window of **Start = 13** (13:00 / 1:00 PM) and **End = 20** (20:00 / 8:00 PM):
+
+When configuring the **MT5 EA (using typical Broker Server Time GMT+2 / GMT+3)**, you must calculate the input parameters based on the seasonal Daylight Saving Time (DST) shift:
+
+#### 1. ☀️ Summer Period (Daylight Saving Time - Summer DST: Late March to Late October)
+Broker server time is **4 hours behind** Thailand Time (Subtract 4 hours from GMT+7):
+*   **InpStartHour** = 13 - 4 = 9
+*   **InpEndHour** = 20 - 4 = 16
+*   *👉 During the summer period, set `InpStartHour = 9` and `InpEndHour = 16` in MT5.*
+
+#### 2. ❄️ Winter Period (Standard Time: Late October to Late March)
+Broker server time is **5 hours behind** Thailand Time (Subtract 5 hours from GMT+7):
+*   **InpStartHour** = 13 - 5 = 8
+*   **InpEndHour** = 20 - 5 = 15
+*   *👉 During the winter period, set `InpStartHour = 8` and `InpEndHour = 15` in MT5.*
+
+> [!NOTE]
+> Most major MT5 brokers automatically adjust their server time between GMT+2 (Winter) and GMT+3 (Summer) according to US/European Daylight Saving Time schedules.
+
+---
+
 ## 🛡️ Deep-Dive: Advanced Risk Controls
 
 The Breakout Follow Trend system stands out due to its active capital preservation safeguards, fully integrated and logically aligned across Python, MQL5, and Pine Script.
