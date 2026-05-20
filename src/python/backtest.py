@@ -35,7 +35,7 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
     trades = []
 
     # Daily Loss Limit tracking — base recalculated on each new day when compounding (matches MQ5)
-    daily_pnl = 0.0
+    daily_pnl_by_date = {}  # Map date.date() -> float
     current_trading_day = None
     init_base = capital if compound else fixed_balance
     max_daily_loss = init_base * (daily_loss_limit / 100)
@@ -74,7 +74,6 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         candle_day = current_date.date()
         if candle_day != current_trading_day:
             current_trading_day = candle_day
-            daily_pnl = 0.0
             day_base = capital if compound else fixed_balance
             max_daily_loss = day_base * (daily_loss_limit / 100)
         
@@ -87,50 +86,58 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
             if trade_pos['type'] == 'LONG':
                 if next_candle['Low'] <= trade_pos['sl']:
                     capital -= trade_pos['risk']
+                    exit_date = next_candle['Date']
                     trades.append({
-                        'Exit_Date': next_candle['Date'],
+                        'Exit_Date': exit_date,
                         'Type': 'LONG',
                         'Result': 'LOSS',
                         'Profit': -trade_pos['risk'],
                         'Capital': capital
                     })
-                    daily_pnl -= trade_pos['risk']
+                    exit_day = exit_date.date()
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) - trade_pos['risk']
                     exited = True
                 elif next_candle['High'] >= trade_pos['tp']:
                     profit = (trade_pos['risk'] * rr)
                     capital += profit
+                    exit_date = next_candle['Date']
                     trades.append({
-                        'Exit_Date': next_candle['Date'],
+                        'Exit_Date': exit_date,
                         'Type': 'LONG',
                         'Result': 'WIN',
                         'Profit': profit,
                         'Capital': capital
                     })
-                    daily_pnl += profit
+                    exit_day = exit_date.date()
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                     exited = True
             elif trade_pos['type'] == 'SHORT':
                 if next_candle['High'] >= trade_pos['sl']:
                     capital -= trade_pos['risk']
+                    exit_date = next_candle['Date']
                     trades.append({
-                        'Exit_Date': next_candle['Date'],
+                        'Exit_Date': exit_date,
                         'Type': 'SHORT',
                         'Result': 'LOSS',
                         'Profit': -trade_pos['risk'],
                         'Capital': capital
                     })
-                    daily_pnl -= trade_pos['risk']
+                    exit_day = exit_date.date()
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) - trade_pos['risk']
                     exited = True
                 elif next_candle['Low'] <= trade_pos['tp']:
                     profit = (trade_pos['risk'] * rr)
                     capital += profit
+                    exit_date = next_candle['Date']
                     trades.append({
-                        'Exit_Date': next_candle['Date'],
+                        'Exit_Date': exit_date,
                         'Type': 'SHORT',
                         'Result': 'WIN',
                         'Profit': profit,
                         'Capital': capital
                     })
-                    daily_pnl += profit
+                    exit_day = exit_date.date()
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                     exited = True
             
             # Weekend Exit (Force close)
@@ -143,6 +150,7 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                 
                 profit = reward_ratio * trade_pos['risk']
                 capital += profit
+                exit_day = current_date.date()
                 trades.append({
                     'Exit_Date': current_date,
                     'Type': trade_pos['type'],
@@ -151,7 +159,7 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                     'Capital': capital,
                     'Notes': 'Friday Close'
                 })
-                daily_pnl += profit
+                daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                 exited = True
             
             if not exited:
@@ -160,7 +168,8 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         active_trades = still_active
             
         # 2. Check Entry Conditions (Only if we have space for more trades, not weekend, daily loss limit not hit, and within trading hours)
-        daily_loss_hit = daily_loss_limit > 0 and daily_pnl <= -max_daily_loss
+        current_day_pnl = daily_pnl_by_date.get(candle_day, 0.0)
+        daily_loss_hit = daily_loss_limit > 0 and current_day_pnl <= -max_daily_loss
         
         # Time filter
         current_hour = current_date.hour
@@ -219,29 +228,30 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         if new_trade is not None:
             # Check SL/TP on the entry bar itself (same bar as next_candle's Open fill)
             exited_now = False
+            exit_day = next_candle['Date'].date()
             if new_trade['type'] == 'LONG':
                 if next_candle['Low'] <= new_trade['sl']:
                     capital -= new_trade['risk']
                     trades.append({'Exit_Date': next_candle['Date'], 'Type': 'LONG', 'Result': 'LOSS', 'Profit': -new_trade['risk'], 'Capital': capital})
-                    daily_pnl -= new_trade['risk']
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) - new_trade['risk']
                     exited_now = True
                 elif next_candle['High'] >= new_trade['tp']:
                     profit = new_trade['risk'] * rr
                     capital += profit
                     trades.append({'Exit_Date': next_candle['Date'], 'Type': 'LONG', 'Result': 'WIN', 'Profit': profit, 'Capital': capital})
-                    daily_pnl += profit
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                     exited_now = True
             else:
                 if next_candle['High'] >= new_trade['sl']:
                     capital -= new_trade['risk']
                     trades.append({'Exit_Date': next_candle['Date'], 'Type': 'SHORT', 'Result': 'LOSS', 'Profit': -new_trade['risk'], 'Capital': capital})
-                    daily_pnl -= new_trade['risk']
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) - new_trade['risk']
                     exited_now = True
                 elif next_candle['Low'] <= new_trade['tp']:
                     profit = new_trade['risk'] * rr
                     capital += profit
                     trades.append({'Exit_Date': next_candle['Date'], 'Type': 'SHORT', 'Result': 'WIN', 'Profit': profit, 'Capital': capital})
-                    daily_pnl += profit
+                    daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                     exited_now = True
 
             if not exited_now:
@@ -375,7 +385,16 @@ def generate_report(trades, params, output_file="report.txt"):
 
     ui += f"{CLR_C}╚" + "═" * (width + 2) + f"╝{CLR_0}\n"
     
-    print(ui)
+    try:
+        print(ui)
+    except UnicodeEncodeError:
+        import sys
+        try:
+            sys.stdout.buffer.write(ui.encode('utf-8'))
+            sys.stdout.flush()
+        except Exception:
+            # Fallback to standard print with ASCII replacement if everything fails
+            print(ui.encode('ascii', errors='replace').decode('ascii'))
     
     # Save Report to Text File (strip colors for clean text file)
     try:
