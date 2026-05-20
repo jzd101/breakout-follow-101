@@ -158,10 +158,10 @@ void OnTick()
    // LONG Condition
    if(ema_long && close1 > upperBB[0] && vol_condition)
      {
-      double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+      double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
       double slDist = atr_val * InpATRMult;
-      double slPrice = entryPrice - slDist;
-      double tpPrice = entryPrice + (slDist * InpRR);
+      double slPrice = NormalizeDouble(entryPrice - slDist, _Digits);
+      double tpPrice = NormalizeDouble(entryPrice + (slDist * InpRR), _Digits);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
@@ -174,10 +174,10 @@ void OnTick()
    // SHORT Condition
    else if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
-      double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+      double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       double slDist = atr_val * InpATRMult;
-      double slPrice = entryPrice + slDist;
-      double tpPrice = entryPrice - (slDist * InpRR);
+      double slPrice = NormalizeDouble(entryPrice + slDist, _Digits);
+      double tpPrice = NormalizeDouble(entryPrice - (slDist * InpRR), _Digits);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
