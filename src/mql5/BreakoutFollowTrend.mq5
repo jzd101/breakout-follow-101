@@ -94,27 +94,77 @@ void OnDeinit(const int reason)
   }
 
 //+------------------------------------------------------------------+
+//| Check if current server time is in the weekend block             |
+//+------------------------------------------------------------------+
+bool IsWeekendBlock()
+  {
+   if(!InpWeekendClose) return false;
+
+   MqlDateTime dt;
+   TimeToStruct(TimeTradeServer(), dt);
+   
+   // Parse Friday Time
+   string t = InpFridayTime;
+   StringTrimLeft(t);
+   StringTrimRight(t);
+   int sep = StringFind(t, ":");
+   int h = 0, m = 0;
+   if(sep != -1)
+     {
+      h = (int)StringToInteger(StringSubstr(t, 0, sep));
+      m = (int)StringToInteger(StringSubstr(t, sep + 1));
+     }
+   else
+     {
+      int val = (int)StringToInteger(t);
+      h = val / 100;
+      m = val % 100;
+     }
+   
+   int target_min = h * 60 + m;
+   int current_min = dt.hour * 60 + dt.min;
+   
+   bool is_friday_past = (dt.day_of_week == 5 && current_min >= target_min);
+   bool is_weekend = (dt.day_of_week == 6 || dt.day_of_week == 0);
+   bool is_monday_before = (dt.day_of_week == 1 && dt.hour < InpStartHour);
+   
+   return (is_friday_past || is_weekend || is_monday_before);
+  }
+
+//+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Check for Weekend Close
+   // Check for Weekend Close (force close active positions)
    CheckWeekendClose();
 
-   // Execute the rest only on new bar
-   static datetime last_time = 0;
+   // Block entries during the weekend close block
+   if(IsWeekendBlock()) return;
+
+   // Get current bar's start time
    datetime current_time = iTime(_Symbol, _Period, 0);
+   if(current_time == 0) return; // Time not ready, retry on next tick
+   
+   static datetime last_time = 0;
    if(current_time == last_time) return;
-   last_time = current_time;
    
    // Daily Loss Limit: Reset on new calendar day
    CheckDailyReset(TimeTradeServer());
 
    // Check if we have space for more trades
-   if(CountOpenPositions() >= InpMaxTrades) return;
+   if(CountOpenPositions() >= InpMaxTrades)
+     {
+      last_time = current_time;
+      return;
+     }
    
    // Check Daily Loss Limit
-   if(InpDailyLossLimit > 0 && g_dailyPnL <= -g_dailyLossMax) return;
+   if(InpDailyLossLimit > 0 && g_dailyPnL <= -g_dailyLossMax)
+     {
+      last_time = current_time;
+      return;
+     }
    
    // Check Trading Hours
    MqlDateTime dt_time;
@@ -125,7 +175,11 @@ void OnTick()
    else // Overnight window
       in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
       
-   if(!in_time_window) return;
+   if(!in_time_window)
+     {
+      last_time = current_time;
+      return;
+     }
    
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];
@@ -133,20 +187,21 @@ void OnTick()
    ArraySetAsSeries(upperBB, true);
    ArraySetAsSeries(lowerBB, true);
    
-   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return;
-   if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return;
-   if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return;
+   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return; // Do not update last_time; retry on next tick
+   if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return; // Do not update last_time; retry on next tick
+   if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return; // Do not update last_time; retry on next tick
    
    // Manual ATR (RMA/Wilder's) Calculation to match Python
-   // Python: df['ATR_14'] = series.ewm(alpha=1/length, min_periods=length, adjust=False).mean()
-   // Formula: ATR_t = (ATR_{t-1} * (N-1) + TR_t) / N
    double atr_val = CalculateRMA_ATR(InpATRPeriod);
-   if(atr_val <= 0) return;
+   if(atr_val <= 0) return; // Do not update last_time; retry on next tick
+
+   // Successfully fetched and calculated all data! Mark this bar as processed.
+   last_time = current_time;
 
    double close1 = iClose(_Symbol, _Period, 1);
    long vol1 = iVolume(_Symbol, _Period, 1);
    
-   // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(20).mean()
+   // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(15).mean()
    double vol_ma = 0;
    if(InpUseVol)
      {
@@ -361,42 +416,13 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void CheckWeekendClose()
   {
-   if(!InpWeekendClose) return;
-
-   MqlDateTime dt;
-   // TimeTradeServer() returns server time regardless of ticks (calculated from system time + offset)
-   TimeToStruct(TimeTradeServer(), dt);
-   
-   // Parse Friday Time
-   string t = InpFridayTime;
-   StringTrimLeft(t);
-   StringTrimRight(t);
-   int sep = StringFind(t, ":");
-   int h = 0, m = 0;
-   if(sep != -1)
-     {
-      h = (int)StringToInteger(StringSubstr(t, 0, sep));
-      m = (int)StringToInteger(StringSubstr(t, sep + 1));
-     }
-   else
-     {
-      int val = (int)StringToInteger(t);
-      h = val / 100;
-      m = val % 100;
-     }
-   
-   int target_min = h * 60 + m;
-   int current_min = dt.hour * 60 + dt.min;
-   
-   bool is_friday_past = (dt.day_of_week == 5 && current_min >= target_min);
-   bool is_weekend = (dt.day_of_week == 6 || dt.day_of_week == 0);
-   bool is_monday_before = (dt.day_of_week == 1 && dt.hour < InpStartHour);
-   
-   if(is_friday_past || is_weekend || is_monday_before)
+   if(IsWeekendBlock())
      {
       if(CountOpenPositions() > 0)
         {
          CloseAllPositions("Friday Close");
+         MqlDateTime dt;
+         TimeToStruct(TimeTradeServer(), dt);
          Print("Weekend Close Triggered (inclusive) at Day ", dt.day_of_week, " ", dt.hour, ":", dt.min, " (via Timer/ServerTime)");
         }
      }
