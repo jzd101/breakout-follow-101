@@ -38,6 +38,25 @@ int    g_currentMon = -1;
 int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
 
+
+//+------------------------------------------------------------------+
+//| Check and reset daily loss tracking on a new calendar day        |
+//+------------------------------------------------------------------+
+void CheckDailyReset(datetime time_to_check)
+  {
+   MqlDateTime dt;
+   TimeToStruct(time_to_check, dt);
+   if(dt.day != g_currentDay || dt.mon != g_currentMon || dt.year != g_currentYear)
+     {
+      g_currentDay = dt.day;
+      g_currentMon = dt.mon;
+      g_currentYear = dt.year;
+      g_dailyPnL = 0.0;
+      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
+      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+     }
+  }
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -56,6 +75,8 @@ int OnInit()
    // Calculate daily loss max from initial balance
    double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+   // Initialize daily tracking variables using the current server time
+   CheckDailyReset(TimeTradeServer());
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
      
@@ -87,18 +108,7 @@ void OnTick()
    last_time = current_time;
    
    // Daily Loss Limit: Reset on new calendar day
-   MqlDateTime dt_daily;
-   TimeToStruct(TimeTradeServer(), dt_daily);
-   if(dt_daily.day != g_currentDay || dt_daily.mon != g_currentMon || dt_daily.year != g_currentYear)
-     {
-      g_currentDay = dt_daily.day;
-      g_currentMon = dt_daily.mon;
-      g_currentYear = dt_daily.year;
-      g_dailyPnL = 0.0;
-      // Recalculate daily loss max with current equity if compounding (matches Pine strategy.equity)
-      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
-      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
-     }
+   CheckDailyReset(TimeTradeServer());
 
    // Check if we have space for more trades
    if(CountOpenPositions() >= InpMaxTrades) return;
@@ -207,9 +217,13 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
         {
          long dealMagic = HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
          ENUM_DEAL_ENTRY dealEntry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+         string dealSymbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
          
-         if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT)
+         if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT && dealSymbol == _Symbol)
            {
+            datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+            CheckDailyReset(dealTime);
+            
             double dealProfit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
             double dealSwap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
             double dealComm = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);

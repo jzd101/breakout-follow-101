@@ -79,6 +79,10 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         day_base = daily_starting_capital[candle_day] if compound else fixed_balance
         max_daily_loss = day_base * (daily_loss_limit / 100)
         
+        # Capture daily loss limit status BEFORE new bar's exit evaluations to avoid lookahead/concurrency bias
+        current_day_pnl = daily_pnl_by_date.get(candle_day, 0.0)
+        daily_loss_hit = daily_loss_limit > 0 and current_day_pnl <= -max_daily_loss
+        
         # 1. Check for exits on all active trades
         still_active = []
         for trade_pos in active_trades:
@@ -180,8 +184,6 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         active_trades = still_active
             
         # 2. Check Entry Conditions (Only if we have space for more trades, not weekend, daily loss limit not hit, and within trading hours)
-        current_day_pnl = daily_pnl_by_date.get(candle_day, 0.0)
-        daily_loss_hit = daily_loss_limit > 0 and current_day_pnl <= -max_daily_loss
         
         # Time filter
         current_hour = current_date.hour
@@ -301,7 +303,7 @@ def generate_report(trades, params, output_file="report.txt"):
     df_trades.set_index('Exit_Date', inplace=True)
     
     # Calculate Monthly Stats
-    df_trades['Month_Period'] = df_trades.index.to_period('M')
+    df_trades['Month_Period'] = (df_trades.index.tz_localize(None) if df_trades.index.tz is not None else df_trades.index).to_period('M')
     monthly_groups = df_trades.groupby('Month_Period')
     
     monthly_data = []
