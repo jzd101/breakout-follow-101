@@ -24,6 +24,8 @@ def main():
     parser.add_argument('--end-hour', type=int, default=24, help='Trading end hour (1-24, default: 24)')
     parser.add_argument('--friday-close', type=str, default=None, help='Friday close time (HH:MM, default: None)')
     parser.add_argument('--input-tz', type=str, default=None, help='Timezone of the input start/end hours (e.g., America/New_York, Asia/Bangkok, UTC). If None, hours are assumed to match the data timezone.')
+    parser.add_argument('--bb-period', type=int, default=15, help='Bollinger Bands Period (default: 15)')
+    parser.add_argument('--bb-dev', type=float, default=1.5, help='Bollinger Bands Deviation (default: 1.5)')
     
     args = parser.parse_args()
     
@@ -54,7 +56,7 @@ def main():
         
     # 2. Backtest
     print("Calculating indicators...")
-    df = calculate_indicators(df)
+    df = calculate_indicators(df, bb_period=args.bb_period, bb_std=args.bb_dev)
     
     # Adjust hours for timezone
     adj_start_hour, adj_end_hour = adjust_hours_for_timezone(
@@ -81,7 +83,9 @@ def main():
         'start_hour': adj_start_hour,
         'end_hour': adj_end_hour,
         'friday_close_time': args.friday_close,
-        'timezone': tz_name
+        'timezone': tz_name,
+        'bb_period': args.bb_period,
+        'bb_dev': args.bb_dev
     }
     generate_report(trades, params, report_txt)
 

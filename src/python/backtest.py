@@ -2,15 +2,15 @@ import pandas as pd
 import numpy as np
 import os
 
-def calculate_indicators(df):
+def calculate_indicators(df, bb_period=15, bb_std=1.5):
     # EMA 200
     df['EMA_200'] = df['Close'].ewm(span=200, adjust=False).mean()
     
-    # Bollinger Bands 15, 2
-    df['SMA_15'] = df['Close'].rolling(window=15).mean()
-    df['STD_15'] = df['Close'].rolling(window=15).std(ddof=0)  # population std to match MT5/TradingView
-    df['Upper_BB'] = df['SMA_15'] + 1.5 * df['STD_15']
-    df['Lower_BB'] = df['SMA_15'] - 1.5 * df['STD_15']
+    # Bollinger Bands
+    df['SMA_15'] = df['Close'].rolling(window=bb_period).mean()
+    df['STD_15'] = df['Close'].rolling(window=bb_period).std(ddof=0)  # population std to match MT5/TradingView
+    df['Upper_BB'] = df['SMA_15'] + bb_std * df['STD_15']
+    df['Lower_BB'] = df['SMA_15'] - bb_std * df['STD_15']
     
     # Volume MA 15
     df['Vol_MA'] = df['Volume'].rolling(window=15).mean()
@@ -357,6 +357,7 @@ def generate_report(trades, params, output_file="report.txt"):
     ui += box_line(f"{CLR_B}[ SYSTEM SETTINGS ]{CLR_0}")
     ui += box_line(f" {CLR_C}▶{CLR_0} Symbol          : {CLR_Y}{params.get('symbol', 'Unknown')}{CLR_0}")
     ui += box_line(f" {CLR_C}▶{CLR_0} Timeframe       : {params.get('timeframe', 'Unknown')}")
+    ui += box_line(f" {CLR_C}▶{CLR_0} BB Period/Dev    : {params.get('bb_period', 15)} / {params.get('bb_dev', 1.5)}")
     ui += box_line(f" {CLR_C}▶{CLR_0} Risk Per Trade  : {CLR_Y}{params.get('risk', 0.0)}%{CLR_0}")
     ui += box_line(f" {CLR_C}▶{CLR_0} Risk:Reward     : 1:{params.get('rr', 2.0)}")
     ui += box_line(f" {CLR_C}▶{CLR_0} Risk Mode       : {CLR_M}{'Compounding' if params.get('compound', True) else 'Fixed (Initial Cap)'}{CLR_0}")
@@ -429,27 +430,31 @@ def adjust_hours_for_timezone(start_hour, end_hour, input_tz_str, data_tz_str):
     """
     if not input_tz_str or not data_tz_str or input_tz_str.lower() == data_tz_str.lower():
         return start_hour, end_hour
+        
+    # If the duration covers the entire 24 hours, return full day window directly
+    if (end_hour - start_hour) % 24 == 0 and end_hour != start_hour:
+        return 0, 24
     
     import pytz
-    from datetime import datetime
+    from datetime import datetime, timedelta
     
     try:
-        # ใช้เวลาของวันนี้เป็นตัวอ้างอิงเพื่อคำนวณส่วนต่าง offset
         input_tz = pytz.timezone(input_tz_str)
         data_tz = pytz.timezone(data_tz_str)
         
-        ref_dt = datetime.now()
+        # Use a safe reference date at midnight
+        ref_dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # กำหนดชั่วโมงตามโซนเวลาต้นทาง (Input Timezone)
-        dt_input_start = input_tz.localize(ref_dt.replace(hour=start_hour, minute=0, second=0, microsecond=0))
-        dt_input_end = input_tz.localize(ref_dt.replace(hour=end_hour % 24, minute=0, second=0, microsecond=0))
+        # Localize base date and add hour offsets via timedelta
+        dt_input_start = input_tz.localize(ref_dt) + timedelta(hours=start_hour)
+        dt_input_end = input_tz.localize(ref_dt) + timedelta(hours=end_hour)
         
-        # แปลงเวลาไปเป็นโซนเวลาของชุดข้อมูล (Data Timezone)
+        # Convert to data timezone
         dt_data_start = dt_input_start.astimezone(data_tz)
         dt_data_end = dt_input_end.astimezone(data_tz)
         
         adj_start = dt_data_start.hour
-        adj_end = dt_data_end.hour if end_hour != 24 else 24
+        adj_end = dt_data_end.hour
         
         print(f"\n[Timezone Matcher] Converting trading window from {input_tz_str} ({start_hour:02d}:00 - {end_hour:02d}:00)")
         print(f"               -> Data Timezone {data_tz_str} ({adj_start:02d}:00 - {adj_end:02d}:00)")
