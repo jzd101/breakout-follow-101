@@ -36,9 +36,7 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
 
     # Daily Loss Limit tracking — base recalculated on each new day when compounding (matches MQ5)
     daily_pnl_by_date = {}  # Map date.date() -> float
-    current_trading_day = None
-    init_base = capital if compound else fixed_balance
-    max_daily_loss = init_base * (daily_loss_limit / 100)
+    daily_starting_capital = {}  # Map date.date() -> float
     
     # Check if volume data exists
     has_volume = df['Volume'].max() > 0
@@ -54,6 +52,9 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         next_candle = df.iloc[i+1]
         current_date = current_candle['Date']
         next_date = next_candle['Date']
+
+        # Capture block status BEFORE exits on next candle are processed to avoid lookahead/concurrency bias
+        entry_blocked_by_max_trades = len(active_trades) >= max_trades
 
         # Friday Time Parsing
         is_friday_close = False
@@ -72,10 +73,11 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         
         # Daily Loss Limit: Reset daily P&L on new calendar day
         candle_day = current_date.date()
-        if candle_day != current_trading_day:
-            current_trading_day = candle_day
-            day_base = capital if compound else fixed_balance
-            max_daily_loss = day_base * (daily_loss_limit / 100)
+        if candle_day not in daily_starting_capital:
+            daily_starting_capital[candle_day] = capital
+            
+        day_base = daily_starting_capital[candle_day] if compound else fixed_balance
+        max_daily_loss = day_base * (daily_loss_limit / 100)
         
         # 1. Check for exits on all active trades
         still_active = []
@@ -85,8 +87,11 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
             # Normal Exit (SL/TP) on next candle
             if trade_pos['type'] == 'LONG':
                 if next_candle['Low'] <= trade_pos['sl']:
-                    capital -= trade_pos['risk']
                     exit_date = next_candle['Date']
+                    exit_day = exit_date.date()
+                    if exit_day not in daily_starting_capital:
+                        daily_starting_capital[exit_day] = capital
+                    capital -= trade_pos['risk']
                     trades.append({
                         'Exit_Date': exit_date,
                         'Type': 'LONG',
@@ -94,13 +99,15 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                         'Profit': -trade_pos['risk'],
                         'Capital': capital
                     })
-                    exit_day = exit_date.date()
                     daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) - trade_pos['risk']
                     exited = True
                 elif next_candle['High'] >= trade_pos['tp']:
                     profit = (trade_pos['risk'] * rr)
-                    capital += profit
                     exit_date = next_candle['Date']
+                    exit_day = exit_date.date()
+                    if exit_day not in daily_starting_capital:
+                        daily_starting_capital[exit_day] = capital
+                    capital += profit
                     trades.append({
                         'Exit_Date': exit_date,
                         'Type': 'LONG',
@@ -108,13 +115,15 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                         'Profit': profit,
                         'Capital': capital
                     })
-                    exit_day = exit_date.date()
                     daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                     exited = True
             elif trade_pos['type'] == 'SHORT':
                 if next_candle['High'] >= trade_pos['sl']:
-                    capital -= trade_pos['risk']
                     exit_date = next_candle['Date']
+                    exit_day = exit_date.date()
+                    if exit_day not in daily_starting_capital:
+                        daily_starting_capital[exit_day] = capital
+                    capital -= trade_pos['risk']
                     trades.append({
                         'Exit_Date': exit_date,
                         'Type': 'SHORT',
@@ -122,13 +131,15 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                         'Profit': -trade_pos['risk'],
                         'Capital': capital
                     })
-                    exit_day = exit_date.date()
                     daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) - trade_pos['risk']
                     exited = True
                 elif next_candle['Low'] <= trade_pos['tp']:
                     profit = (trade_pos['risk'] * rr)
-                    capital += profit
                     exit_date = next_candle['Date']
+                    exit_day = exit_date.date()
+                    if exit_day not in daily_starting_capital:
+                        daily_starting_capital[exit_day] = capital
+                    capital += profit
                     trades.append({
                         'Exit_Date': exit_date,
                         'Type': 'SHORT',
@@ -136,7 +147,6 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                         'Profit': profit,
                         'Capital': capital
                     })
-                    exit_day = exit_date.date()
                     daily_pnl_by_date[exit_day] = daily_pnl_by_date.get(exit_day, 0.0) + profit
                     exited = True
             
@@ -149,8 +159,10 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                     reward_ratio = (trade_pos['entry'] - exit_price) / (trade_pos['sl'] - trade_pos['entry']) if trade_pos['entry'] != trade_pos['sl'] else 0
                 
                 profit = reward_ratio * trade_pos['risk']
-                capital += profit
                 exit_day = current_date.date()
+                if exit_day not in daily_starting_capital:
+                    daily_starting_capital[exit_day] = capital
+                capital += profit
                 trades.append({
                     'Exit_Date': current_date,
                     'Type': trade_pos['type'],
@@ -179,7 +191,6 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         else: # Overnight window (e.g. 22:00 to 04:00)
             in_time_window = current_hour >= start_hour or current_hour < end_hour
 
-        # 2. Check Entry Conditions
         # Block entries during weekend (Friday after close until Monday start)
         is_friday_block = False
         if friday_close_time and friday_close_time.lower() != 'none':
@@ -191,7 +202,7 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
                            is_friday_block or
                            (current_date.weekday() == 0 and current_date.hour < start_hour))
 
-        if len(active_trades) >= max_trades or is_market_gap or is_weekend_block or daily_loss_hit or not in_time_window:
+        if entry_blocked_by_max_trades or is_market_gap or is_weekend_block or daily_loss_hit or not in_time_window:
             continue
             
         close = current_candle['Close']
@@ -229,6 +240,9 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
             # Check SL/TP on the entry bar itself (same bar as next_candle's Open fill)
             exited_now = False
             exit_day = next_candle['Date'].date()
+            if exit_day not in daily_starting_capital:
+                daily_starting_capital[exit_day] = capital
+                
             if new_trade['type'] == 'LONG':
                 if next_candle['Low'] <= new_trade['sl']:
                     capital -= new_trade['risk']
@@ -407,3 +421,39 @@ def generate_report(trades, params, output_file="report.txt"):
     
     # Remove detailed trades CSV save
 
+
+def adjust_hours_for_timezone(start_hour, end_hour, input_tz_str, data_tz_str):
+    """
+    แปลงชั่วโมงเทรด (start/end) จากโซนเวลาของโบรกเกอร์/ผู้ใช้งาน (input_tz_str)
+    ให้ตรงตามเวลาที่อยู่ในชุดข้อมูลย้อนหลัง (data_tz_str เช่น America/New_York หรือ UTC)
+    """
+    if not input_tz_str or not data_tz_str or input_tz_str.lower() == data_tz_str.lower():
+        return start_hour, end_hour
+    
+    import pytz
+    from datetime import datetime
+    
+    try:
+        # ใช้เวลาของวันนี้เป็นตัวอ้างอิงเพื่อคำนวณส่วนต่าง offset
+        input_tz = pytz.timezone(input_tz_str)
+        data_tz = pytz.timezone(data_tz_str)
+        
+        ref_dt = datetime.now()
+        
+        # กำหนดชั่วโมงตามโซนเวลาต้นทาง (Input Timezone)
+        dt_input_start = input_tz.localize(ref_dt.replace(hour=start_hour, minute=0, second=0, microsecond=0))
+        dt_input_end = input_tz.localize(ref_dt.replace(hour=end_hour % 24, minute=0, second=0, microsecond=0))
+        
+        # แปลงเวลาไปเป็นโซนเวลาของชุดข้อมูล (Data Timezone)
+        dt_data_start = dt_input_start.astimezone(data_tz)
+        dt_data_end = dt_input_end.astimezone(data_tz)
+        
+        adj_start = dt_data_start.hour
+        adj_end = dt_data_end.hour if end_hour != 24 else 24
+        
+        print(f"\n[Timezone Matcher] Converting trading window from {input_tz_str} ({start_hour:02d}:00 - {end_hour:02d}:00)")
+        print(f"               -> Data Timezone {data_tz_str} ({adj_start:02d}:00 - {adj_end:02d}:00)")
+        return adj_start, adj_end
+    except Exception as e:
+        print(f"Warning: Timezone conversion failed ({e}). Using original hours.")
+        return start_hour, end_hour

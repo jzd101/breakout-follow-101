@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 from download_data import download_data
-from backtest import calculate_indicators, run_backtest, generate_report
+from backtest import calculate_indicators, run_backtest, generate_report, adjust_hours_for_timezone
 import pandas as pd
 
 def main():
@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--start-hour', type=int, default=11, help='Trading start hour (0-23, default: 11)')
     parser.add_argument('--end-hour', type=int, default=24, help='Trading end hour (1-24, default: 24)')
     parser.add_argument('--friday-close', type=str, default=None, help='Friday close time (HH:MM, default: None)')
+    parser.add_argument('--input-tz', type=str, default=None, help='Timezone of the input start/end hours (e.g., America/New_York, Asia/Bangkok, UTC). If None, hours are assumed to match the data timezone.')
     
     args = parser.parse_args()
     
@@ -55,10 +56,18 @@ def main():
     print("Calculating indicators...")
     df = calculate_indicators(df)
     
+    # Adjust hours for timezone
+    adj_start_hour, adj_end_hour = adjust_hours_for_timezone(
+        args.start_hour, 
+        args.end_hour, 
+        args.input_tz, 
+        tz_name
+    )
+    
     compound = not args.no_compound
     
     print(f"Running backtest with Initial Capital: ${args.capital}, Risk: {args.risk}%, RR: 1:{rr_val}, ATR Mult: {args.atr_mult}, Compound: {compound}...")
-    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, args.start_hour, args.end_hour, args.friday_close, fixed_balance=args.fixed_balance)
+    trades, final_capital = run_backtest(df, args.capital, args.risk, rr_val, not args.no_ema, not args.no_vol, args.atr_mult, compound, args.max_trades, args.daily_loss_limit, adj_start_hour, adj_end_hour, args.friday_close, fixed_balance=args.fixed_balance)
     
     print("Generating report...")
     params = {
@@ -69,8 +78,8 @@ def main():
         'rr': rr_val,
         'compound': compound,
         'daily_loss_limit': args.daily_loss_limit,
-        'start_hour': args.start_hour,
-        'end_hour': args.end_hour,
+        'start_hour': adj_start_hour,
+        'end_hour': adj_end_hour,
         'friday_close_time': args.friday_close,
         'timezone': tz_name
     }
