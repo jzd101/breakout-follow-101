@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
-def calculate_indicators(df, bb_period=15, bb_std=1.5):
+def calculate_indicators(df, bb_period=15, bb_std=1.5, vol_period=15):
     # EMA 200
     df['EMA_200'] = df['Close'].ewm(span=200, adjust=False).mean()
     
@@ -13,7 +13,7 @@ def calculate_indicators(df, bb_period=15, bb_std=1.5):
     df['Lower_BB'] = df['SMA_15'] - bb_std * df['STD_15']
     
     # Volume MA 15
-    df['Vol_MA'] = df['Volume'].rolling(window=15).mean()
+    df['Vol_MA'] = df['Volume'].rolling(window=vol_period).mean()
     
     # ATR 14 (RMA smoothing like TradingView)
     df['Prev_Close'] = df['Close'].shift(1)
@@ -215,6 +215,10 @@ def run_backtest(df, initial_capital=10000, risk_pct=2.0, rr=2.0, use_ema=True, 
         vol_ma = current_candle['Vol_MA']
         atr = current_candle['ATR_14']
         
+        # Skip entry if any indicator value is NaN or ATR is zero/negative
+        if pd.isna(atr) or atr <= 0 or pd.isna(ema) or pd.isna(upper_bb) or pd.isna(lower_bb):
+            continue
+        
         # EMA Filter
         ema_long_cond = close > ema if use_ema else True
         ema_short_cond = close < ema if use_ema else True
@@ -415,7 +419,9 @@ def generate_report(trades, params, output_file="report.txt"):
     
     # Save Report to Text File (strip colors for clean text file)
     try:
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        out_dir = os.path.dirname(output_file)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(strip_ansi(ui))
         print(f"Report saved to: {output_file}")

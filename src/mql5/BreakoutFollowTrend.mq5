@@ -37,6 +37,7 @@ int    g_currentDay = -1;
 int    g_currentMon = -1;
 int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
+bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 
 
 //+------------------------------------------------------------------+
@@ -79,6 +80,8 @@ int OnInit()
    CheckDailyReset(TimeTradeServer());
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
+   // Flag static last_time in OnTick to reset so we don't miss the first bar after re-init
+   g_resetLastTime = true;
      
    return(INIT_SUCCEEDED);
   }
@@ -147,6 +150,11 @@ void OnTick()
    if(current_time == 0) return; // Time not ready, retry on next tick
    
    static datetime last_time = 0;
+   if(g_resetLastTime)
+     {
+      last_time = 0;
+      g_resetLastTime = false;
+     }
    if(current_time == last_time) return;
    
    // Daily Loss Limit: Reset on new calendar day
@@ -298,7 +306,9 @@ double CalculateRMA_ATR(int period)
    
    // Use a large stabilization window so RMA converges to match Python's full-dataset calc.
    // Python processes all bars from index 0; we simulate by using max available history.
-   int bars_to_calculate = MathMin(period * 50, iBars(_Symbol, _Period) - 2);
+   int totalBars = iBars(_Symbol, _Period);
+   if(totalBars <= period + 1) return -1; // Not enough bars loaded yet
+   int bars_to_calculate = MathMin(period * 50, totalBars - 2);
    if(bars_to_calculate < period * 2) return -1; // Not enough history
 
    double atr = 0;
@@ -389,6 +399,8 @@ double CalculateLotSize(double sl_distance)
    double points = sl_distance / tickSize;
    double valuePerLot = points * tickValue;
    
+   if(valuePerLot <= 0) return 0.0;
+   
    double lot = riskAmount / valuePerLot;
    
    // Normalize lot size
@@ -396,6 +408,8 @@ double CalculateLotSize(double sl_distance)
    double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
    double stepLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
    
+   if(stepLot <= 0) stepLot = minLot; // Prevent division by zero
+    
    lot = MathFloor(lot / stepLot) * stepLot;
    if(lot < minLot) lot = minLot;
    if(lot > maxLot) lot = maxLot;

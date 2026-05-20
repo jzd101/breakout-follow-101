@@ -33,7 +33,7 @@ def main():
     rr_str = args.rr
     if ':' in rr_str:
         parts = rr_str.split(':')
-        if len(parts) == 2:
+        if len(parts) == 2 and float(parts[0]) != 0:
             rr_val = float(parts[1]) / float(parts[0])
         else:
             rr_val = float(rr_str)

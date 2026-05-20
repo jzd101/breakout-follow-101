@@ -103,6 +103,12 @@ def download_data(symbol, timeframe, period_str):
             
         # Select relevant columns
         cols = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+        missing_cols = [c for c in cols if c not in data.columns]
+        if missing_cols:
+            print(f"Warning: Missing columns {missing_cols} in downloaded data.")
+            # Add missing columns with zeros (e.g., Volume may be absent for some instruments)
+            for c in missing_cols:
+                data[c] = 0
         data = data[cols]
         
         print(f"Data downloaded successfully. Rows: {len(data)} (Timezone: {tz_name})")
