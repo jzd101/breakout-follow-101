@@ -34,6 +34,8 @@ CTrade trade;
 // Daily Loss Limit tracking
 double g_dailyPnL = 0.0;
 int    g_currentDay = -1;
+int    g_currentMon = -1;
+int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
 
 //+------------------------------------------------------------------+
@@ -87,9 +89,11 @@ void OnTick()
    // Daily Loss Limit: Reset on new calendar day
    MqlDateTime dt_daily;
    TimeToStruct(TimeTradeServer(), dt_daily);
-   if(dt_daily.day != g_currentDay)
+   if(dt_daily.day != g_currentDay || dt_daily.mon != g_currentMon || dt_daily.year != g_currentYear)
      {
       g_currentDay = dt_daily.day;
+      g_currentMon = dt_daily.mon;
+      g_currentYear = dt_daily.year;
       g_dailyPnL = 0.0;
       // Recalculate daily loss max with current equity if compounding (matches Pine strategy.equity)
       double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
@@ -376,7 +380,7 @@ void CheckWeekendClose()
    
    if(is_friday_past || is_weekend || is_monday_before)
      {
-      if(PositionsTotal() > 0)
+      if(CountOpenPositions() > 0)
         {
          CloseAllPositions("Friday Close");
          Print("Weekend Close Triggered (inclusive) at Day ", dt.day_of_week, " ", dt.hour, ":", dt.min, " (via Timer/ServerTime)");
