@@ -96,8 +96,8 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 | | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
-| **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Focuses on highly active session overlap) |
-| | End Hour | **20** | 20 | Closes window at 20:00 (London/US active hours) |
+| **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Golden time window to achieve the highest Profit Factor) |
+| | End Hour | **20** | 20 | Closes window at 20:00 (Golden time window to achieve the highest Profit Factor) |
 | | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
 | | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
