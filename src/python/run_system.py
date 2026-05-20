@@ -20,8 +20,8 @@ def main():
     parser.add_argument('--fixed-balance', type=float, default=10000.0, help='Fixed balance for risk sizing when compounding is disabled (default: 10000)')
     parser.add_argument('--max-trades', type=int, default=1, help='Maximum concurrent trades (default: 1)')
     parser.add_argument('--daily-loss-limit', type=float, default=2.0, help='Daily loss limit as %% of initial capital. 0=disabled (default: 2.0)')
-    parser.add_argument('--start-hour', type=int, default=7, help='Trading start hour (0-23, default: 7)')
-    parser.add_argument('--end-hour', type=int, default=20, help='Trading end hour (1-24, default: 20)')
+    parser.add_argument('--start-hour', type=int, default=11, help='Trading start hour (0-23, default: 11)')
+    parser.add_argument('--end-hour', type=int, default=24, help='Trading end hour (1-24, default: 24)')
     parser.add_argument('--friday-close', type=str, default=None, help='Friday close time (HH:MM, default: None)')
     
     args = parser.parse_args()

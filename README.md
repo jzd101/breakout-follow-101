@@ -96,8 +96,8 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 | | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
-| **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Focuses on highly active session overlap) |
-| | End Hour | **20** | 20 | Closes window at 20:00 (London/US active hours) |
+| **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Golden time window to achieve the highest Profit Factor) |
+| | End Hour | **20** | 20 | Closes window at 20:00 (Golden time window to achieve the highest Profit Factor) |
 | | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
 | | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
@@ -179,8 +179,8 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `--fixed-balance`| `10000.0`| `float` | Sizing balance when compounding is disabled |
 | `--max-trades` | `1` | `int` | Maximum concurrent open positions |
 | `--daily-loss-limit`| `2.0` | `float` | Daily loss limit % (0.0 to disable) |
-| `--start-hour` | `7` | `int` | Trading start hour (0-23) |
-| `--end-hour` | `20` | `int` | Trading end hour (1-24) |
+| `--start-hour` | `11` | `int` | Trading start hour (0-23) |
+| `--end-hour` | `24` | `int` | Trading end hour (1-24) |
 | `--friday-close`| `None` | `str` | Friday evening cutoff time (HH:MM) |
 
 ### 2. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
@@ -203,8 +203,8 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time) |
 | `InpMaxTrades` | `1` | `int` | Maximum concurrent trades |
 | `InpDailyLossLimit`| `2.0` | `double` | Daily loss limit % |
-| `InpStartHour` | `7` | `int` | Trading start hour |
-| `InpEndHour` | `20` | `int` | Trading end hour |
+| `InpStartHour` | `14` | `int` | Trading start hour |
+| `InpEndHour` | `3` | `int` | Trading end hour |
 
 ### 3. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
 | Input Name | Default | Type | Description |
