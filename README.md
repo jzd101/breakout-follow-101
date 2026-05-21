@@ -3,12 +3,13 @@
 [![Asset: Gold](https://img.shields.io/badge/Asset-Gold%20%28XAUUSD%29-gold?style=flat-square&logo=gold)](https://github.com/jzd101/breakout-follow-101)
 [![Timeframe: 15m / 1H](https://img.shields.io/badge/Timeframe-15m%20%2F%201H-blue?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
-[![Language: English](https://img.shields.io/badge/Language-English%20Only-lightgrey?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
+[![MetaTrader: 5 (MQL5)](https://img.shields.io/badge/MetaTrader-5%20%28MQL5%29-orange?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
+[![TradingView: Pine Script v5](https://img.shields.io/badge/TradingView-Pine%20Script%20v5-blueviolet?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 
 An automated, quantitative volatility breakout trading system specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across TradingView visualization and MetaTrader 5 execution.
 
 > [!IMPORTANT]
-> **100% Logic Parity**: This repository maintains absolute mathematical alignment across TradingView (Visualization) and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across both platforms.
+> **100% Logic Parity Guarantee**: This repository maintains absolute mathematical alignment across TradingView (Visualization) and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across both platforms to eliminate platform discrepancy ("strategy drift").
 
 ---
 
@@ -17,21 +18,11 @@ An automated, quantitative volatility breakout trading system specifically optim
 ```text
 breakout-follow-101/
 ├── .agents/                 # AI Assistant skills and settings
-├── docs/
-│   └── superpowers/specs/   # Technical design specifications
-└── src/
-    ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
-    └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
+├── src/
+│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
+│   └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
+└── README.md                # Comprehensive System Technical Specification (This File)
 ```
-
----
-
-## 📋 Prerequisites & System Requirements
-
-Before executing or deploying any component of the Breakout Follow Trend system, ensure your environment meets the following conditions:
-
-*   **TradingView Visualization**: Active TradingView account with access to the **Pine Editor** (v5).
-*   **MetaTrader 5 Execution**: MetaTrader 5 Terminal installed on a Windows system (or VPS) with active broker connection and Hedging account.
 
 ---
 
@@ -73,22 +64,22 @@ graph TD
 ### Technical Indicators & Settings
 | Indicator | Default Setting | Purpose | Formula / Standard |
 | :--- | :--- | :--- | :--- |
-| **EMA** | Period = 200 | Primary Trend Filter | Price > EMA 200 (Bullish), Price < EMA 200 (Bearish) |
-| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger | Volatility expansion bounds |
-| **Volume MA** | Period = 15 (SMA) | Momentum Filter | Prev volume > SMA 15 (Volume confirmation) |
-| **ATR** | Period = 14 | Dynamic SL/TP Base | Wilder's RMA Smoothing (RMA) |
+| **EMA** | Period = 200 | Primary Trend Filter | $\text{EMA}_t = \text{Price}_t \times \alpha + \text{EMA}_{t-1} \times (1 - \alpha)$ |
+| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger | $\text{Basis} \pm (\text{StdDev} \times 1.5)$ |
+| **Volume MA** | Period = 15 (SMA) | Momentum Filter | $\frac{1}{15}\sum_{i=1}^{15}\text{Volume}_i$ |
+| **ATR** | Period = 14 | Dynamic SL/TP Base | Wilder's RMA Smoothing (Equivalent to RMA) |
 
 ---
 
 ### 🟢 LONG (Buy Entry) Conditions
-All conditions must be confirmed on the **Close of Candle 1**:
+All conditions must be confirmed on the **Close of Candle 1** (completed candle):
 *   **Trend Filter**: Price is strictly **above** EMA 200 (`Close > EMA 200`).
 *   **BB Breakout**: Candle close is **greater than** the Upper Bollinger Band (`Close > Upper BB`).
 *   **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
 *   *Execution: Market BUY order opened at the open of the very next candle (Candle 0).*
 
 ### 🔴 SHORT (Sell Entry) Conditions
-All conditions must be confirmed on the **Close of Candle 1**:
+All conditions must be confirmed on the **Close of Candle 1** (completed candle):
 *   **Trend Filter**: Price is strictly **below** EMA 200 (`Close < EMA 200`).
 *   **BB Breakout**: Candle close is **less than** the Lower Bollinger Band (`Close < Lower BB`).
 *   **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
@@ -96,7 +87,156 @@ All conditions must be confirmed on the **Close of Candle 1**:
 
 ---
 
-### 🏆 High Win-Rate & Precision Settings (Gold 15m Preset)
+## 🔄 Dual-Platform Execution Lifecycles
+
+Understanding how TradingView and MetaTrader 5 process price data is crucial for achieving 100% execution parity.
+
+```text
+TradingView (Pine Script v5) Calculation Model:
+[Bar 2 Close] ───────────► [Bar 1 Close] ───────────────► [Bar 0 Open (Active Bar)]
+(Calculations Completed)   (All Entry Conditions Evaluated) (Order Sent on open of bar 0)
+
+MetaTrader 5 (MQL5) Event Loop:
+[OnTick / OnTimer] ──────► [Check if New Bar Formed] ──► [Evaluate Bar 1 Close Indicators] ──► [Execute CTrade]
+(Fires on every tick)      (If new bar 0 has just opened) (Evaluates completed Bar 1 data)   (Sends instant market order)
+```
+
+1. **TradingView's Historical vs. Real-time Execution**: In TradingView, backtesting calculations run once per candle close. When a candle closes (Bar 1), the indicators are evaluated. If a breakout occurs, Pine Script's execution engine simulates the entry at the opening tick of the next bar (Bar 0).
+2. **MT5 Expert Advisor Real-time Execution**: The MT5 Expert Advisor (`BreakoutFollowTrend.mq5`) operates within the `OnTick()` event loop. To avoid entering trades mid-candle (which creates massive historical divergence), the EA monitors when a new bar has just opened (`current_time != last_time`). Once detected, it immediately queries the historical buffers for the completed candle (Bar 1) to evaluate trade signals and execute instantly on Bar 0.
+
+---
+
+## 🛡️ Advanced Risk & Capital Preservation Controls
+
+The Breakout Follow Trend system incorporates active institutional-grade capital preservation safeguards, fully integrated and logically aligned across MQL5 and Pine Script.
+
+### 1. Dynamic Volatility-Based Position Sizing
+When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity and the volatility-based Stop Loss distance.
+
+$$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{100} \right)$$
+
+$$\text{Stop Loss Distance} = \text{ATR (14)} \times \text{ATR Multiplier}$$
+
+$$\text{Position Size (Lots)} = \frac{\text{Risk Amount}}{\text{Stop Loss Distance in Ticks} \times \text{Tick Value per Lot}}$$
+
+*   **Compounding Enabled**: `Base Balance = Live Account Equity` (scales lot sizes up as the account grows, and down during drawdowns).
+*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance` (maintains fixed contract/lot sizes).
+*   *Tick Rounding Safety*: Both platforms mathematically round the Stop Loss and Take Profit distances to the nearest tick value before executing. This prevents order rejection on MT5 due to raw decimal price offsets.
+
+### 2. Transactional Daily Loss Limit (Drawdown Lockout)
+To protect against consecutive losses or unpredictable market "black swan" events, the system features a realized **Daily Loss Limit**.
+
+*   **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
+*   **Threshold Blocking**: Once the total net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system **immediately suspends all new entries**.
+*   **Automatic Reset**: The lockout automatically resets on the next server trading day.
+*   **Gregorian Calendar Rollover Protection**: To ensure continuous calendar integrity and avoid locking out during month-end boundary transitions, both systems use Gregorian calendar checks:
+    *   **MQL5**: Evaluates month and year shifts (`dt.day`, `dt.mon`, `dt.year`) to prevent reset failures during monthly transitions.
+    *   **Pine Script**: Tracks daily timestamp milestones (`time("D")`) for continuous calendar integrity.
+
+### 3. Weekend Liquidation Policy
+Holding open positions over the weekend exposes accounts to high-volatility broker gaps and spread expansions.
+*   When `Weekend Close` is enabled, the system monitors broker server time.
+*   On Friday evening at the specified cutoff time (default: `23:45`), the system **force-closes all active positions** and **blocks all new trade entries**.
+*   New orders are blocked until Monday morning at the designated starting hour.
+*   **Log-Flooding Mitigation (MQL5)**: The EA's Friday close timer check isolates active position queries (`CountOpenPositions() > 0`), ensuring execution logs are never flooded with redundant close requests.
+
+---
+
+## 🕒 Global Synchronization & Timezone Conversion Matrix
+
+When setting up the trading session times, it is critical to understand how TradingView (Pine Script) and MetaTrader 5 (MT5) interpret time parameters to maintain **absolute parity** in execution.
+
+```mermaid
+gantt
+    title Timezone Mapping (Gold 15m Preset)
+    dateFormat HH
+    axisFormat %H:00
+    section TradingView (Exchange Time / UTC-4)
+    Trading Session (13:00 - 20:00) :active, 13, 20
+    section MT5 Broker Server Time (UTC+3)
+    Trading Session (20:00 - 03:00) :crit, 20, 27
+```
+
+### 1. Understanding TradingView's Exchange Time
+*   **Visual Clock vs. Back-end Logic**: Changing the timezone at the bottom-right corner of your TradingView screen (e.g., to UTC+7 Bangkok Time) is only a visual aid for chart viewing.
+*   **Pine Script Behavior**: Under the hood, the Pine Script engine ignores your localized UI timezone. It always evaluates candle timestamps using the asset's **Exchange Time** (which is **UTC-4 / New York Time** for Gold/XAUUSD).
+*   **Parameters**: Therefore, entering `Start Hour = 13` and `End Hour = 20` in the TradingView strategy strictly translates to **13:00** and **20:00 Exchange Time (UTC-4)**.
+
+### 2. Timezone Offset Conversion Formula
+To find the exact time difference between your MT5 broker's server time and TradingView's Exchange time, compare the hourly candle timestamp on both platforms at the same moment:
+
+$$\text{Time Offset} = \text{MT5 Server Time (UTC)} - \text{TradingView Exchange Time (UTC-4)}$$
+
+$$\text{MT5 Parameter} = (\text{TradingView Parameter} + \text{Time Offset}) \pmod{24}$$
+
+### 3. Universal Conversion Lookup Matrix (Gold 15m Preset)
+To run the high-precision **Gold 15m Preset** (TradingView: 13:00 - 20:00 Exchange Time), configure your MT5 EA parameters based on your broker's server timezone offset:
+
+| Broker MT5 Timezone (Standard) | Time Offset | MT5 Start Hour Input | MT5 End Hour Input |
+| :--- | :--- | :--- | :--- |
+| **UTC + 0** (e.g., GMT Broker) | $+4 \text{ Hours}$ | `17` | `0` (Midnight) |
+| **UTC + 2** (e.g., Eastern European Standard Time) | $+6 \text{ Hours}$ | `19` | `2` (Overnight) |
+| **UTC + 3** (e.g., Eastern European Daylight Time / Cyprus) | **$+7 \text{ Hours}$ (Standard)** | **`20`** | **`3` (Overnight)** |
+| **UTC + 5** (e.g., Central Asian Broker) | $+9 \text{ Hours}$ | `22` | `5` (Overnight) |
+
+---
+
+## 🤝 System Parity & Math Alignment
+
+To preserve system integrity, any mathematical or logic update **MUST** be implemented across both platforms simultaneously. Below is the technical breakdown of how absolute parity is achieved between **TradingView (Pine Script v5)** and **MetaTrader 5 (MQL5)**:
+
+### 1. Stop Loss & Take Profit Tick-Size Rounding
+
+TradingView calculates SL/TP exits in ticks, which inherently rounds the distances to the nearest tick before establishing execution levels. MT5 broker terminals will reject or slightly shift orders if SL/TP are submitted as raw floating-point decimals. Both platforms round distances using the symbol's tick size before calculating final prices:
+
+```pinescript
+// TradingView (Pine Script v5)
+lossTicks   = math.round(slDist / syminfo.mintick)
+profitTicks = math.round(slDist * inpRR / syminfo.mintick)
+```
+
+```mql5
+// MetaTrader 5 (MQL5)
+double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+if(tickSize <= 0) tickSize = _Point;
+
+double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
+double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+```
+
+### 2. Completed-Bar Hour Filtering
+
+Pine Script evaluates conditions on the close of a candle (Signal Bar at index 1) and executes orders at the open of the next candle (Entry Bar at index 0). Evaluating the active tick's hour in MT5 causes a 1-bar discrepancy on session window transitions (e.g. entry occurs 1 bar late). We align the session timing by evaluating the completed signal bar's open time instead of active tick time:
+
+```pinescript
+// TradingView (Pine Script v5)
+// 'hour' represents the hour of the signal bar being evaluated
+isInTimeWindow = inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour)
+```
+
+```mql5
+// MetaTrader 5 (MQL5)
+// Query completed bar (index 1) time
+datetime bar1_time = iTime(_Symbol, _Period, 1);
+MqlDateTime dt_time;
+TimeToStruct(bar1_time, dt_time);
+
+bool in_time_window = true;
+if(InpStartHour < InpEndHour)
+   in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
+else
+   in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
+```
+
+### 3. Indicator & Volume Smoothing
+
+*   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
+*   **Tick-Based SL/TP**: SL and TP distances are anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
+*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero, preventing system lockouts on illiquid candles.
+
+---
+
+## 🏆 High Win-Rate & Precision Settings (Gold 15m Preset)
 
 For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor** with **fewer, high-precision trades**, attach the system to a **15m chart** using these optimized settings:
 
@@ -119,102 +259,30 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 
 ---
 
-## 🕒 Trading Time Calculation: TradingView (Exchange Time) to MT5 (Broker Server Time)
-
-When setting up the trading session times, it is critical to understand how TradingView (Pine Script) and MetaTrader 5 (MT5) interpret time parameters to maintain **absolute parity** in execution.
-
-```mermaid
-gantt
-    title Timezone Mapping (Gold 15m Preset)
-    dateFormat HH
-    axisFormat %H:00
-    section TradingView (Exchange Time / UTC-4)
-    Trading Session (13:00 - 20:00) :active, 13, 20
-    section MT5 Broker Server Time (UTC+3)
-    Trading Session (20:00 - 03:00) :crit, 20, 27
-```
-
-### 1. Understanding TradingView's Back-end Time (Exchange Time)
-*   **Visual Clock vs. Back-end Logic**: Changing the timezone at the bottom-right corner of your TradingView screen (e.g., to UTC+7 Bangkok Time) is only a visual aid for chart viewing.
-*   **Pine Script Behavior**: Under the hood, the Pine Script engine ignores your localized UI timezone. It always evaluates candle timestamps using the asset's **Exchange Time** (which is **UTC-4 / New York Time** for Gold/XAUUSD).
-*   **Parameters**: Therefore, entering `Start Hour = 13` and `End Hour = 20` in the TradingView strategy strictly translates to **13:00** and **20:00 Exchange Time (UTC-4)**.
-
-### 2. Determining the Offset (MT5 Server vs. TradingView Exchange)
-To find the exact time difference between your MT5 broker's server time and TradingView's Exchange time, compare the hourly candle timestamp on both platforms at the same moment:
-*   **MetaTrader 5 Candle Time**: Shows **10:00**
-*   **TradingView (Exchange Time) Candle Time**: Shows **03:00**
-*   **Time Offset Calculation**: 
-    $$\text{Offset} = \text{MT5 Time} - \text{TradingView Exchange Time} = 10 - 3 = +7 \text{ hours}$$
-*   This indicates that your **MT5 Broker Server Time runs 7 hours ahead** of TradingView's Exchange Time.
-
-### 3. Converting TradingView Inputs to MT5 Parameters
-To align the MT5 Expert Advisor to execute at the **exact same absolute moments** as the TradingView strategy, add the $+7$ hour offset to your TradingView inputs:
-
-*   **MT5 Start Hour (`InpStartHour`)**: 
-    $$13\ (\text{TradingView}) + 7 = 20\ (\text{MT5})$$
-*   **MT5 End Hour (`InpEndHour`)**: 
-    $$20\ (\text{TradingView}) + 7 = 27 \implies 27 - 24 = 3\ (\text{MT5})$$
-
-> [!TIP]
-> To run the precise **Gold 15m Preset** (TradingView: 13:00 - 20:00), configure your MT5 EA inputs as **Start = 20** and **End = 3**. This achieves perfect mathematical synchronization across both systems!
-
----
-
-## 🛡️ Deep-Dive: Advanced Risk Controls
-
-The Breakout Follow Trend system stands out due to its active capital preservation safeguards, fully integrated and logically aligned across MQL5 and Pine Script.
-
-### 1. Dynamic Compounding Risk & Position Sizing
-When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity and the volatility-based Stop Loss distance.
-
-$$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{100} \right)$$
-$$\text{Position Size (Lots/Contracts)} = \frac{\text{Risk Amount}}{\text{ATR (14)} \times \text{ATR Multiplier}}$$
-
-*   **Compounding Enabled**: `Base Balance = Live Account Equity` (scales lot sizes up as account grows, scales down during drawdowns).
-*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance` (maintains fixed contract/lot sizes).
-
-### 2. Transactional Daily Loss Limit
-To protect against consecutive losses or unpredictable market black swan events, the system features an active **Daily Loss Limit**.
-*   **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
-*   **Threshold Blocking**: Once the total net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system **immediately suspends all new entries**.
-*   **Automatic Reset**: The lockout automatically resets on the next server trading day.
-*   **Boundary Parity**: Uses robust Gregorian rollover protection:
-    *   **MQL5**: Tracks year, month, and day shifts (`dt.day`, `dt.mon`, `dt.year`) to prevent reset failures during monthly transitions.
-    *   **Pine Script**: Tracks daily timestamp milestones (`time("D")`) for continuous calendar integrity.
-
-### 3. Weekend Liquidation Policy
-Holding open positions over the weekend exposes accounts to high-volatility broker gaps and spread expansions.
-*   When `Weekend Close` is enabled, the system monitors broker server time.
-*   On Friday evening at the specified cutoff time (default: `23:45`), the system **force-closes all active positions** and **blocks all new trade entries**.
-*   New orders are blocked until Monday morning at the designated starting hour.
-*   **Log-Flooding Mitigation (MQL5)**: The EA's Friday close timer check isolates active position queries (`CountOpenPositions() > 0`) ensuring execution logs are never flooded with redundant close requests.
-
----
-
-## ⚙️ Parameters & Configuration
+## ⚙️ Master Parameter & Configuration Reference
 
 ### 1. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
 | Input Name | Default | Type | Description |
 | :--- | :--- | :--- | :--- |
-| `InpRiskPct` | `2.0` | `double` | Risk % per trade |
-| `InpRR` | `2.0` | `double` | Risk Reward Ratio |
-| `InpATRMult` | `2.0` | `double` | ATR Multiplier for Stop Loss |
+| `InpRiskPct` | `2.0` | `double` | Risk % per trade based on SL distance |
+| `InpRR` | `2.0` | `double` | Risk Reward Ratio (Multiplier for Take Profit) |
+| `InpATRMult` | `2.0` | `double` | ATR Multiplier for dynamic Stop Loss distance |
 | `InpCompound` | `true` | `bool` | Enable Compounding Risk based on current equity |
 | `InpFixedBalance`| `10000.0`| `double` | Fixed balance if Compounding is false |
-| `InpUseEMA` | `true` | `bool` | Filter entries using EMA |
-| `InpUseVol` | `true` | `bool` | Filter entries using Volume MA |
+| `InpUseEMA` | `true` | `bool` | Filter entries using 200 EMA trend line |
+| `InpUseVol` | `true` | `bool` | Filter entries using Volume MA filter |
 | `InpEMAPeriod` | `200` | `int` | EMA Trend Filter Period |
 | `InpBBPeriod` | `15` | `int` | Bollinger Bands Period |
 | `InpBBDev` | `1.5` | `double` | Bollinger Bands Standard Deviation |
 | `InpATRPeriod` | `14` | `int` | ATR Smoothing Period |
 | `InpVolPeriod` | `15` | `int` | Volume MA Period |
 | `InpMagic` | `123456` | `int` | Unique Magic Number for position tracking |
-| `InpWeekendClose` | `false` | `bool` | Enable Friday evening close |
+| `InpWeekendClose` | `false` | `bool` | Enable Friday evening close safety exit |
 | `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time) |
 | `InpMaxTrades` | `1` | `int` | Maximum concurrent trades |
-| `InpDailyLossLimit`| `2.0` | `double` | Daily loss limit % |
-| `InpStartHour` | `7` | `int` | Trading start hour |
-| `InpEndHour` | `20` | `int` | Trading end hour |
+| `InpDailyLossLimit`| `2.0` | `double` | Realized daily drawdown lockout percentage |
+| `InpStartHour` | `7` | `int` | Trading window start hour (Broker Server Time) |
+| `InpEndHour` | `20` | `int` | Trading window end hour (Broker Server Time) |
 
 ### 2. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
 | Internal Variable | UI Display Label | Default | Type | Description |
@@ -224,8 +292,8 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `inpATRMult` | `ATR Multiplier (SL)` | `2.0` | `float` | ATR multiplier to determine Stop Loss distance |
 | `inpMaxTrades` | `Max Concurrent Trades` | `1` | `int` | Maximum concurrent open positions |
 | `inpCompound` | `Use Compounding Risk` | `true` | `bool` | Use Compounding Risk based on current equity |
-| `inpFixedBal` | `Fixed Balance (when compounding off)`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
-| `inpDailyLoss` | `Daily Loss Limit %` | `2.0` | `float` | Realized daily loss lockout percentage (0.0 to disable) |
+| `inpFixedBal` | `Fixed Balance`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
+| `inpDailyLoss` | `Daily Loss Limit %` | `2.0` | `float` | Realized daily loss lockout percentage |
 | `inpUseEMA` | `Use EMA Trend Filter` | `true` | `bool` | Filter entries using EMA trend filter |
 | `inpEMAPeriod` | `EMA Period` | `200` | `int` | EMA Trend Filter Period |
 | `inpBBPeriod` | `Bollinger Bands Period`| `15` | `int` | Bollinger Bands Period |
@@ -240,57 +308,18 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 
 ---
 
-## 🤝 System Parity & Math Alignment
+## 🛡️ Production Deployment & VPS Checklist
 
-To preserve system integrity, any mathematical or logic update **MUST** be implemented across both platforms simultaneously. Below is the technical breakdown of how absolute parity is achieved between **TradingView (Pine Script v5)** and **MetaTrader 5 (MQL5)**:
+Deploying a quantitative trading system requires strict compliance with trade environment constraints. Follow this checklist before launching on a live production environment:
 
-### 1. Stop Loss & Take Profit Tick-Size Rounding
-
-TradingView calculates SL/TP exits in ticks, which inherently rounds the distances to the nearest tick before establishing execution levels. MT5 broker terminals will reject or slightly shift orders if SL/TP are submitted as raw floating-point decimals. 
-
-To eliminate micro-pip discrepancies, both platforms round distances using the symbol's tick size before calculating final prices:
-
-*   **TradingView (Pine Script v5)**:
-    ```pinescript
-    lossTicks   = math.round(slDist / syminfo.mintick)
-    profitTicks = math.round(slDist * inpRR / syminfo.mintick)
-    ```
-*   **MetaTrader 5 (MQL5)**:
-    ```mql5
-    double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
-    if(tickSize <= 0) tickSize = _Point;
-    
-    double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
-    double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
-    ```
-
-### 2. Completed-Bar Hour Filtering
-
-Pine Script evaluates conditions on the close of a candle (Signal Bar at index 1) and executes orders at the open of the next candle (Entry Bar at index 0). Evaluating the active tick's hour in MT5 causes a 1-bar discrepancy on session window transitions (e.g. entry occurs 1 bar late).
-
-We align the session timing by evaluating the completed signal bar's open time instead of active tick time:
-
-*   **TradingView (Pine Script v5)**:
-    ```pinescript
-    // hour represents the hour of the signal bar being evaluated
-    isInTimeWindow = inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour)
-    ```
-*   **MetaTrader 5 (MQL5)**:
-    ```mql5
-    // Query completed bar (index 1) time
-    datetime bar1_time = iTime(_Symbol, _Period, 1);
-    MqlDateTime dt_time;
-    TimeToStruct(bar1_time, dt_time);
-    
-    bool in_time_window = true;
-    if(InpStartHour < InpEndHour)
-       in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
-    else
-       in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
-    ```
-
-### 3. Indicator & Volume Smoothing
-
-*   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
-*   **Tick-Based SL/TP**: SL and TP distances are anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
-*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero, preventing system lockouts on illiquid candles.
+1. **Hedging Account Mode Required**: 
+   * **Mandatory**: Your MT5 trading account must support **Hedging** (allowing multiple concurrent or opposing positions). Netting accounts will cause position aggregation, corrupting the EA's trade tracking.
+2. **Virtual Private Server (VPS)**:
+   * **Setup**: Deploy the MT5 terminal to a low-latency VPS physically located near your broker's execution server (London/LD4 or New York/NY4 are standard for Gold brokers).
+   * **Uptime**: Ensure the VPS is configured with automated OS update delays and auto-start scripts for the MT5 terminal to prevent downtime during active hours.
+3. **Indicator Pre-calculation**:
+   * **Execution**: Upon first attachment, the MQL5 indicator handles `iMA` and `iBands` initialize instantly, but history stabilization is required for the RMA ATR. The EA includes a stabilization check that requires at least `InpATRPeriod * 2` bars to have loaded before executing trades.
+4. **Broker-Specific Spread & Commission Guard**:
+   * Gold spreads can expand drastically during high-impact news releases or rollover hours (23:59 - 00:05 Server Time). Ensure your broker offers institutional raw-spread accounts for Gold to minimize slippage, as high transaction costs can significantly erode breakout performance.
+5. **Magic Number Isolation**:
+   * Assign a unique magic number (`InpMagic`) to each chart instance if running multiple timeframes or assets. This prevents EAs from interfering with or closing each other's open positions.
