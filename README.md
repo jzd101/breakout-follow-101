@@ -217,22 +217,25 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 ### 1. Python Backtest CLI (`run_system.py`)
 | Parameter | Default | Type | Description |
 | :--- | :--- | :--- | :--- |
-| `--symbol` | (Required) | `str` | Trading asset, e.g., `XAUUSD`, `ETHUSD` |
+| `--symbol` | (Required) | `str` | Trading symbol, e.g., `XAUUSD`, `GBPUSD` |
 | `--timeframe` | `1h` | `str` | Candle timeframe (`15m`, `1h`, `1d`) |
-| `--period` | `1y` | `str` | Historical data length (`1mo`, `1y`, etc.) |
-| `--capital` | `10000.0` | `float` | Starting account equity |
-| `--risk` | `2.0` | `float` | Risk % per trade |
-| `--rr` | `2.0` | `float` | Risk-to-Reward ratio |
+| `--period` | `1y` | `str` | Historical data range length (`1mo`, `1y`, etc.) |
+| `--capital` | `10000.0` | `float` | Starting account capital / equity |
+| `--risk` | `2.0` | `float` | Percentage risk per trade |
+| `--rr` | `'1:2'` | `str` | Risk-to-Reward ratio (e.g., `'1:2'` or `'2.0'`) |
 | `--atr-mult` | `2.0` | `float` | ATR Multiplier for Stop Loss |
-| `--no-ema` | `False` | `bool` | Disable the EMA 200 trend filter |
-| `--no-vol` | `False` | `bool` | Disable the Volume MA confirmation filter |
-| `--no-compound`| `False` | `bool` | Disable compounding (use fixed balance) |
-| `--fixed-balance`| `10000.0`| `float` | Sizing balance when compounding is disabled |
+| `--no-ema` | `False` | `bool` | Disable the EMA 200 trend filter (uses `--no-ema` flag) |
+| `--no-vol` | `False` | `bool` | Disable the Volume MA confirmation filter (uses `--no-vol` flag) |
+| `--no-compound`| `False` | `bool` | Disable compounding risk (uses `--no-compound` flag) |
+| `--fixed-balance`| `10000.0`| `float` | Fixed balance when compounding is disabled |
 | `--max-trades` | `1` | `int` | Maximum concurrent open positions |
 | `--daily-loss-limit`| `2.0` | `float` | Daily loss limit % (0.0 to disable) |
-| `--start-hour` | `11` | `int` | Trading start hour (0-23) |
-| `--end-hour` | `24` | `int` | Trading end hour (1-24) |
+| `--start-hour` | `11` | `int` | Trading window start hour (0-23) |
+| `--end-hour` | `24` | `int` | Trading window end hour (1-24) |
 | `--friday-close`| `None` | `str` | Friday evening cutoff time (HH:MM) |
+| `--input-tz` | `None` | `str` | Timezone of the input start/end hours (e.g., `America/New_York`, `Asia/Bangkok`, `UTC`). If `None`, hours are assumed to match the data timezone |
+| `--bb-period` | `15` | `int` | Bollinger Bands Period |
+| `--bb-dev` | `1.5` | `float` | Bollinger Bands Standard Deviation |
 
 ### 2. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
 | Input Name | Default | Type | Description |
@@ -258,26 +261,26 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `InpEndHour` | `3` | `int` | Trading end hour |
 
 ### 3. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
-| Input Name | Default | Type | Description |
-| :--- | :--- | :--- | :--- |
-| `Risk % per Trade` | `2.0` | `float` | Risk % per trade |
-| `Risk:Reward Ratio`| `2.0` | `float` | Risk Reward Ratio |
-| `ATR Multiplier (SL)`| `2.0` | `float` | ATR Multiplier for Stop Loss |
-| `Use Compounding Risk`| `true` | `bool` | Use Compounding Risk based on current equity |
-| `Fixed Balance` | `10000.0`| `float` | Fixed balance if Compounding is off |
-| `Use EMA Trend Filter`| `true` | `bool` | Enable EMA Filter |
-| `EMA Period` | `200` | `int` | EMA Trend Filter Period |
-| `Bollinger Bands Period`| `15` | `int` | Bollinger Bands Period |
-| `Bollinger Bands Deviation`| `1.5`| `float` | Bollinger Bands Standard Deviation |
-| `ATR Period` | `14` | `int` | ATR Period for Stop Loss calculation |
-| `Use Volume Filter`| `true` | `bool` | Enable Volume Filter |
-| `Volume MA Period`| `15` | `int` | Volume MA Period |
-| `Daily Loss Limit %`| `2.0` | `float` | Daily loss limit % |
-| `Max Concurrent Trades`| `1` | `int` | Max concurrent open positions |
-| `Start Hour (0-23)`| `7` | `int` | Trading start hour |
-| `End Hour (0-23)` | `20` | `int` | Trading end hour |
-| `Weekend Close` | `false` | `bool` | Enable Friday evening close |
-| `Friday Close Time`| `"2345"`| `string` | Friday Time to close (HHMM) |
+| Internal Variable | UI Display Label | Default | Type | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `inpRiskPct` | `Risk % per Trade` | `2.0` | `float` | Percentage of base balance to risk based on SL distance |
+| `inpRR` | `Risk:Reward Ratio` | `2.0` | `float` | Target Risk to Reward multiple |
+| `inpATRMult` | `ATR Multiplier (SL)` | `2.0` | `float` | ATR multiplier to determine Stop Loss distance |
+| `inpMaxTrades` | `Max Concurrent Trades` | `1` | `int` | Maximum concurrent open positions |
+| `inpCompound` | `Use Compounding Risk` | `true` | `bool` | Use Compounding Risk based on current equity |
+| `inpFixedBal` | `Fixed Balance (when compounding off)`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
+| `inpDailyLoss` | `Daily Loss Limit %` | `2.0` | `float` | Realized daily loss lockout percentage (0.0 to disable) |
+| `inpUseEMA` | `Use EMA Trend Filter` | `true` | `bool` | Filter entries using EMA trend filter |
+| `inpEMAPeriod` | `EMA Period` | `200` | `int` | EMA Trend Filter Period |
+| `inpBBPeriod` | `Bollinger Bands Period`| `15` | `int` | Bollinger Bands Period |
+| `inpBBDev` | `Bollinger Bands Deviation`| `1.5` | `float` | Bollinger Bands Standard Deviation |
+| `inpATRPeriod` | `ATR Period` | `14` | `int` | ATR Period for Stop Loss calculation |
+| `inpUseVol` | `Use Volume Filter` | `true` | `bool` | Enable Volume filter momentum filter |
+| `inpVolPeriod` | `Volume MA Period` | `15` | `int` | Volume MA Period |
+| `inpStartHour` | `Start Hour (0-23)` | `7` | `int` | Strategy trading window start hour (Exchange Time) |
+| `inpEndHour` | `End Hour (0-23)` | `20` | `int` | Strategy trading window end hour (Exchange Time) |
+| `inpWeekendCl` | `Weekend Close (Friday)`| `false` | `bool` | Enable Friday evening close safety exit |
+| `inpFridayTime` | `Friday Close Time (HHMM)`| `"2345"` | `string` | Friday Time to close in HHMM format |
 
 ## 🤝 System Parity & Math Alignment
 
