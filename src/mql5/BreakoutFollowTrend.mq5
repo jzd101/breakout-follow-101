@@ -25,8 +25,8 @@ input bool   InpWeekendClose = false; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
-input int    InpStartHour = 14;      // Trading start hour (0-23)
-input int    InpEndHour = 3;        // Trading end hour (1-24)
+input int    InpStartHour = 7;       // Trading start hour (0-23)
+input int    InpEndHour = 20;       // Trading end hour (1-24)
 
 int handleEMA, handleBB;
 CTrade trade;
@@ -34,7 +34,29 @@ CTrade trade;
 // Daily Loss Limit tracking
 double g_dailyPnL = 0.0;
 int    g_currentDay = -1;
+int    g_currentMon = -1;
+int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
+bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
+
+
+//+------------------------------------------------------------------+
+//| Check and reset daily loss tracking on a new calendar day        |
+//+------------------------------------------------------------------+
+void CheckDailyReset(datetime time_to_check)
+  {
+   MqlDateTime dt;
+   TimeToStruct(time_to_check, dt);
+   if(dt.day != g_currentDay || dt.mon != g_currentMon || dt.year != g_currentYear)
+     {
+      g_currentDay = dt.day;
+      g_currentMon = dt.mon;
+      g_currentYear = dt.year;
+      g_dailyPnL = 0.0;
+      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
+      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+     }
+  }
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -54,8 +76,12 @@ int OnInit()
    // Calculate daily loss max from initial balance
    double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+   // Initialize daily tracking variables using the current server time
+   CheckDailyReset(TimeTradeServer());
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
+   // Flag static last_time in OnTick to reset so we don't miss the first bar after re-init
+   g_resetLastTime = true;
      
    return(INIT_SUCCEEDED);
   }
@@ -71,47 +97,100 @@ void OnDeinit(const int reason)
   }
 
 //+------------------------------------------------------------------+
+//| Check if current server time is in the weekend block             |
+//+------------------------------------------------------------------+
+bool IsWeekendBlock()
+  {
+   if(!InpWeekendClose) return false;
+
+   MqlDateTime dt;
+   TimeToStruct(TimeTradeServer(), dt);
+   
+   // Parse Friday Time
+   string t = InpFridayTime;
+   StringTrimLeft(t);
+   StringTrimRight(t);
+   int sep = StringFind(t, ":");
+   int h = 0, m = 0;
+   if(sep != -1)
+     {
+      h = (int)StringToInteger(StringSubstr(t, 0, sep));
+      m = (int)StringToInteger(StringSubstr(t, sep + 1));
+     }
+   else
+     {
+      int val = (int)StringToInteger(t);
+      h = val / 100;
+      m = val % 100;
+     }
+   
+   int target_min = h * 60 + m;
+   int current_min = dt.hour * 60 + dt.min;
+   
+   bool is_friday_past = (dt.day_of_week == 5 && current_min >= target_min);
+   bool is_weekend = (dt.day_of_week == 6 || dt.day_of_week == 0);
+   bool is_monday_before = (dt.day_of_week == 1 && dt.hour < InpStartHour);
+   
+   return (is_friday_past || is_weekend || is_monday_before);
+  }
+
+//+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Check for Weekend Close
+   // Check for Weekend Close (force close active positions)
    CheckWeekendClose();
 
-   // Execute the rest only on new bar
-   static datetime last_time = 0;
+   // Block entries during the weekend close block
+   if(IsWeekendBlock()) return;
+
+   // Get current bar's start time
    datetime current_time = iTime(_Symbol, _Period, 0);
+   if(current_time == 0) return; // Time not ready, retry on next tick
+   
+   static datetime last_time = 0;
+   if(g_resetLastTime)
+     {
+      last_time = 0;
+      g_resetLastTime = false;
+     }
    if(current_time == last_time) return;
-   last_time = current_time;
    
    // Daily Loss Limit: Reset on new calendar day
-   MqlDateTime dt_daily;
-   TimeToStruct(TimeTradeServer(), dt_daily);
-   if(dt_daily.day != g_currentDay)
-     {
-      g_currentDay = dt_daily.day;
-      g_dailyPnL = 0.0;
-      // Recalculate daily loss max with current equity if compounding (matches Pine strategy.equity)
-      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
-      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
-     }
+   CheckDailyReset(TimeTradeServer());
 
    // Check if we have space for more trades
-   if(CountOpenPositions() >= InpMaxTrades) return;
+   if(CountOpenPositions() >= InpMaxTrades)
+     {
+      last_time = current_time;
+      return;
+     }
    
    // Check Daily Loss Limit
-   if(InpDailyLossLimit > 0 && g_dailyPnL <= -g_dailyLossMax) return;
+   if(InpDailyLossLimit > 0 && g_dailyPnL <= -g_dailyLossMax)
+     {
+      last_time = current_time;
+      return;
+     }
    
-   // Check Trading Hours
+   // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
+   datetime bar1_time = iTime(_Symbol, _Period, 1);
+   if(bar1_time == 0) return; // Time not ready, retry on next tick
+   
    MqlDateTime dt_time;
-   TimeToStruct(TimeTradeServer(), dt_time);
+   TimeToStruct(bar1_time, dt_time);
    bool in_time_window = true;
    if(InpStartHour < InpEndHour)
       in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
    else // Overnight window
       in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
       
-   if(!in_time_window) return;
+   if(!in_time_window)
+     {
+      last_time = current_time;
+      return;
+     }
    
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];
@@ -119,20 +198,21 @@ void OnTick()
    ArraySetAsSeries(upperBB, true);
    ArraySetAsSeries(lowerBB, true);
    
-   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return;
-   if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return;
-   if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return;
+   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return; // Do not update last_time; retry on next tick
+   if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return; // Do not update last_time; retry on next tick
+   if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return; // Do not update last_time; retry on next tick
    
    // Manual ATR (RMA/Wilder's) Calculation to match Python
-   // Python: df['ATR_14'] = series.ewm(alpha=1/length, min_periods=length, adjust=False).mean()
-   // Formula: ATR_t = (ATR_{t-1} * (N-1) + TR_t) / N
    double atr_val = CalculateRMA_ATR(InpATRPeriod);
-   if(atr_val <= 0) return;
+   if(atr_val <= 0) return; // Do not update last_time; retry on next tick
+
+   // Successfully fetched and calculated all data! Mark this bar as processed.
+   last_time = current_time;
 
    double close1 = iClose(_Symbol, _Period, 1);
    long vol1 = iVolume(_Symbol, _Period, 1);
    
-   // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(20).mean()
+   // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(15).mean()
    double vol_ma = 0;
    if(InpUseVol)
      {
@@ -154,14 +234,21 @@ void OnTick()
    PrintFormat("Time: %s, Close: %.5f, EMA: %.5f, UpperBB: %.5f, LowerBB: %.5f, ATR: %.5f, Vol: %d, VolMA: %.2f", 
                TimeToString(current_time), close1, ema[0], upperBB[0], lowerBB[0], atr_val, vol1, vol_ma);
    */
-
+   
    // LONG Condition
    if(ema_long && close1 > upperBB[0] && vol_condition)
      {
-      double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+      double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
+      
+      double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+      if(tickSize <= 0) tickSize = _Point;
+      
       double slDist = atr_val * InpATRMult;
-      double slPrice = entryPrice - slDist;
-      double tpPrice = entryPrice + (slDist * InpRR);
+      double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
+      double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+      
+      double slPrice = NormalizeDouble(entryPrice - slDist_rounded, _Digits);
+      double tpPrice = NormalizeDouble(entryPrice + tpDist_rounded, _Digits);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
@@ -174,10 +261,17 @@ void OnTick()
    // SHORT Condition
    else if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
-      double entryPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+      double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
+      
+      double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+      if(tickSize <= 0) tickSize = _Point;
+      
       double slDist = atr_val * InpATRMult;
-      double slPrice = entryPrice + slDist;
-      double tpPrice = entryPrice - (slDist * InpRR);
+      double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
+      double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+      
+      double slPrice = NormalizeDouble(entryPrice + slDist_rounded, _Digits);
+      double tpPrice = NormalizeDouble(entryPrice - tpDist_rounded, _Digits);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
@@ -203,9 +297,13 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
         {
          long dealMagic = HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
          ENUM_DEAL_ENTRY dealEntry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+         string dealSymbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
          
-         if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT)
+         if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT && dealSymbol == _Symbol)
            {
+            datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+            CheckDailyReset(dealTime);
+            
             double dealProfit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
             double dealSwap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
             double dealComm = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
@@ -225,7 +323,9 @@ double CalculateRMA_ATR(int period)
    
    // Use a large stabilization window so RMA converges to match Python's full-dataset calc.
    // Python processes all bars from index 0; we simulate by using max available history.
-   int bars_to_calculate = MathMin(period * 50, iBars(_Symbol, _Period) - 2);
+   int totalBars = iBars(_Symbol, _Period);
+   if(totalBars <= period + 1) return -1; // Not enough bars loaded yet
+   int bars_to_calculate = MathMin(period * 50, totalBars - 2);
    if(bars_to_calculate < period * 2) return -1; // Not enough history
 
    double atr = 0;
@@ -316,6 +416,8 @@ double CalculateLotSize(double sl_distance)
    double points = sl_distance / tickSize;
    double valuePerLot = points * tickValue;
    
+   if(valuePerLot <= 0) return 0.0;
+   
    double lot = riskAmount / valuePerLot;
    
    // Normalize lot size
@@ -323,6 +425,8 @@ double CalculateLotSize(double sl_distance)
    double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
    double stepLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
    
+   if(stepLot <= 0) stepLot = minLot; // Prevent division by zero
+    
    lot = MathFloor(lot / stepLot) * stepLot;
    if(lot < minLot) lot = minLot;
    if(lot > maxLot) lot = maxLot;
@@ -343,42 +447,13 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void CheckWeekendClose()
   {
-   if(!InpWeekendClose) return;
-
-   MqlDateTime dt;
-   // TimeTradeServer() returns server time regardless of ticks (calculated from system time + offset)
-   TimeToStruct(TimeTradeServer(), dt);
-   
-   // Parse Friday Time
-   string t = InpFridayTime;
-   StringTrimLeft(t);
-   StringTrimRight(t);
-   int sep = StringFind(t, ":");
-   int h = 0, m = 0;
-   if(sep != -1)
+   if(IsWeekendBlock())
      {
-      h = (int)StringToInteger(StringSubstr(t, 0, sep));
-      m = (int)StringToInteger(StringSubstr(t, sep + 1));
-     }
-   else
-     {
-      int val = (int)StringToInteger(t);
-      h = val / 100;
-      m = val % 100;
-     }
-   
-   int target_min = h * 60 + m;
-   int current_min = dt.hour * 60 + dt.min;
-   
-   bool is_friday_past = (dt.day_of_week == 5 && current_min >= target_min);
-   bool is_weekend = (dt.day_of_week == 6 || dt.day_of_week == 0);
-   bool is_monday_before = (dt.day_of_week == 1 && dt.hour < InpStartHour);
-   
-   if(is_friday_past || is_weekend || is_monday_before)
-     {
-      if(PositionsTotal() > 0)
+      if(CountOpenPositions() > 0)
         {
          CloseAllPositions("Friday Close");
+         MqlDateTime dt;
+         TimeToStruct(TimeTradeServer(), dt);
          Print("Weekend Close Triggered (inclusive) at Day ", dt.day_of_week, " ", dt.hour, ":", dt.min, " (via Timer/ServerTime)");
         }
      }

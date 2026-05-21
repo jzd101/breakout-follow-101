@@ -85,8 +85,8 @@ profitTicks = slDist > 0 ? math.round(slDist * inpRR / syminfo.mintick) : 0
 var float dailyPnL     = 0.0
 var int   currentDay   = -1
 var float dailyLossMax = 0.0
-if dayofmonth != currentDay
-    currentDay   := dayofmonth
+if time("D") != currentDay
+    currentDay   := time("D")
     dailyPnL     := 0.0
     // Recalculate daily loss max with current equity/balance (matches MQL5 daily reset)
     dailyLossMax := baseBal * (inpDailyLoss / 100)
