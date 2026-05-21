@@ -75,6 +75,21 @@ Visualize entry signals and dynamic risk tools:
 
 The Breakout Follow Trend system relies on pure statistics and momentum confirmation, removing emotional variables from execution.
 
+```mermaid
+graph TD
+    A[New Candle Close] --> B{Daily Loss Limit Hit?}
+    B -- Yes --> C[Block Entry]
+    B -- No --> D{Within Trading Hours?}
+    D -- No --> C
+    D -- Yes --> E[Calculate Indicators: EMA, BB, Volume MA, ATR]
+    E --> F{Breakout & Trend Confirm?}
+    F -- 🟢 Bullish BB + Vol > MA + Close > EMA --> G[Market Buy / Calculate dynamic Lot]
+    F -- 🔴 Bearish BB + Vol > MA + Close < EMA --> H[Market Sell / Calculate dynamic Lot]
+    F -- No Breakout --> I[Keep Monitoring]
+    G --> J[Set Stop Loss & Take Profit via ATR]
+    H --> J
+```
+
 ### Technical Indicators & Settings
 | Indicator | Default Setting | Purpose | Formula / Standard |
 | :--- | :--- | :--- | :--- |
@@ -87,17 +102,17 @@ The Breakout Follow Trend system relies on pure statistics and momentum confirma
 
 ### 🟢 LONG (Buy Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1**:
-1. **Trend Filter**: Price is strictly **above** EMA 200 (`Close > EMA 200`).
-2. **BB Breakout**: Candle close is **greater than** the Upper Bollinger Band (`Close > Upper BB`).
-3. **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
-*Execution: Market BUY order opened at the open of the very next candle.*
+*   **Trend Filter**: Price is strictly **above** EMA 200 (`Close > EMA 200`).
+*   **BB Breakout**: Candle close is **greater than** the Upper Bollinger Band (`Close > Upper BB`).
+*   **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
+*   *Execution: Market BUY order opened at the open of the very next candle (Candle 0).*
 
 ### 🔴 SHORT (Sell Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1**:
-1. **Trend Filter**: Price is strictly **below** EMA 200 (`Close < EMA 200`).
-2. **BB Breakout**: Candle close is **less than** the Lower Bollinger Band (`Close < Lower BB`).
-3. **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
-*Execution: Market SELL order opened at the open of the very next candle.*
+*   **Trend Filter**: Price is strictly **below** EMA 200 (`Close < EMA 200`).
+*   **BB Breakout**: Candle close is **less than** the Lower Bollinger Band (`Close < Lower BB`).
+*   **Volume Momentum**: Volume is **greater than** the 15-period Volume MA (`Volume > Vol SMA 15`).
+*   *Execution: Market SELL order opened at the open of the very next candle (Candle 0).*
 
 ---
 
