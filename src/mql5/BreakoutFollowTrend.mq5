@@ -259,13 +259,12 @@ void OnTick()
 
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];
-   ArraySetAsSeries(ema, true);
-   ArraySetAsSeries(upperBB, true);
-   ArraySetAsSeries(lowerBB, true);
    
-   if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return; // Do not update last_time; retry on next tick
-   if(CopyBuffer(handleBB, 1, 1, 1, upperBB) <= 0) return; // Do not update last_time; retry on next tick
-   if(CopyBuffer(handleBB, 2, 1, 1, lowerBB) <= 0) return; // Do not update last_time; retry on next tick
+   // Use time instead of index to guarantee we get the indicator values for the exact completed bar,
+   // avoiding a 1-bar delay if the indicator thread hasn't processed the new tick yet.
+   if(CopyBuffer(handleEMA, 0, bar1_time, bar1_time, ema) <= 0) return; // Do not update last_time; retry on next tick
+   if(CopyBuffer(handleBB, 1, bar1_time, bar1_time, upperBB) <= 0) return; // Do not update last_time; retry on next tick
+   if(CopyBuffer(handleBB, 2, bar1_time, bar1_time, lowerBB) <= 0) return; // Do not update last_time; retry on next tick
    
    // Manual ATR (RMA/Wilder's) Calculation to match Python
    double atr_val = CalculateRMA_ATR(InpATRPeriod);

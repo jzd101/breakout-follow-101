@@ -234,14 +234,43 @@ else
    in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
 ```
 
-### 3. Indicator & Volume Smoothing
+### 3. Indicator Buffer Synchronization (Datetime-Based `CopyBuffer`)
+
+In MQL5, indicator calculations run asynchronously on a separate internal thread. At the exact moment the first tick of a new bar arrives (Bar 0 opens), the EA detects a new bar has formed. However, the indicator thread may not yet have processed this tick, meaning it still holds values from **Bar 2** (two bars ago) instead of the completed **Bar 1** signal bar.
+
+Using a position-based index (`CopyBuffer(..., 1, 1, ...)`) in this asynchronous window causes the EA to receive stale indicator values, effectively evaluating conditions from the **wrong bar** and producing a **1-bar entry delay** vs. TradingView.
+
+**Solution**: Use the **exact datetime** of the completed signal bar (`bar1_time`) as the `CopyBuffer` time argument. If the indicator has not yet computed values for that timestamp, `CopyBuffer` returns `<= 0`, and the EA retries on the next sub-millisecond tick — guaranteeing the correct bar's indicator values are used.
+
+```pinescript
+// TradingView (Pine Script v5)
+// Indicators are always synchronous with bar evaluation — no special handling needed.
+emaVal  = ta.ema(close, inpEMAPeriod)
+[_, upperBB, lowerBB] = ta.bb(close, inpBBPeriod, inpBBDev)
+```
+
+```mql5
+// MetaTrader 5 (MQL5) — CORRECT: Use exact datetime of the completed bar
+datetime bar1_time = iTime(_Symbol, _Period, 1);
+
+// If the indicator thread hasn't processed bar1_time yet, CopyBuffer returns <= 0
+// and OnTick retries on the next sub-ms tick (no last_time update = safe retry)
+if(CopyBuffer(handleEMA, 0, bar1_time, bar1_time, ema)    <= 0) return;
+if(CopyBuffer(handleBB,  1, bar1_time, bar1_time, upperBB) <= 0) return;
+if(CopyBuffer(handleBB,  2, bar1_time, bar1_time, lowerBB) <= 0) return;
+
+// INCORRECT (before fix): index-based — may return stale Bar 2 values on the first tick of Bar 0
+// if(CopyBuffer(handleEMA, 0, 1, 1, ema) <= 0) return;  // <-- caused 1-bar delay
+```
+
+### 4. Indicator & Volume Smoothing
 
 *   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
 *   **Fill-Price Anchoring**: SL and TP distances are anchored strictly to the **actual fill price** (`strategy.opentrades.entry_price`) of the execution candle, preventing calculation drift from using signal-bar close price.
 *   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero (`na(volMA) or volMA == 0`), preventing system lockouts on illiquid candles.
 *   **Tick-Value Position Sizing**: Both platforms compute lot size via `riskAmount / (slDist / tickSize * tickValuePerLot)`. Pine Script uses `syminfo.pointvalue` for CFD/Futures scaling; MQL5 uses `SYMBOL_TRADE_TICK_VALUE` and `SYMBOL_TRADE_TICK_SIZE` for exact broker-side precision.
 
-### 4. Per-Entry SL/TP Queue (MaxTrades > 1 Support)
+### 5. Per-Entry SL/TP Queue (MaxTrades > 1 Support)
 
 When `MaxTrades > 1`, multiple signals can fire on consecutive bars before the visual engine processes them. To prevent an off-by-one mismatch (where the wrong ATR value is used for a visual tool), each signal's `slDist` is pushed into a keyed queue (`sl_entry_ids` / `sl_dist_queue`) *before* the entry is submitted. When the entry is confirmed, the queue is looked up by the unique entry ID (e.g., `"L5"` → `5`) and the correct distance is retrieved and removed.
 
