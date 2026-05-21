@@ -101,16 +101,27 @@ volCond        = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
 longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
 shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
 
-// Store signal bar's slDist for visual box construction on the entry bar
-var float sig_slDist = na
-if longCondition or shortCondition
-    sig_slDist := slDist
-
 // ==========================================
 // Strategy Execution
 // ==========================================
 // Entry IDs are unique so each position carries its own SL/TP (matches MQL5 hedge-like per-position management)
 var int entryCounter = 0
+
+// Per-entry slDist queue: stores (entryCounter, slDist) so visual section can retrieve
+// the exact ATR-based distance for the bar that generated each signal,
+// even when MaxTrades > 1 and signals fire on consecutive bars.
+var int[]   sl_entry_ids  = array.new_int()
+var float[] sl_dist_queue = array.new_float()
+
+// Push signal's slDist into queue BEFORE incrementing entryCounter
+// so we store the counter value that will be assigned to this entry.
+if longCondition and strategy.opentrades < inpMaxTrades and posSize > 0
+    array.push(sl_entry_ids, entryCounter + 1)
+    array.push(sl_dist_queue, slDist)
+
+if shortCondition and strategy.opentrades < inpMaxTrades and posSize > 0
+    array.push(sl_entry_ids, entryCounter + 1)
+    array.push(sl_dist_queue, slDist)
 
 // Matches MQL5: if(lotSize > 0) guard prevents zero-size entries when ATR is unavailable
 if (longCondition and strategy.opentrades < inpMaxTrades and posSize > 0)
@@ -157,12 +168,31 @@ if array.size(active_tp_boxes) > 0
         box.set_right(array.get(active_sl_boxes, i), bar_index)
         line.set_x2(array.get(active_entry_lines, i), bar_index)
 
+// Helper: look up slDist from queue by entry ID number (numeric suffix of "L5" or "S5" → 5)
+// Returns the stored slDist and removes the entry from the queue to keep it lean.
+f_pop_sl_dist(string entry_id) =>
+    float result = na
+    int num = int(str.tonumber(str.substring(entry_id, 1)))
+    if not na(num) and array.size(sl_entry_ids) > 0
+        for k = 0 to array.size(sl_entry_ids) - 1
+            if array.get(sl_entry_ids, k) == num
+                result := array.get(sl_dist_queue, k)
+                array.remove(sl_entry_ids, k)
+                array.remove(sl_dist_queue, k)
+                break
+    result
+
 // 2. New entry detection — compute SL/TP from actual fill price + signal bar's slDist
 if strategy.opentrades > strategy.opentrades[1]
     int num_opened = strategy.opentrades - strategy.opentrades[1]
     for i = 0 to num_opened - 1
         int trade_idx = strategy.opentrades - num_opened + i
-        float sd      = sig_slDist[1]
+        string eid    = strategy.opentrades.entry_id(trade_idx)
+        // Retrieve per-entry slDist from queue — avoids off-by-one when MaxTrades > 1
+        float sd      = f_pop_sl_dist(eid)
+        // Fallback to current bar's slDist if queue lookup fails (should not happen)
+        if na(sd)
+            sd := slDist
         bool is_long  = strategy.opentrades.size(trade_idx) > 0
         float en      = strategy.opentrades.entry_price(trade_idx)
         
@@ -182,7 +212,7 @@ if strategy.opentrades > strategy.opentrades[1]
         array.push(active_entry_lines, l_en)
         array.push(active_sl_prices, sl)
         array.push(active_tp_prices, tp)
-        array.push(active_trade_ids, strategy.opentrades.entry_id(trade_idx))
+        array.push(active_trade_ids, eid)
 
 // 3. Handle Exit detection (Prune active arrays based on currently open trades)
 if array.size(active_trade_ids) > 0

@@ -260,7 +260,7 @@ void OnTick()
      }
      
    // SHORT Condition
-   else if(ema_short && close1 < lowerBB[0] && vol_condition)
+   if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       
