@@ -196,14 +196,19 @@ $$\text{Position Size (Lots/Contracts)} = \frac{\text{Risk Amount}}{\text{ATR (1
 ### 2. Transactional Daily Loss Limit
 To protect against consecutive losses or unpredictable market black swan events, the system features an active **Daily Loss Limit**.
 *   **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
-*   **Threshold Blocking**: Once the total net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system **immediately suspends all entries**.
+*   **Threshold Blocking**: Once the total net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system **immediately suspends all new entries**.
 *   **Automatic Reset**: The lockout automatically resets on the next server trading day.
+*   **Boundary Parity**: Uses robust Gregorian rollover protection:
+    *   **MQL5**: Tracks year, month, and day shifts (`dt.day`, `dt.mon`, `dt.year`) to prevent reset failures during monthly transitions.
+    *   **Pine Script**: Tracks daily timestamp milestones (`time("D")`) for continuous calendar integrity.
+    *   **Python**: Maps calendar date objects (`current_date.date()`) dynamically.
 
 ### 3. Weekend Liquidation Policy
 Holding open positions over the weekend exposes accounts to high-volatility broker gaps and spread expansions.
 *   When `Weekend Close` is enabled, the system monitors broker server time.
 *   On Friday evening at the specified cutoff time (default: `23:45`), the system **force-closes all active positions** and **blocks all new trade entries**.
 *   New orders are blocked until Monday morning at the designated starting hour.
+*   **Log-Flooding Mitigation (MQL5)**: The EA's Friday close timer check isolates active position queries (`CountOpenPositions() > 0`) ensuring execution logs are never flooded with redundant close requests.
 
 ---
 
