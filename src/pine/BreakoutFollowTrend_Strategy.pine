@@ -2,7 +2,7 @@
 // © jzd101
 
 //@version=5
-strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=10)
+strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=100)
 
 // ==========================================
 // Inputs
@@ -91,8 +91,8 @@ if not na(d) and (na(currentDay) or d != currentDay)
 // Sum ALL trades closed this bar (MQL5 OnTradeTransaction fires per-deal; loop covers simultaneous exits)
 if strategy.closedtrades > nz(strategy.closedtrades[1])
     for i = int(nz(strategy.closedtrades[1])) to strategy.closedtrades - 1
-        dailyPnL := dailyPnL + strategy.closedtrades.profit(i)
-dailyLossHit = inpDailyLoss > 0 and dailyPnL <= -dailyLossMax
+        dailyPnL := dailyPnL + strategy.closedtrades.profit(i) - nz(strategy.closedtrades.commission(i))
+dailyLossHit = inpDailyLoss > 0 and not na(currentDay) and dailyPnL <= -dailyLossMax
 
 // ==========================================
 // Signal Conditions — plain comparison on closed bar (matches MQL5: close1 > upperBB / close1 < lowerBB)
@@ -172,7 +172,7 @@ if array.size(active_tp_boxes) > 0
 // Returns the stored slDist and removes the entry from the queue to keep it lean.
 f_pop_sl_dist(string entry_id) =>
     float result = na
-    int num = int(str.tonumber(str.substring(entry_id, 1)))
+    int num = int(str.tonumber(str.substring(entry_id, 1, str.length(entry_id))))
     if not na(num) and array.size(sl_entry_ids) > 0
         for k = 0 to array.size(sl_entry_ids) - 1
             if array.get(sl_entry_ids, k) == num
