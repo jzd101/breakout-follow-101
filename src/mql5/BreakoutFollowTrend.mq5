@@ -25,8 +25,8 @@ input bool   InpWeekendClose = false; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
-input int    InpStartHour = 14;      // Trading start hour (0-23)
-input int    InpEndHour = 3;        // Trading end hour (1-24)
+input int    InpStartHour = 7;       // Trading start hour (0-23)
+input int    InpEndHour = 20;       // Trading end hour (1-24)
 
 int handleEMA, handleBB;
 CTrade trade;
@@ -174,9 +174,12 @@ void OnTick()
       return;
      }
    
-   // Check Trading Hours
+   // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
+   datetime bar1_time = iTime(_Symbol, _Period, 1);
+   if(bar1_time == 0) return; // Time not ready, retry on next tick
+   
    MqlDateTime dt_time;
-   TimeToStruct(TimeTradeServer(), dt_time);
+   TimeToStruct(bar1_time, dt_time);
    bool in_time_window = true;
    if(InpStartHour < InpEndHour)
       in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
@@ -231,14 +234,21 @@ void OnTick()
    PrintFormat("Time: %s, Close: %.5f, EMA: %.5f, UpperBB: %.5f, LowerBB: %.5f, ATR: %.5f, Vol: %d, VolMA: %.2f", 
                TimeToString(current_time), close1, ema[0], upperBB[0], lowerBB[0], atr_val, vol1, vol_ma);
    */
-
+   
    // LONG Condition
    if(ema_long && close1 > upperBB[0] && vol_condition)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
+      
+      double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+      if(tickSize <= 0) tickSize = _Point;
+      
       double slDist = atr_val * InpATRMult;
-      double slPrice = NormalizeDouble(entryPrice - slDist, _Digits);
-      double tpPrice = NormalizeDouble(entryPrice + (slDist * InpRR), _Digits);
+      double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
+      double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+      
+      double slPrice = NormalizeDouble(entryPrice - slDist_rounded, _Digits);
+      double tpPrice = NormalizeDouble(entryPrice + tpDist_rounded, _Digits);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
@@ -252,9 +262,16 @@ void OnTick()
    else if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
+      
+      double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+      if(tickSize <= 0) tickSize = _Point;
+      
       double slDist = atr_val * InpATRMult;
-      double slPrice = NormalizeDouble(entryPrice + slDist, _Digits);
-      double tpPrice = NormalizeDouble(entryPrice - (slDist * InpRR), _Digits);
+      double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
+      double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+      
+      double slPrice = NormalizeDouble(entryPrice + slDist_rounded, _Digits);
+      double tpPrice = NormalizeDouble(entryPrice - tpDist_rounded, _Digits);
       
       double lotSize = CalculateLotSize(slDist);
       if(lotSize > 0)
