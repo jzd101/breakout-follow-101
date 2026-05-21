@@ -42,13 +42,66 @@ bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 
 
 //+------------------------------------------------------------------+
+//| Rebuild realized P&L for the current calendar day from history   |
+//+------------------------------------------------------------------+
+double RebuildDailyPnL()
+  {
+   double pnl = 0.0;
+   datetime now = TimeTradeServer();
+   MqlDateTime dt_now;
+   TimeToStruct(now, dt_now);
+   
+   // Construct start of the current server day (00:00:00)
+   MqlDateTime dt_start = dt_now;
+   dt_start.hour = 0;
+   dt_start.min = 0;
+   dt_start.sec = 0;
+   datetime start_of_day = StructToTime(dt_start);
+   
+   if(HistorySelect(start_of_day, now))
+     {
+      int totalDeals = HistoryDealsTotal();
+      for(int i = 0; i < totalDeals; i++)
+        {
+         ulong ticket = HistoryDealGetTicket(i);
+         if(ticket > 0)
+           {
+            long dealMagic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+            ENUM_DEAL_ENTRY dealEntry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(ticket, DEAL_ENTRY);
+            string dealSymbol = HistoryDealGetString(ticket, DEAL_SYMBOL);
+            
+            if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT && dealSymbol == _Symbol)
+              {
+               double dealProfit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+               double dealSwap = HistoryDealGetDouble(ticket, DEAL_SWAP);
+               double dealComm = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+               pnl += (dealProfit + dealSwap + dealComm);
+              }
+           }
+        }
+     }
+   return pnl;
+  }
+
+//+------------------------------------------------------------------+
 //| Check and reset daily loss tracking on a new calendar day        |
 //+------------------------------------------------------------------+
 void CheckDailyReset(datetime time_to_check)
   {
    MqlDateTime dt;
    TimeToStruct(time_to_check, dt);
-   if(dt.day != g_currentDay || dt.mon != g_currentMon || dt.year != g_currentYear)
+   
+   if(g_currentDay == -1) // EA just loaded / re-initialized
+     {
+      g_currentDay = dt.day;
+      g_currentMon = dt.mon;
+      g_currentYear = dt.year;
+      g_dailyPnL = RebuildDailyPnL();
+      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
+      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+      PrintFormat("Daily Loss Limit initialized. Current Day realized P&L: %.2f, Max Allowed Daily Loss: %.2f", g_dailyPnL, g_dailyLossMax);
+     }
+   else if(dt.day != g_currentDay || dt.mon != g_currentMon || dt.year != g_currentYear)
      {
       g_currentDay = dt.day;
       g_currentMon = dt.mon;
@@ -56,6 +109,7 @@ void CheckDailyReset(datetime time_to_check)
       g_dailyPnL = 0.0;
       double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
       g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+      PrintFormat("Daily Loss Limit reset for new calendar day. Max Allowed Daily Loss: %.2f", g_dailyLossMax);
      }
   }
 
@@ -77,8 +131,13 @@ int OnInit()
    // Calculate daily loss max from initial balance
    double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
-   // Initialize daily tracking variables using the current server time
+   
+   // Set tracking variables to force a lookup
+   g_currentDay = -1;
+   g_currentMon = -1;
+   g_currentYear = -1;
    CheckDailyReset(TimeTradeServer());
+   
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
    // Flag static last_time in OnTick to reset so we don't miss the first bar after re-init
@@ -193,6 +252,11 @@ void OnTick()
       return;
      }
    
+      double close1 = iClose(_Symbol, _Period, 1);
+   if(close1 <= 0) return; // Signal bar not ready, retry on next tick
+   long vol1 = iVolume(_Symbol, _Period, 1);
+   if(vol1 < 0) return; // Signal bar volume not ready, retry on next tick
+
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];
    ArraySetAsSeries(ema, true);
@@ -210,18 +274,23 @@ void OnTick()
    // Successfully fetched and calculated all data! Mark this bar as processed.
    last_time = current_time;
 
-   double close1 = iClose(_Symbol, _Period, 1);
-   long vol1 = iVolume(_Symbol, _Period, 1);
-   
    // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(15).mean()
    double vol_ma = 0;
    if(InpUseVol)
      {
       long vol_sum = 0;
+      bool vol_data_ok = true;
       for(int i=1; i<=InpVolPeriod; i++)
         {
-         vol_sum += iVolume(_Symbol, _Period, i);
+         long v = iVolume(_Symbol, _Period, i);
+         if(v < 0)
+           {
+            vol_data_ok = false;
+            break;
+           }
+         vol_sum += v;
         }
+      if(!vol_data_ok) return; // Volume history not loaded yet, retry on next tick
       vol_ma = (double)vol_sum / InpVolPeriod;
      }
    
@@ -260,7 +329,7 @@ void OnTick()
      }
      
    // SHORT Condition
-   else if(ema_short && close1 < lowerBB[0] && vol_condition)
+   if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       
@@ -325,23 +394,27 @@ double CalculateRMA_ATR(int period)
    // Use a large stabilization window so RMA converges to match Python's full-dataset calc.
    // Python processes all bars from index 0; we simulate by using max available history.
    int totalBars = iBars(_Symbol, _Period);
-   if(totalBars <= period + 1) return -1; // Not enough bars loaded yet
+   if(totalBars <= period + 1) return -1.0; // Not enough bars loaded yet
    int bars_to_calculate = MathMin(period * 50, totalBars - 2);
-   if(bars_to_calculate < period * 2) return -1; // Not enough history
+   if(bars_to_calculate < period * 2) return -1.0; // Not enough history
 
    double atr = 0;
    
    // Initial SMA for the first 'period' bars (seed value)
    for(int i = bars_to_calculate; i > bars_to_calculate - period; i--)
      {
-      tr_sum += GetTrueRange(i);
+      double tr = GetTrueRange(i);
+      if(tr <= 0.0) return -1.0; // Fail early if data is invalid/not loaded
+      tr_sum += tr;
      }
    atr = tr_sum / period;
    
    // Recursive RMA calculation: ATR_t = (ATR_{t-1} * (period-1) + TR_t) / period
    for(int i = bars_to_calculate - period; i >= 1; i--)
      {
-      atr = (atr * (period - 1) + GetTrueRange(i)) / period;
+      double tr = GetTrueRange(i);
+      if(tr <= 0.0) return -1.0; // Fail early if data is invalid/not loaded
+      atr = (atr * (period - 1) + tr) / period;
      }
      
    return atr;
@@ -354,8 +427,11 @@ double CalculateRMA_ATR(int period)
 double GetTrueRange(int index)
   {
    double high = iHigh(_Symbol, _Period, index);
+   if(high <= 0) return 0.0;
    double low = iLow(_Symbol, _Period, index);
+   if(low <= 0) return 0.0;
    double prev_close = iClose(_Symbol, _Period, index + 1);
+   if(prev_close <= 0) return 0.0;
    
    double tr = MathMax(high - low, MathMax(MathAbs(high - prev_close), MathAbs(low - prev_close)));
    return tr;
