@@ -18,9 +18,8 @@ An automated, quantitative volatility breakout trading system specifically optim
 ```text
 breakout-follow-101/
 ├── .agents/                 # AI Assistant skills and settings
-├── docs/                    # Project documentation
 ├── src/
-│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5 + compiled .ex5)
+│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
 │   └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
 └── README.md                # Comprehensive System Technical Specification (This File)
 ```
@@ -31,13 +30,13 @@ breakout-follow-101/
 
 ### 1. MetaTrader 5 Expert Advisor
 Deploy for automated real-time execution:
-1. Copy [BreakoutFollowTrend.mq5](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
+1. Copy [BreakoutFollowTrend.mq5](src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
 2. Compile the EA inside the MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **1H** or **15m** timeframe.
 3. Enable **Algo Trading** in your MT5 terminal.
 
 ### 2. TradingView Pine Script
 Visualize entry signals and dynamic risk tools:
-1. Copy the full source code from [BreakoutFollowTrend_Strategy.pine](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/pine/BreakoutFollowTrend_Strategy.pine).
+1. Copy the full source code from [BreakoutFollowTrend_Strategy.pine](src/pine/BreakoutFollowTrend_Strategy.pine).
 2. In TradingView, open the **Pine Editor** tab, paste the code, and click **Save**.
 3. Click **Add to Chart** and open the **Strategy Tester** tab to inspect trade histories.
 
