@@ -5,10 +5,10 @@
 [![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Language: English](https://img.shields.io/badge/Language-English%20Only-lightgrey?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 
-An automated, quantitative volatility breakout trading system specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across Python research, TradingView visualization, and MetaTrader 5 execution.
+An automated, quantitative volatility breakout trading system specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across TradingView visualization and MetaTrader 5 execution.
 
 > [!IMPORTANT]
-> **100% Logic Parity**: This repository maintains absolute mathematical alignment across Python (Research), TradingView (Visualization), and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across all three platforms.
+> **100% Logic Parity**: This repository maintains absolute mathematical alignment across TradingView (Visualization) and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across both platforms.
 
 ---
 
@@ -19,15 +19,9 @@ breakout-follow-101/
 ├── .agents/                 # AI Assistant skills and settings
 ├── docs/
 │   └── superpowers/specs/   # Technical design specifications
-├── reports/                 # Auto-generated backtest reports
-├── src/
-│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
-│   ├── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
-│   └── python/              # Python Research & Backtest framework
-│       ├── backtest.py      # Core backtest and indicator calculations
-│       ├── download_data.py # Yahoo Finance data downloader
-│       └── run_system.py    # CLI entry point
-└── requirements.txt         # Python library dependencies
+└── src/
+    ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
+    └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
 ```
 
 ---
@@ -36,7 +30,6 @@ breakout-follow-101/
 
 Before executing or deploying any component of the Breakout Follow Trend system, ensure your environment meets the following conditions:
 
-*   **Python Research & Backtest**: Python `3.8` or higher installed, with standard scientific packages (`pandas`, `numpy`, `yfinance`, `pytz`).
 *   **TradingView Visualization**: Active TradingView account with access to the **Pine Editor** (v5).
 *   **MetaTrader 5 Execution**: MetaTrader 5 Terminal installed on a Windows system (or VPS) with active broker connection and Hedging account.
 
@@ -44,26 +37,13 @@ Before executing or deploying any component of the Breakout Follow Trend system,
 
 ## 🚀 1-Minute Quick Start
 
-### 1. Python Backtest
-Instantly run historical simulations for Gold:
-```bash
-# Clone the repository
-git clone https://github.com/jzd101/breakout-follow-101.git
-cd breakout-follow-101
-
-# Run backtest with default Gold parameters
-# (Requires Python and packages: pandas, numpy, yfinance, pytz)
-python src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
-```
-> Reports and monthly stats breakdown will be auto-generated in the `reports/` folder.
-
-### 2. MetaTrader 5 Expert Advisor
+### 1. MetaTrader 5 Expert Advisor
 Deploy for automated real-time execution:
 1. Copy [BreakoutFollowTrend.mq5](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
 2. Compile the EA inside the MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **1H** or **15m** timeframe.
 3. Enable **Algo Trading** in your MT5 terminal.
 
-### 3. TradingView Pine Script
+### 2. TradingView Pine Script
 Visualize entry signals and dynamic risk tools:
 1. Copy the full source code from [BreakoutFollowTrend_Strategy.pine](file:///c:/Users/jessa/Nextcloud/Documents/Code/breakout-follow-101/src/pine/BreakoutFollowTrend_Strategy.pine).
 2. In TradingView, open the **Pine Editor** tab, paste the code, and click **Save**.
@@ -182,10 +162,10 @@ To align the MT5 Expert Advisor to execute at the **exact same absolute moments*
 
 ## 🛡️ Deep-Dive: Advanced Risk Controls
 
-The Breakout Follow Trend system stands out due to its active capital preservation safeguards, fully integrated and logically aligned across Python, MQL5, and Pine Script.
+The Breakout Follow Trend system stands out due to its active capital preservation safeguards, fully integrated and logically aligned across MQL5 and Pine Script.
 
 ### 1. Dynamic Compounding Risk & Position Sizing
-When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity (Pine Script/MT5 EA) or current capital (Python backtest) and the volatility-based Stop Loss distance.
+When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity and the volatility-based Stop Loss distance.
 
 $$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{100} \right)$$
 $$\text{Position Size (Lots/Contracts)} = \frac{\text{Risk Amount}}{\text{ATR (14)} \times \text{ATR Multiplier}}$$
@@ -201,7 +181,6 @@ To protect against consecutive losses or unpredictable market black swan events,
 *   **Boundary Parity**: Uses robust Gregorian rollover protection:
     *   **MQL5**: Tracks year, month, and day shifts (`dt.day`, `dt.mon`, `dt.year`) to prevent reset failures during monthly transitions.
     *   **Pine Script**: Tracks daily timestamp milestones (`time("D")`) for continuous calendar integrity.
-    *   **Python**: Maps calendar date objects (`current_date.date()`) dynamically.
 
 ### 3. Weekend Liquidation Policy
 Holding open positions over the weekend exposes accounts to high-volatility broker gaps and spread expansions.
@@ -214,30 +193,7 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 
 ## ⚙️ Parameters & Configuration
 
-### 1. Python Backtest CLI (`run_system.py`)
-| Parameter | Default | Type | Description |
-| :--- | :--- | :--- | :--- |
-| `--symbol` | (Required) | `str` | Trading symbol, e.g., `XAUUSD`, `GBPUSD` |
-| `--timeframe` | `1h` | `str` | Candle timeframe (`15m`, `1h`, `1d`) |
-| `--period` | `1y` | `str` | Historical data range length (`1mo`, `1y`, etc.) |
-| `--capital` | `10000.0` | `float` | Starting account capital / equity |
-| `--risk` | `2.0` | `float` | Percentage risk per trade |
-| `--rr` | `'1:2'` | `str` | Risk-to-Reward ratio (e.g., `'1:2'` or `'2.0'`) |
-| `--atr-mult` | `2.0` | `float` | ATR Multiplier for Stop Loss |
-| `--no-ema` | `False` | `bool` | Disable the EMA 200 trend filter (uses `--no-ema` flag) |
-| `--no-vol` | `False` | `bool` | Disable the Volume MA confirmation filter (uses `--no-vol` flag) |
-| `--no-compound`| `False` | `bool` | Disable compounding risk (uses `--no-compound` flag) |
-| `--fixed-balance`| `10000.0`| `float` | Fixed balance when compounding is disabled |
-| `--max-trades` | `1` | `int` | Maximum concurrent open positions |
-| `--daily-loss-limit`| `2.0` | `float` | Daily loss limit % (0.0 to disable) |
-| `--start-hour` | `11` | `int` | Trading window start hour (0-23) |
-| `--end-hour` | `24` | `int` | Trading window end hour (1-24) |
-| `--friday-close`| `None` | `str` | Friday evening cutoff time (HH:MM) |
-| `--input-tz` | `None` | `str` | Timezone of the input start/end hours (e.g., `America/New_York`, `Asia/Bangkok`, `UTC`). If `None`, hours are assumed to match the data timezone |
-| `--bb-period` | `15` | `int` | Bollinger Bands Period |
-| `--bb-dev` | `1.5` | `float` | Bollinger Bands Standard Deviation |
-
-### 2. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
+### 1. MetaTrader 5 Expert Advisor (`BreakoutFollowTrend.mq5`)
 | Input Name | Default | Type | Description |
 | :--- | :--- | :--- | :--- |
 | `InpRiskPct` | `2.0` | `double` | Risk % per trade |
@@ -260,7 +216,7 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `InpStartHour` | `14` | `int` | Trading start hour |
 | `InpEndHour` | `3` | `int` | Trading end hour |
 
-### 3. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
+### 2. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
 | Internal Variable | UI Display Label | Default | Type | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `inpRiskPct` | `Risk % per Trade` | `2.0` | `float` | Percentage of base balance to risk based on SL distance |
@@ -282,9 +238,11 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `inpWeekendCl` | `Weekend Close (Friday)`| `false` | `bool` | Enable Friday evening close safety exit |
 | `inpFridayTime` | `Friday Close Time (HHMM)`| `"2345"` | `string` | Friday Time to close in HHMM format |
 
+---
+
 ## 🤝 System Parity & Math Alignment
 
-To preserve system integrity, any mathematical or logic update **MUST** be implemented across all three platforms simultaneously.
-*   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine, MQ5, and Python.
+To preserve system integrity, any mathematical or logic update **MUST** be implemented across both platforms simultaneously.
+*   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
 *   **Tick-Based SL/TP**: SL and TP distances must be anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
 *   **Volume Filter Parity**: Ensure that Volume filters pass automatically if the volume data is unavailable or zero.
