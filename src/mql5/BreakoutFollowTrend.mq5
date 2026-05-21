@@ -252,6 +252,11 @@ void OnTick()
       return;
      }
    
+      double close1 = iClose(_Symbol, _Period, 1);
+   if(close1 <= 0) return; // Signal bar not ready, retry on next tick
+   long vol1 = iVolume(_Symbol, _Period, 1);
+   if(vol1 < 0) return; // Signal bar volume not ready, retry on next tick
+
    // Get indicator values for the completed bar (index 1)
    double ema[], upperBB[], lowerBB[];
    ArraySetAsSeries(ema, true);
@@ -269,18 +274,23 @@ void OnTick()
    // Successfully fetched and calculated all data! Mark this bar as processed.
    last_time = current_time;
 
-   double close1 = iClose(_Symbol, _Period, 1);
-   long vol1 = iVolume(_Symbol, _Period, 1);
-   
    // Calculate Volume MA (SMA) — matches Python: df['Volume'].rolling(15).mean()
    double vol_ma = 0;
    if(InpUseVol)
      {
       long vol_sum = 0;
+      bool vol_data_ok = true;
       for(int i=1; i<=InpVolPeriod; i++)
         {
-         vol_sum += iVolume(_Symbol, _Period, i);
+         long v = iVolume(_Symbol, _Period, i);
+         if(v < 0)
+           {
+            vol_data_ok = false;
+            break;
+           }
+         vol_sum += v;
         }
+      if(!vol_data_ok) return; // Volume history not loaded yet, retry on next tick
       vol_ma = (double)vol_sum / InpVolPeriod;
      }
    
