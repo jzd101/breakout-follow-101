@@ -1,10 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                     BreakoutFollowTrend.mq5      |
-//|                                  Copyright 2026, jzd101          |
+//|                    Copyright 2026, jzd101 (Aligned with Pine v5) |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.01"
+#property version   "1.02"
+
 
 #include <Trade\Trade.mqh>
 
