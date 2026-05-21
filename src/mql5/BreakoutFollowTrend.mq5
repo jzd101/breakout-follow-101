@@ -42,13 +42,66 @@ bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 
 
 //+------------------------------------------------------------------+
+//| Rebuild realized P&L for the current calendar day from history   |
+//+------------------------------------------------------------------+
+double RebuildDailyPnL()
+  {
+   double pnl = 0.0;
+   datetime now = TimeTradeServer();
+   MqlDateTime dt_now;
+   TimeToStruct(now, dt_now);
+   
+   // Construct start of the current server day (00:00:00)
+   MqlDateTime dt_start = dt_now;
+   dt_start.hour = 0;
+   dt_start.min = 0;
+   dt_start.sec = 0;
+   datetime start_of_day = StructToTime(dt_start);
+   
+   if(HistorySelect(start_of_day, now))
+     {
+      int totalDeals = HistoryDealsTotal();
+      for(int i = 0; i < totalDeals; i++)
+        {
+         ulong ticket = HistoryDealGetTicket(i);
+         if(ticket > 0)
+           {
+            long dealMagic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+            ENUM_DEAL_ENTRY dealEntry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(ticket, DEAL_ENTRY);
+            string dealSymbol = HistoryDealGetString(ticket, DEAL_SYMBOL);
+            
+            if(dealMagic == InpMagic && dealEntry == DEAL_ENTRY_OUT && dealSymbol == _Symbol)
+              {
+               double dealProfit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+               double dealSwap = HistoryDealGetDouble(ticket, DEAL_SWAP);
+               double dealComm = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+               pnl += (dealProfit + dealSwap + dealComm);
+              }
+           }
+        }
+     }
+   return pnl;
+  }
+
+//+------------------------------------------------------------------+
 //| Check and reset daily loss tracking on a new calendar day        |
 //+------------------------------------------------------------------+
 void CheckDailyReset(datetime time_to_check)
   {
    MqlDateTime dt;
    TimeToStruct(time_to_check, dt);
-   if(dt.day != g_currentDay || dt.mon != g_currentMon || dt.year != g_currentYear)
+   
+   if(g_currentDay == -1) // EA just loaded / re-initialized
+     {
+      g_currentDay = dt.day;
+      g_currentMon = dt.mon;
+      g_currentYear = dt.year;
+      g_dailyPnL = RebuildDailyPnL();
+      double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
+      g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+      PrintFormat("Daily Loss Limit initialized. Current Day realized P&L: %.2f, Max Allowed Daily Loss: %.2f", g_dailyPnL, g_dailyLossMax);
+     }
+   else if(dt.day != g_currentDay || dt.mon != g_currentMon || dt.year != g_currentYear)
      {
       g_currentDay = dt.day;
       g_currentMon = dt.mon;
@@ -56,6 +109,7 @@ void CheckDailyReset(datetime time_to_check)
       g_dailyPnL = 0.0;
       double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
       g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
+      PrintFormat("Daily Loss Limit reset for new calendar day. Max Allowed Daily Loss: %.2f", g_dailyLossMax);
      }
   }
 
@@ -77,8 +131,13 @@ int OnInit()
    // Calculate daily loss max from initial balance
    double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
-   // Initialize daily tracking variables using the current server time
+   
+   // Set tracking variables to force a lookup
+   g_currentDay = -1;
+   g_currentMon = -1;
+   g_currentYear = -1;
    CheckDailyReset(TimeTradeServer());
+   
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
    // Flag static last_time in OnTick to reset so we don't miss the first bar after re-init
