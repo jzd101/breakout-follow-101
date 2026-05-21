@@ -183,36 +183,40 @@ f_pop_sl_dist(string entry_id) =>
     result
 
 // 2. New entry detection — compute SL/TP from actual fill price + signal bar's slDist
-if strategy.opentrades > strategy.opentrades[1]
-    int num_opened = strategy.opentrades - strategy.opentrades[1]
-    for i = 0 to num_opened - 1
-        int trade_idx = strategy.opentrades - num_opened + i
-        string eid    = strategy.opentrades.entry_id(trade_idx)
-        // Retrieve per-entry slDist from queue — avoids off-by-one when MaxTrades > 1
-        float sd      = f_pop_sl_dist(eid)
-        // Fallback to current bar's slDist if queue lookup fails (should not happen)
-        if na(sd)
-            sd := slDist
-        bool is_long  = strategy.opentrades.size(trade_idx) > 0
-        float en      = strategy.opentrades.entry_price(trade_idx)
-        
-        // Mathematically round the SL/TP prices to the nearest tick value for 100% MQL5 parity
-        float sd_rounded = math.round(sd / syminfo.mintick) * syminfo.mintick
-        float tp_rounded = math.round((sd * inpRR) / syminfo.mintick) * syminfo.mintick
-        
-        float tp      = is_long ? en + tp_rounded : en - tp_rounded
-        float sl      = is_long ? en - sd_rounded : en + sd_rounded
-
-        box b_tp  = box.new(bar_index-1, is_long ? tp : en, bar_index, is_long ? en : tp, bgcolor=color_tp_fill, border_color=color_tp_border, border_width=1)
-        box b_sl  = box.new(bar_index-1, is_long ? en : sl, bar_index, is_long ? sl : en, bgcolor=color_sl_fill, border_color=color_sl_border, border_width=1)
-        line l_en = line.new(bar_index-1, en, bar_index, en, color=color_entry_line, width=1)
-
-        array.push(active_tp_boxes, b_tp)
-        array.push(active_sl_boxes, b_sl)
-        array.push(active_entry_lines, l_en)
-        array.push(active_sl_prices, sl)
-        array.push(active_tp_prices, tp)
-        array.push(active_trade_ids, eid)
+int total_trades = strategy.closedtrades + strategy.opentrades
+int prev_total_trades = nz(strategy.closedtrades[1]) + nz(strategy.opentrades[1])
+if total_trades > prev_total_trades
+    int num_opened = total_trades - prev_total_trades
+    int trades_to_process = math.min(num_opened, strategy.opentrades)
+    if trades_to_process > 0
+        for i = 0 to trades_to_process - 1
+            int trade_idx = strategy.opentrades - trades_to_process + i
+            string eid    = strategy.opentrades.entry_id(trade_idx)
+            // Retrieve per-entry slDist from queue — avoids off-by-one when MaxTrades > 1
+            float sd      = f_pop_sl_dist(eid)
+            // Fallback to current bar's slDist if queue lookup fails (should not happen)
+            if na(sd)
+                sd := slDist
+            bool is_long  = strategy.opentrades.size(trade_idx) > 0
+            float en      = strategy.opentrades.entry_price(trade_idx)
+            
+            // Mathematically round the SL/TP prices to the nearest tick value for 100% MQL5 parity
+            float sd_rounded = math.round(sd / syminfo.mintick) * syminfo.mintick
+            float tp_rounded = math.round((sd * inpRR) / syminfo.mintick) * syminfo.mintick
+            
+            float tp      = is_long ? en + tp_rounded : en - tp_rounded
+            float sl      = is_long ? en - sd_rounded : en + sd_rounded
+    
+            box b_tp  = box.new(bar_index-1, is_long ? tp : en, bar_index, is_long ? en : tp, bgcolor=color_tp_fill, border_color=color_tp_border, border_width=1)
+            box b_sl  = box.new(bar_index-1, is_long ? en : sl, bar_index, is_long ? sl : en, bgcolor=color_sl_fill, border_color=color_sl_border, border_width=1)
+            line l_en = line.new(bar_index-1, en, bar_index, en, color=color_entry_line, width=1)
+    
+            array.push(active_tp_boxes, b_tp)
+            array.push(active_sl_boxes, b_sl)
+            array.push(active_entry_lines, l_en)
+            array.push(active_sl_prices, sl)
+            array.push(active_tp_prices, tp)
+            array.push(active_trade_ids, eid)
 
 // 3. Handle Exit detection (Prune active arrays based on currently open trades)
 if array.size(active_trade_ids) > 0
