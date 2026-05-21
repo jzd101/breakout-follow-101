@@ -242,9 +242,55 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 
 ## 🤝 System Parity & Math Alignment
 
-To preserve system integrity, any mathematical or logic update **MUST** be implemented across both platforms simultaneously.
+To preserve system integrity, any mathematical or logic update **MUST** be implemented across both platforms simultaneously. Below is the technical breakdown of how absolute parity is achieved between **TradingView (Pine Script v5)** and **MetaTrader 5 (MQL5)**:
+
+### 1. Stop Loss & Take Profit Tick-Size Rounding
+
+TradingView calculates SL/TP exits in ticks, which inherently rounds the distances to the nearest tick before establishing execution levels. MT5 broker terminals will reject or slightly shift orders if SL/TP are submitted as raw floating-point decimals. 
+
+To eliminate micro-pip discrepancies, both platforms round distances using the symbol's tick size before calculating final prices:
+
+*   **TradingView (Pine Script v5)**:
+    ```pinescript
+    lossTicks   = math.round(slDist / syminfo.mintick)
+    profitTicks = math.round(slDist * inpRR / syminfo.mintick)
+    ```
+*   **MetaTrader 5 (MQL5)**:
+    ```mql5
+    double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+    if(tickSize <= 0) tickSize = _Point;
+    
+    double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
+    double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+    ```
+
+### 2. Completed-Bar Hour Filtering
+
+Pine Script evaluates conditions on the close of a candle (Signal Bar at index 1) and executes orders at the open of the next candle (Entry Bar at index 0). Evaluating the active tick's hour in MT5 causes a 1-bar discrepancy on session window transitions (e.g. entry occurs 1 bar late).
+
+We align the session timing by evaluating the completed signal bar's open time instead of active tick time:
+
+*   **TradingView (Pine Script v5)**:
+    ```pinescript
+    // hour represents the hour of the signal bar being evaluated
+    isInTimeWindow = inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour)
+    ```
+*   **MetaTrader 5 (MQL5)**:
+    ```mql5
+    // Query completed bar (index 1) time
+    datetime bar1_time = iTime(_Symbol, _Period, 1);
+    MqlDateTime dt_time;
+    TimeToStruct(bar1_time, dt_time);
+    
+    bool in_time_window = true;
+    if(InpStartHour < InpEndHour)
+       in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
+    else
+       in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
+    ```
+
+### 3. Indicator & Volume Smoothing
+
 *   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
-*   **Tick-Based SL/TP**: SL and TP distances must be anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
-*   **Tick-Size Rounding**: Stop Loss and Take Profit distances are rounded to the nearest broker tick size (`SYMBOL_TRADE_TICK_SIZE` / `syminfo.mintick`) before adding/subtracting them from the entry price, guaranteeing identical level executions down to the point.
-*   **Completed-Bar Hour Filtering**: Trading hours are evaluated based on the completed signal bar's open time (index 1), ensuring that entries on session window transitions occur on the exact same bar.
-*   **Volume Filter Parity**: Ensure that Volume filters pass automatically if the volume data is unavailable or zero.
+*   **Tick-Based SL/TP**: SL and TP distances are anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
+*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero, preventing system lockouts on illiquid candles.
