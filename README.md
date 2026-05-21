@@ -213,8 +213,8 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 | `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time) |
 | `InpMaxTrades` | `1` | `int` | Maximum concurrent trades |
 | `InpDailyLossLimit`| `2.0` | `double` | Daily loss limit % |
-| `InpStartHour` | `14` | `int` | Trading start hour |
-| `InpEndHour` | `3` | `int` | Trading end hour |
+| `InpStartHour` | `7` | `int` | Trading start hour |
+| `InpEndHour` | `20` | `int` | Trading end hour |
 
 ### 2. TradingView Pine Script (`BreakoutFollowTrend_Strategy.pine`)
 | Internal Variable | UI Display Label | Default | Type | Description |
@@ -245,4 +245,6 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 To preserve system integrity, any mathematical or logic update **MUST** be implemented across both platforms simultaneously.
 *   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
 *   **Tick-Based SL/TP**: SL and TP distances must be anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
+*   **Tick-Size Rounding**: Stop Loss and Take Profit distances are rounded to the nearest broker tick size (`SYMBOL_TRADE_TICK_SIZE` / `syminfo.mintick`) before adding/subtracting them from the entry price, guaranteeing identical level executions down to the point.
+*   **Completed-Bar Hour Filtering**: Trading hours are evaluated based on the completed signal bar's open time (index 1), ensuring that entries on session window transitions occur on the exact same bar.
 *   **Volume Filter Parity**: Ensure that Volume filters pass automatically if the volume data is unavailable or zero.
