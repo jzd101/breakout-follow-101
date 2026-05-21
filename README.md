@@ -5,10 +5,30 @@
 [![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Language: English](https://img.shields.io/badge/Language-English%20Only-lightgrey?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 
-An automated, quantitative trading system based on the **Breakout Follow Trend** strategy—specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across Python research, TradingView visualization, and MetaTrader 5 execution.
+An automated, quantitative volatility breakout trading system specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across Python research, TradingView visualization, and MetaTrader 5 execution.
 
 > [!IMPORTANT]
 > **100% Logic Parity**: This repository maintains absolute mathematical alignment across Python (Research), TradingView (Visualization), and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across all three platforms.
+
+---
+
+## 📂 Repository Blueprint
+
+```text
+breakout-follow-101/
+├── .agents/                 # AI Assistant skills and settings
+├── docs/
+│   └── superpowers/specs/   # Technical design specifications
+├── reports/                 # Auto-generated backtest reports
+├── src/
+│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
+│   ├── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
+│   └── python/              # Python Research & Backtest framework
+│       ├── backtest.py      # Core backtest and indicator calculations
+│       ├── download_data.py # Yahoo Finance data downloader
+│       └── run_system.py    # CLI entry point
+└── requirements.txt         # Python library dependencies
+```
 
 ---
 
@@ -32,6 +52,7 @@ git clone https://github.com/jzd101/breakout-follow-101.git
 cd breakout-follow-101
 
 # Run backtest with default Gold parameters
+# (Requires Python and packages: pandas, numpy, yfinance, pytz)
 python src/python/run_system.py --symbol XAUUSD --period 1y --risk 2.0 --rr 2.0
 ```
 > Reports and monthly stats breakdown will be auto-generated in the `reports/` folder.
