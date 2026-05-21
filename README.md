@@ -139,16 +139,27 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 
 ---
 
-### 🕒 Trading Time Calculation: TradingView (Exchange Time) to MT5 (Broker Server Time)
+## 🕒 Trading Time Calculation: TradingView (Exchange Time) to MT5 (Broker Server Time)
 
 When setting up the trading session times, it is critical to understand how TradingView (Pine Script) and MetaTrader 5 (MT5) interpret time parameters to maintain **absolute parity** in execution.
 
-#### 1. Understanding TradingView's Back-end Time (Exchange Time)
+```mermaid
+gantt
+    title Timezone Mapping (Gold 15m Preset)
+    dateFormat HH
+    axisFormat %H:00
+    section TradingView (Exchange Time / UTC-4)
+    Trading Session (13:00 - 20:00) :active, 13, 20
+    section MT5 Broker Server Time (UTC+3)
+    Trading Session (20:00 - 03:00) :crit, 20, 27
+```
+
+### 1. Understanding TradingView's Back-end Time (Exchange Time)
 *   **Visual Clock vs. Back-end Logic**: Changing the timezone at the bottom-right corner of your TradingView screen (e.g., to UTC+7 Bangkok Time) is only a visual aid for chart viewing.
 *   **Pine Script Behavior**: Under the hood, the Pine Script engine ignores your localized UI timezone. It always evaluates candle timestamps using the asset's **Exchange Time** (which is **UTC-4 / New York Time** for Gold/XAUUSD).
 *   **Parameters**: Therefore, entering `Start Hour = 13` and `End Hour = 20` in the TradingView strategy strictly translates to **13:00** and **20:00 Exchange Time (UTC-4)**.
 
-#### 2. Determining the Offset (MT5 Server vs. TradingView Exchange)
+### 2. Determining the Offset (MT5 Server vs. TradingView Exchange)
 To find the exact time difference between your MT5 broker's server time and TradingView's Exchange time, compare the hourly candle timestamp on both platforms at the same moment:
 *   **MetaTrader 5 Candle Time**: Shows **10:00**
 *   **TradingView (Exchange Time) Candle Time**: Shows **03:00**
@@ -156,7 +167,7 @@ To find the exact time difference between your MT5 broker's server time and Trad
     $$\text{Offset} = \text{MT5 Time} - \text{TradingView Exchange Time} = 10 - 3 = +7 \text{ hours}$$
 *   This indicates that your **MT5 Broker Server Time runs 7 hours ahead** of TradingView's Exchange Time.
 
-#### 3. Converting TradingView Inputs to MT5 Parameters
+### 3. Converting TradingView Inputs to MT5 Parameters
 To align the MT5 Expert Advisor to execute at the **exact same absolute moments** as the TradingView strategy, add the $+7$ hour offset to your TradingView inputs:
 
 *   **MT5 Start Hour (`InpStartHour`)**: 
@@ -166,7 +177,6 @@ To align the MT5 Expert Advisor to execute at the **exact same absolute moments*
 
 > [!TIP]
 > To run the precise **Gold 15m Preset** (TradingView: 13:00 - 20:00), configure your MT5 EA inputs as **Start = 20** and **End = 3**. This achieves perfect mathematical synchronization across both systems!
-
 
 ---
 
