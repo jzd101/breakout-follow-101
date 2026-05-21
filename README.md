@@ -18,8 +18,9 @@ An automated, quantitative volatility breakout trading system specifically optim
 ```text
 breakout-follow-101/
 ├── .agents/                 # AI Assistant skills and settings
+├── docs/                    # Project documentation
 ├── src/
-│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
+│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5 + compiled .ex5)
 │   └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
 └── README.md                # Comprehensive System Technical Specification (This File)
 ```
@@ -117,10 +118,10 @@ $$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{1
 
 $$\text{Stop Loss Distance} = \text{ATR (14)} \times \text{ATR Multiplier}$$
 
-$$\text{Position Size (Lots)} = \frac{\text{Risk Amount}}{\text{Stop Loss Distance in Ticks} \times \text{Tick Value per Lot}}$$
+$$\text{Position Size (Lots)} = \frac{\text{Risk Amount}}{\left(\frac{\text{SL Distance}}{\text{Tick Size}}\right) \times \text{Tick Value per Lot}}$$
 
-*   **Compounding Enabled**: `Base Balance = Live Account Equity` (scales lot sizes up as the account grows, and down during drawdowns).
-*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance` (maintains fixed contract/lot sizes).
+*   **Compounding Enabled**: `Base Balance = Live Account Equity` — lot sizes scale up as the account grows and shrink during drawdowns.
+*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance (when compounding off)` — maintains fixed contract/lot sizes regardless of equity.
 *   *Tick Rounding Safety*: Both platforms mathematically round the Stop Loss and Take Profit distances to the nearest tick value before executing. This prevents order rejection on MT5 due to raw decimal price offsets.
 
 ### 2. Transactional Daily Loss Limit (Drawdown Lockout)
@@ -190,9 +191,12 @@ To preserve system integrity, any mathematical or logic update **MUST** be imple
 TradingView calculates SL/TP exits in ticks, which inherently rounds the distances to the nearest tick before establishing execution levels. MT5 broker terminals will reject or slightly shift orders if SL/TP are submitted as raw floating-point decimals. Both platforms round distances using the symbol's tick size before calculating final prices:
 
 ```pinescript
-// TradingView (Pine Script v5)
-lossTicks   = math.round(slDist / syminfo.mintick)
-profitTicks = math.round(slDist * inpRR / syminfo.mintick)
+// TradingView (Pine Script v5) — round distance, then multiply back to price units
+float sd_rounded = math.round(sd / syminfo.mintick) * syminfo.mintick
+float tp_rounded = math.round((sd * inpRR) / syminfo.mintick) * syminfo.mintick
+
+float sl = is_long ? entry_price - sd_rounded : entry_price + sd_rounded
+float tp = is_long ? entry_price + tp_rounded : entry_price - tp_rounded
 ```
 
 ```mql5
@@ -202,6 +206,9 @@ if(tickSize <= 0) tickSize = _Point;
 
 double slDist_rounded = MathRound(slDist / tickSize) * tickSize;
 double tpDist_rounded = MathRound((slDist * InpRR) / tickSize) * tickSize;
+
+double slPrice = NormalizeDouble(entryPrice - slDist_rounded, _Digits); // Long
+double tpPrice = NormalizeDouble(entryPrice + tpDist_rounded, _Digits); // Long
 ```
 
 ### 2. Completed-Bar Hour Filtering
@@ -231,8 +238,41 @@ else
 ### 3. Indicator & Volume Smoothing
 
 *   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
-*   **Tick-Based SL/TP**: SL and TP distances are anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
-*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero, preventing system lockouts on illiquid candles.
+*   **Fill-Price Anchoring**: SL and TP distances are anchored strictly to the **actual fill price** (`strategy.opentrades.entry_price`) of the execution candle, preventing calculation drift from using signal-bar close price.
+*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero (`na(volMA) or volMA == 0`), preventing system lockouts on illiquid candles.
+*   **Tick-Value Position Sizing**: Both platforms compute lot size via `riskAmount / (slDist / tickSize * tickValuePerLot)`. Pine Script uses `syminfo.pointvalue` for CFD/Futures scaling; MQL5 uses `SYMBOL_TRADE_TICK_VALUE` and `SYMBOL_TRADE_TICK_SIZE` for exact broker-side precision.
+
+### 4. Per-Entry SL/TP Queue (MaxTrades > 1 Support)
+
+When `MaxTrades > 1`, multiple signals can fire on consecutive bars before the visual engine processes them. To prevent an off-by-one mismatch (where the wrong ATR value is used for a visual tool), each signal's `slDist` is pushed into a keyed queue (`sl_entry_ids` / `sl_dist_queue`) *before* the entry is submitted. When the entry is confirmed, the queue is looked up by the unique entry ID (e.g., `"L5"` → `5`) and the correct distance is retrieved and removed.
+
+---
+
+## 🖼️ Visual Chart Tools (TradingView Only)
+
+The Pine Script strategy renders a live **position management overlay** directly on the TradingView chart — matching the visual experience of TradingView's built-in order tools. This is a display-only layer; it has no effect on backtest calculations.
+
+| Visual Element | Description |
+| :--- | :--- |
+| **EMA Line** | Blue line showing the EMA Trend Filter (hidden when EMA Filter is disabled) |
+| **Bollinger Bands** | Upper and Lower BB with a semi-transparent grey fill zone |
+| **TP Box** (green) | A dynamically extended green box from entry to Take Profit price |
+| **SL Box** (red) | A dynamically extended red box from entry to Stop Loss price |
+| **Entry Line** (grey dashed) | A dashed horizontal line marking the exact fill price of each open trade |
+| **TP Label** (green) | Right-edge label showing TP price and distance in pips/ticks |
+| **SL Label** (red) | Right-edge label showing SL price and distance in pips/ticks |
+| **Entry Label** (grey) | Right-edge label showing trade direction (▲ LONG / ▼ SHORT) and fill price |
+
+### Visual Lifecycle
+1. **On New Entry**: A TP box, SL box, entry dashed line, and three labels (TP, SL, Entry) are created anchored at the actual fill price (`strategy.opentrades.entry_price`), using the signal bar's ATR-based SL/TP distances rounded to the nearest tick.
+2. **Per Bar**: All active boxes, lines, and labels extend to the current bar automatically.
+3. **On Trade Close**: The closed trade's boxes, line, and labels are deleted to keep the chart clean.
+4. **Emergency Reset**: If `strategy.position_size == 0` but stale visual objects remain (e.g. after a manual strategy restart), all objects are force-deleted and arrays are cleared.
+
+### Pip / Tick Display
+The label helper `f_pips()` converts the raw tick distance into human-readable pips:
+*   **Forex (5-decimal pairs)**: divides tick count by 10 to display standard pips.
+*   **All other instruments** (e.g., Gold/CFDs): displays the raw tick count directly.
 
 ---
 
@@ -278,9 +318,9 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 | `InpVolPeriod` | `15` | `int` | Volume MA Period |
 | `InpMagic` | `123456` | `int` | Unique Magic Number for position tracking |
 | `InpWeekendClose` | `false` | `bool` | Enable Friday evening close safety exit |
-| `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time) |
+| `InpFridayTime` | `"2345"` | `string` | Friday Time to close (Broker Time, e.g. `23:45` or `2345`) |
 | `InpMaxTrades` | `1` | `int` | Maximum concurrent trades |
-| `InpDailyLossLimit`| `2.0` | `double` | Realized daily drawdown lockout percentage |
+| `InpDailyLossLimit`| `2.0` | `double` | Realized daily drawdown lockout percentage (0 = disabled) |
 | `InpStartHour` | `7` | `int` | Trading window start hour (Broker Server Time) |
 | `InpEndHour` | `20` | `int` | Trading window end hour (Broker Server Time) |
 
@@ -292,8 +332,8 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 | `inpATRMult` | `ATR Multiplier (SL)` | `2.0` | `float` | ATR multiplier to determine Stop Loss distance |
 | `inpMaxTrades` | `Max Concurrent Trades` | `1` | `int` | Maximum concurrent open positions |
 | `inpCompound` | `Use Compounding Risk` | `true` | `bool` | Use Compounding Risk based on current equity |
-| `inpFixedBal` | `Fixed Balance`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
-| `inpDailyLoss` | `Daily Loss Limit %` | `2.0` | `float` | Realized daily loss lockout percentage |
+| `inpFixedBal` | `Fixed Balance (when compounding off)`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
+| `inpDailyLoss` | `Daily Loss Limit %` | `2.0` | `float` | Realized daily loss lockout percentage (0 = disabled) |
 | `inpUseEMA` | `Use EMA Trend Filter` | `true` | `bool` | Filter entries using EMA trend filter |
 | `inpEMAPeriod` | `EMA Period` | `200` | `int` | EMA Trend Filter Period |
 | `inpBBPeriod` | `Bollinger Bands Period`| `15` | `int` | Bollinger Bands Period |
@@ -318,7 +358,7 @@ Deploying a quantitative trading system requires strict compliance with trade en
    * **Setup**: Deploy the MT5 terminal to a low-latency VPS physically located near your broker's execution server (London/LD4 or New York/NY4 are standard for Gold brokers).
    * **Uptime**: Ensure the VPS is configured with automated OS update delays and auto-start scripts for the MT5 terminal to prevent downtime during active hours.
 3. **Indicator Pre-calculation**:
-   * **Execution**: Upon first attachment, the MQL5 indicator handles `iMA` and `iBands` initialize instantly, but history stabilization is required for the RMA ATR. The EA includes a stabilization check that requires at least `InpATRPeriod * 2` bars to have loaded before executing trades.
+   * **Execution**: Upon first attachment, the MQL5 indicator handles `iMA` and `iBands` initialize instantly, but history stabilization is required for the RMA ATR. The EA stabilizes the ATR by seeding with a large history window (`period * 50` bars) to converge to the correct value before executing any trades.
 4. **Broker-Specific Spread & Commission Guard**:
    * Gold spreads can expand drastically during high-impact news releases or rollover hours (23:59 - 00:05 Server Time). Ensure your broker offers institutional raw-spread accounts for Gold to minimize slippage, as high transaction costs can significantly erode breakout performance.
 5. **Magic Number Isolation**:
