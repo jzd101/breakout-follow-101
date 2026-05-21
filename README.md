@@ -18,8 +18,9 @@ An automated, quantitative volatility breakout trading system specifically optim
 ```text
 breakout-follow-101/
 ├── .agents/                 # AI Assistant skills and settings
+├── docs/                    # Project documentation
 ├── src/
-│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
+│   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5 + compiled .ex5)
 │   └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
 └── README.md                # Comprehensive System Technical Specification (This File)
 ```
@@ -117,10 +118,10 @@ $$\text{Risk Amount} = \text{Base Balance} \times \left( \frac{\text{Risk \%}}{1
 
 $$\text{Stop Loss Distance} = \text{ATR (14)} \times \text{ATR Multiplier}$$
 
-$$\text{Position Size (Lots)} = \frac{\text{Risk Amount}}{\text{Stop Loss Distance in Ticks} \times \text{Tick Value per Lot}}$$
+$$\text{Position Size (Lots)} = \frac{\text{Risk Amount}}{\text{Stop Loss Distance} \times \text{Symbol Point Value}}$$
 
-*   **Compounding Enabled**: `Base Balance = Live Account Equity` (scales lot sizes up as the account grows, and down during drawdowns).
-*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance` (maintains fixed contract/lot sizes).
+*   **Compounding Enabled**: `Base Balance = Live Account Equity` — lot sizes scale up as the account grows and shrink during drawdowns.
+*   **Compounding Disabled**: `Base Balance = User-defined Fixed Balance (when compounding off)` — maintains fixed contract/lot sizes regardless of equity.
 *   *Tick Rounding Safety*: Both platforms mathematically round the Stop Loss and Take Profit distances to the nearest tick value before executing. This prevents order rejection on MT5 due to raw decimal price offsets.
 
 ### 2. Transactional Daily Loss Limit (Drawdown Lockout)
@@ -190,9 +191,12 @@ To preserve system integrity, any mathematical or logic update **MUST** be imple
 TradingView calculates SL/TP exits in ticks, which inherently rounds the distances to the nearest tick before establishing execution levels. MT5 broker terminals will reject or slightly shift orders if SL/TP are submitted as raw floating-point decimals. Both platforms round distances using the symbol's tick size before calculating final prices:
 
 ```pinescript
-// TradingView (Pine Script v5)
-lossTicks   = math.round(slDist / syminfo.mintick)
-profitTicks = math.round(slDist * inpRR / syminfo.mintick)
+// TradingView (Pine Script v5) — round distance, then multiply back to price units
+float sd_rounded = math.round(sd / syminfo.mintick) * syminfo.mintick
+float tp_rounded = math.round((sd * inpRR) / syminfo.mintick) * syminfo.mintick
+
+float sl = is_long ? entry_price - sd_rounded : entry_price + sd_rounded
+float tp = is_long ? entry_price + tp_rounded : entry_price - tp_rounded
 ```
 
 ```mql5
@@ -231,8 +235,33 @@ else
 ### 3. Indicator & Volume Smoothing
 
 *   **RMA Smoothing**: Always calculate ATR using Wilder's Smoothing (RMA) to ensure SL/TP calculations match Pine and MQ5.
-*   **Tick-Based SL/TP**: SL and TP distances are anchored strictly to the **actual open/fill price** of the execution candle, preventing calculation drift.
-*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero, preventing system lockouts on illiquid candles.
+*   **Fill-Price Anchoring**: SL and TP distances are anchored strictly to the **actual fill price** (`strategy.opentrades.entry_price`) of the execution candle, preventing calculation drift from using signal-bar close price.
+*   **Volume Filter Parity**: Volume filters are designed to pass automatically if the volume data is unavailable or zero (`na(volMA) or volMA == 0`), preventing system lockouts on illiquid candles.
+*   **Symbol Point Value Scaling**: Position sizing divides by `syminfo.pointvalue` to correctly scale lot sizes across Futures, CFDs, and Forex instruments.
+
+### 4. Per-Entry SL/TP Queue (MaxTrades > 1 Support)
+
+When `MaxTrades > 1`, multiple signals can fire on consecutive bars before the visual engine processes them. To prevent an off-by-one mismatch (where the wrong ATR value is used for a visual tool), each signal's `slDist` is pushed into a keyed queue (`sl_entry_ids` / `sl_dist_queue`) *before* the entry is submitted. When the entry is confirmed, the queue is looked up by the unique entry ID (e.g., `"L5"` → `5`) and the correct distance is retrieved and removed.
+
+---
+
+## 🖼️ Visual Chart Tools (TradingView Only)
+
+The Pine Script strategy renders a live **position management overlay** directly on the TradingView chart — matching the visual experience of TradingView's built-in order tools. This is a display-only layer; it has no effect on backtest calculations.
+
+| Visual Element | Description |
+| :--- | :--- |
+| **EMA Line** | Blue line showing the EMA Trend Filter (hidden when EMA Filter is disabled) |
+| **Bollinger Bands** | Upper and Lower BB with a semi-transparent grey fill zone |
+| **TP Box** (green) | A dynamically extended green box from entry to Take Profit price |
+| **SL Box** (red) | A dynamically extended red box from entry to Stop Loss price |
+| **Entry Line** (grey) | A horizontal line marking the exact fill price of each open trade |
+
+### Visual Lifecycle
+1. **On New Entry**: A TP box, SL box, and entry line are created anchored at the actual fill price (`strategy.opentrades.entry_price`), using the signal bar's ATR-based SL/TP distances.
+2. **Per Bar**: All active boxes and lines extend to the current bar automatically.
+3. **On Trade Close**: The closed trade's boxes and line are deleted to keep the chart clean.
+4. **Emergency Reset**: If `strategy.position_size == 0` but stale visual objects remain (e.g. after a manual strategy restart), all objects are force-deleted and arrays are cleared.
 
 ---
 
@@ -292,7 +321,7 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 | `inpATRMult` | `ATR Multiplier (SL)` | `2.0` | `float` | ATR multiplier to determine Stop Loss distance |
 | `inpMaxTrades` | `Max Concurrent Trades` | `1` | `int` | Maximum concurrent open positions |
 | `inpCompound` | `Use Compounding Risk` | `true` | `bool` | Use Compounding Risk based on current equity |
-| `inpFixedBal` | `Fixed Balance`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
+| `inpFixedBal` | `Fixed Balance (when compounding off)`| `10000.0` | `float` | Fixed balance if Compounding is disabled |
 | `inpDailyLoss` | `Daily Loss Limit %` | `2.0` | `float` | Realized daily loss lockout percentage |
 | `inpUseEMA` | `Use EMA Trend Filter` | `true` | `bool` | Filter entries using EMA trend filter |
 | `inpEMAPeriod` | `EMA Period` | `200` | `int` | EMA Trend Filter Period |
