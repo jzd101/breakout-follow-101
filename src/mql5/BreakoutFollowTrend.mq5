@@ -384,23 +384,27 @@ double CalculateRMA_ATR(int period)
    // Use a large stabilization window so RMA converges to match Python's full-dataset calc.
    // Python processes all bars from index 0; we simulate by using max available history.
    int totalBars = iBars(_Symbol, _Period);
-   if(totalBars <= period + 1) return -1; // Not enough bars loaded yet
+   if(totalBars <= period + 1) return -1.0; // Not enough bars loaded yet
    int bars_to_calculate = MathMin(period * 50, totalBars - 2);
-   if(bars_to_calculate < period * 2) return -1; // Not enough history
+   if(bars_to_calculate < period * 2) return -1.0; // Not enough history
 
    double atr = 0;
    
    // Initial SMA for the first 'period' bars (seed value)
    for(int i = bars_to_calculate; i > bars_to_calculate - period; i--)
      {
-      tr_sum += GetTrueRange(i);
+      double tr = GetTrueRange(i);
+      if(tr <= 0.0) return -1.0; // Fail early if data is invalid/not loaded
+      tr_sum += tr;
      }
    atr = tr_sum / period;
    
    // Recursive RMA calculation: ATR_t = (ATR_{t-1} * (period-1) + TR_t) / period
    for(int i = bars_to_calculate - period; i >= 1; i--)
      {
-      atr = (atr * (period - 1) + GetTrueRange(i)) / period;
+      double tr = GetTrueRange(i);
+      if(tr <= 0.0) return -1.0; // Fail early if data is invalid/not loaded
+      atr = (atr * (period - 1) + tr) / period;
      }
      
    return atr;
@@ -413,8 +417,11 @@ double CalculateRMA_ATR(int period)
 double GetTrueRange(int index)
   {
    double high = iHigh(_Symbol, _Period, index);
+   if(high <= 0) return 0.0;
    double low = iLow(_Symbol, _Period, index);
+   if(low <= 0) return 0.0;
    double prev_close = iClose(_Symbol, _Period, index + 1);
+   if(prev_close <= 0) return 0.0;
    
    double tr = MathMax(high - low, MathMax(MathAbs(high - prev_close), MathAbs(low - prev_close)));
    return tr;
