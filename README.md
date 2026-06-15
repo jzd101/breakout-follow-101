@@ -152,9 +152,9 @@ gantt
     dateFormat HH
     axisFormat %H:00
     section TradingView (Exchange Time / UTC-4)
-    Trading Session (13:00 - 20:00) :active, 13, 20
+    Trading Session (13:00 - 19:00) :active, 13, 19
     section MT5 Broker Server Time (UTC+3)
-    Trading Session (20:00 - 03:00) :crit, 20, 27
+    Trading Session (20:00 - 02:00) :crit, 20, 26
 ```
 
 ### 1. Understanding TradingView's Exchange Time
@@ -170,14 +170,14 @@ $$\text{Time Offset} = \text{MT5 Server Time (UTC)} - \text{TradingView Exchange
 $$\text{MT5 Parameter} = (\text{TradingView Parameter} + \text{Time Offset}) \pmod{24}$$
 
 ### 3. Universal Conversion Lookup Matrix (Gold 15m Preset)
-To run the high-precision **Gold 15m Preset** (TradingView: 13:00 - 20:00 Exchange Time), configure your MT5 EA parameters based on your broker's server timezone offset:
+To run the high-precision **Gold 15m Preset** (TradingView: 13:00 - 19:00 Exchange Time), configure your MT5 EA parameters based on your broker's server timezone offset:
 
 | Broker MT5 Timezone (Standard) | Time Offset | MT5 Start Hour Input | MT5 End Hour Input |
 | :--- | :--- | :--- | :--- |
-| **UTC + 0** (e.g., GMT Broker) | $+4 \text{ Hours}$ | `17` | `0` (Midnight) |
-| **UTC + 2** (e.g., Eastern European Standard Time) | $+6 \text{ Hours}$ | `19` | `2` (Overnight) |
-| **UTC + 3** (e.g., Eastern European Daylight Time / Cyprus) | **$+7 \text{ Hours}$ (Standard)** | **`20`** | **`3` (Overnight)** |
-| **UTC + 5** (e.g., Central Asian Broker) | $+9 \text{ Hours}$ | `22` | `5` (Overnight) |
+| **UTC + 0** (e.g., GMT Broker) | $+4 \text{ Hours}$ | `17` | `23` |
+| **UTC + 2** (e.g., Eastern European Standard Time) | $+6 \text{ Hours}$ | `19` | `1` (Overnight) |
+| **UTC + 3** (e.g., Eastern European Daylight Time / Cyprus) | **$+7 \text{ Hours}$ (Standard)** | **`20`** | **`2` (Overnight)** |
+| **UTC + 5** (e.g., Central Asian Broker) | $+9 \text{ Hours}$ | `22` | `4` (Overnight) |
 
 ---
 
@@ -310,9 +310,9 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 
 | Category | Parameter | Gold 15m Setting | Default (1H) | Purpose / Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **Risk Management** | Risk % per Trade | **1.0%** | 2.0% | Halved risk exposure to reduce drawdowns |
-| | Risk:Reward Ratio | **1.0** | 2.0 | 1:1 TP to maximize high-probability fills |
-| | ATR Multiplier (SL) | **1.5** | 2.0 | Tighter dynamic stop loss |
+| **Risk Management** | Risk % per Trade | **2.0%** | 2.0% | Standard risk exposure |
+| | Risk:Reward Ratio | **1.9** | 2.0 | 1:1.9 TP to maximize returns with high probability |
+| | ATR Multiplier (SL) | **2.0** | 2.0 | Balanced volatility-based stop loss |
 | | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
 | **Indicators** | EMA Filter | **Enabled** (true) | Enabled | Trend-following direction lock |
 | | EMA Period | **200** | 200 | Long-term trend reference |
@@ -321,7 +321,7 @@ For traders seeking **higher accuracy (Win Rate)** and a **larger Profit Factor*
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
 | **Session Timing** | Start Hour | **13** | 7 | **Shifted to 13:00** (Golden time window to achieve the highest Profit Factor) |
-| | End Hour | **20** | 20 | Closes window at 20:00 (Golden time window to achieve the highest Profit Factor) |
+| | End Hour | **19** | 20 | Closes window at 19:00 (Golden time window to achieve the highest Profit Factor) |
 | | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
 | | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
