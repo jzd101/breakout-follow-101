@@ -173,9 +173,12 @@ f_fmt(float p) => str.tostring(p, format.mintick)
 
 // ── Helper: distance in pips (1 pip = 10 × mintick for 5-dec pairs) ──────────
 f_pips(float dist) =>
-    float raw = dist / syminfo.mintick
-    // For Forex 5-decimal: 10 ticks = 1 pip.  For others keep as ticks.
-    syminfo.type == "forex" ? raw / 10.0 : raw
+    // Auto-detect pip size based on the minimum price movement (syminfo.mintick)
+    // - Forex standard (5 decimals: 0.00001, or 4 decimals: 0.0001) -> 1 Pip = 0.0001
+    // - Forex JPY / gold / 2-3 decimal assets (3 decimals: 0.001, or 2 decimals: 0.01) -> 1 Pip = 0.01
+    // - Other assets (e.g. 1 decimal like 0.1, or whole numbers like 1.0) -> 1 Pip = syminfo.mintick
+    float pipSize = syminfo.mintick >= 0.00001 and syminfo.mintick <= 0.0001 ? 0.0001 : (syminfo.mintick >= 0.001 and syminfo.mintick <= 0.01 ? 0.01 : syminfo.mintick)
+    dist / pipSize
 
 // ── 1. Extend all active boxes & lines to the current bar ─────────────────────
 if array.size(active_tp_boxes) > 0
@@ -315,6 +318,7 @@ if array.size(active_trade_ids) > 0
                     break
 
         if is_still_open
+            // Keep active trades to slide them on next bars
             array.push(temp_tp_boxes,    array.get(active_tp_boxes,    i))
             array.push(temp_sl_boxes,    array.get(active_sl_boxes,    i))
             array.push(temp_entry_lines, array.get(active_entry_lines, i))
@@ -325,13 +329,6 @@ if array.size(active_trade_ids) > 0
             array.push(temp_tp_prices,   array.get(active_tp_prices,   i))
             array.push(temp_trade_ids,   tid)
             array.push(temp_trade_dirs,  array.get(active_trade_dirs,  i))
-        else
-            box.delete(array.get(active_tp_boxes,    i))
-            box.delete(array.get(active_sl_boxes,    i))
-            line.delete(array.get(active_entry_lines,i))
-            label.delete(array.get(active_tp_labels, i))
-            label.delete(array.get(active_sl_labels, i))
-            label.delete(array.get(active_en_labels, i))
 
     active_tp_boxes    := temp_tp_boxes
     active_sl_boxes    := temp_sl_boxes
@@ -344,25 +341,7 @@ if array.size(active_trade_ids) > 0
     active_trade_ids   := temp_trade_ids
     active_trade_dirs  := temp_trade_dirs
 
-// ── 4. Emergency Reset if fully flat ─────────────────────────────────────────
-if strategy.position_size == 0 and array.size(active_trade_ids) > 0
-    for i = 0 to array.size(active_tp_boxes) - 1
-        box.delete(array.get(active_tp_boxes,    i))
-        box.delete(array.get(active_sl_boxes,    i))
-        line.delete(array.get(active_entry_lines,i))
-        label.delete(array.get(active_tp_labels, i))
-        label.delete(array.get(active_sl_labels, i))
-        label.delete(array.get(active_en_labels, i))
-    array.clear(active_tp_boxes)
-    array.clear(active_sl_boxes)
-    array.clear(active_entry_lines)
-    array.clear(active_tp_labels)
-    array.clear(active_sl_labels)
-    array.clear(active_en_labels)
-    array.clear(active_sl_prices)
-    array.clear(active_tp_prices)
-    array.clear(active_trade_ids)
-    array.clear(active_trade_dirs)
+// ── 4. Emergency Reset (Omitted to preserve historical boxes) ─────────────────
 
 // ── 5. Re-submit exit orders every bar using stored prices ────────────────────
 if array.size(active_trade_ids) > 0
