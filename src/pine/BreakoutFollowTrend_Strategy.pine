@@ -297,7 +297,7 @@ if total_trades > prev_total_trades
             array.push(active_trade_ids,   eid)
             array.push(active_trade_dirs,  is_long)
 
-// ── 3. Prune closed trades ────────────────────────────────────────────────────
+// ── 3. Prune closed trades (แก้ไขใหม่: ย้ายออเดอร์ที่ปิดแล้วออกจาก Array เพื่อหยุดการเลื่อนตำแหน่ง แต่ไม่ต้องลบวัตถุบนกราฟ) ──
 if array.size(active_trade_ids) > 0
     box[]    temp_tp_boxes    = array.new_box()
     box[]    temp_sl_boxes    = array.new_box()
@@ -320,6 +320,7 @@ if array.size(active_trade_ids) > 0
                     break
 
         if is_still_open
+            // ถ้าออเดอร์ยังเปิดอยู่ ให้เก็บไว้ในกลุ่ม Active เพื่อเลื่อนตามแท่งเทียนถัดไป
             array.push(temp_tp_boxes,    array.get(active_tp_boxes,    i))
             array.push(temp_sl_boxes,    array.get(active_sl_boxes,    i))
             array.push(temp_entry_lines, array.get(active_entry_lines, i))
@@ -330,13 +331,6 @@ if array.size(active_trade_ids) > 0
             array.push(temp_tp_prices,   array.get(active_tp_prices,   i))
             array.push(temp_trade_ids,   tid)
             array.push(temp_trade_dirs,  array.get(active_trade_dirs,  i))
-        else
-            box.delete(array.get(active_tp_boxes,    i))
-            box.delete(array.get(active_sl_boxes,    i))
-            line.delete(array.get(active_entry_lines,i))
-            label.delete(array.get(active_tp_labels, i))
-            label.delete(array.get(active_sl_labels, i))
-            label.delete(array.get(active_en_labels, i))
 
     active_tp_boxes    := temp_tp_boxes
     active_sl_boxes    := temp_sl_boxes
@@ -349,25 +343,8 @@ if array.size(active_trade_ids) > 0
     active_trade_ids   := temp_trade_ids
     active_trade_dirs  := temp_trade_dirs
 
-// ── 4. Emergency Reset if fully flat ─────────────────────────────────────────
-if strategy.position_size == 0 and array.size(active_trade_ids) > 0
-    for i = 0 to array.size(active_tp_boxes) - 1
-        box.delete(array.get(active_tp_boxes,    i))
-        box.delete(array.get(active_sl_boxes,    i))
-        line.delete(array.get(active_entry_lines,i))
-        label.delete(array.get(active_tp_labels, i))
-        label.delete(array.get(active_sl_labels, i))
-        label.delete(array.get(active_en_labels, i))
-    array.clear(active_tp_boxes)
-    array.clear(active_sl_boxes)
-    array.clear(active_entry_lines)
-    array.clear(active_tp_labels)
-    array.clear(active_sl_labels)
-    array.clear(active_en_labels)
-    array.clear(active_sl_prices)
-    array.clear(active_tp_prices)
-    array.clear(active_trade_ids)
-    array.clear(active_trade_dirs)
+// ── 4. Emergency Reset ── 
+// (นำออกไปเลย เพราะถ้าทิ้งไว้ พอพอร์ตว่างมันจะล้างประวัติกล่องทั้งหมดบนจอทิ้งทันที)
 
 // ── 5. Re-submit exit orders every bar using stored prices ────────────────────
 if array.size(active_trade_ids) > 0
