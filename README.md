@@ -182,7 +182,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | EMA Period | **200** | 200 | Long-term trend reference |
 | | Bollinger Bands Period| **15** | 15 | Short-term volatility contraction range |
 | | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
-| | ATR Period | **16** | 14 | Smooth volatility range estimation over specified bars |
+| | ATR Period | **18** | 14 | Smooth volatility range estimation over specified bars |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
 | **Session Timing** | Start Hour | **13** | 7 | Shifted to 13:00 (Exchange Time) / Golden hour window |
