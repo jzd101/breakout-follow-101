@@ -186,14 +186,3 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
 | | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
----
-
-## 🛡️ Production Deployment & VPS Checklist
-
-Deploying a quantitative trading system requires strict compliance with trade environment constraints. Follow this checklist before launching on a live production environment:
-
-1. **Hedging Account Mode Required**: Your MT5 trading account must support Hedging (allowing multiple concurrent or opposing positions). Netting accounts will cause position aggregation, corrupting the EA's trade tracking.
-2. **Virtual Private Server (VPS)**: Deploy the MT5 terminal to a low-latency VPS physically located near your broker's execution server (e.g. London/LD4 or New York/NY4). Ensure automated OS updates are delayed to prevent downtime.
-3. **Indicator Pre-calculation**: Upon first attachment, the MQL5 indicator handles initialize instantly, but history stabilization is required for the RMA ATR. The EA stabilizes the ATR by seeding with a large history window (`period * 50` bars) to converge to the correct value before executing trades.
-4. **Broker-Specific Spread & Commission Guard**: Gold spreads can expand drastically during news or rollover hours (23:59 - 00:05). Use raw-spread accounts to minimize slippage.
-5. **Magic Number Isolation**: Assign a unique magic number (`InpMagic`) to each chart instance if running multiple timeframes or assets.
