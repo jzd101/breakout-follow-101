@@ -177,9 +177,7 @@ f_pips(float dist) =>
     // - Forex standard (5 decimals: 0.00001, or 4 decimals: 0.0001) -> 1 Pip = 0.0001
     // - Forex JPY / gold / 2-3 decimal assets (3 decimals: 0.001, or 2 decimals: 0.01) -> 1 Pip = 0.01
     // - Other assets (e.g. 1 decimal like 0.1, or whole numbers like 1.0) -> 1 Pip = syminfo.mintick
-    float pipSize = syminfo.mintick >= 0.00001 and syminfo.mintick <= 0.0001 ? 0.0001 :
-                    syminfo.mintick >= 0.001 and syminfo.mintick <= 0.01 ? 0.01 :
-                    syminfo.mintick
+    float pipSize = syminfo.mintick >= 0.00001 and syminfo.mintick <= 0.0001 ? 0.0001 : (syminfo.mintick >= 0.001 and syminfo.mintick <= 0.01 ? 0.01 : syminfo.mintick)
     dist / pipSize
 
 // ── 1. Extend all active boxes & lines to the current bar ─────────────────────
