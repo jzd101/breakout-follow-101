@@ -297,7 +297,7 @@ if total_trades > prev_total_trades
             array.push(active_trade_ids,   eid)
             array.push(active_trade_dirs,  is_long)
 
-// ── 3. Prune closed trades (แก้ไขใหม่: ย้ายออเดอร์ที่ปิดแล้วออกจาก Array เพื่อหยุดการเลื่อนตำแหน่ง แต่ไม่ต้องลบวัตถุบนกราฟ) ──
+// ── 3. Prune closed trades ────────────────────────────────────────────────────
 if array.size(active_trade_ids) > 0
     box[]    temp_tp_boxes    = array.new_box()
     box[]    temp_sl_boxes    = array.new_box()
@@ -320,7 +320,7 @@ if array.size(active_trade_ids) > 0
                     break
 
         if is_still_open
-            // ถ้าออเดอร์ยังเปิดอยู่ ให้เก็บไว้ในกลุ่ม Active เพื่อเลื่อนตามแท่งเทียนถัดไป
+            // Keep active trades to slide them on next bars
             array.push(temp_tp_boxes,    array.get(active_tp_boxes,    i))
             array.push(temp_sl_boxes,    array.get(active_sl_boxes,    i))
             array.push(temp_entry_lines, array.get(active_entry_lines, i))
@@ -343,8 +343,7 @@ if array.size(active_trade_ids) > 0
     active_trade_ids   := temp_trade_ids
     active_trade_dirs  := temp_trade_dirs
 
-// ── 4. Emergency Reset ── 
-// (นำออกไปเลย เพราะถ้าทิ้งไว้ พอพอร์ตว่างมันจะล้างประวัติกล่องทั้งหมดบนจอทิ้งทันที)
+// ── 4. Emergency Reset (Omitted to preserve historical boxes) ─────────────────
 
 // ── 5. Re-submit exit orders every bar using stored prices ────────────────────
 if array.size(active_trade_ids) > 0
