@@ -17,4 +17,7 @@ ENV/
 *.ex5
 
 # AI Agent Superpowers Documents
-docs/superpowers/
+docs/
+
+# AI Agents
+.agents/
