@@ -130,20 +130,20 @@ gantt
     dateFormat HH
     axisFormat %H:00
     section TradingView (Exchange Time / UTC-4)
-    Trading Session (13:00 - 19:00) :active, 13, 19
+    Trading Session (13:00 - 20:00) :active, 13, 20
     section MT5 Broker Server Time (UTC+3)
-    Trading Session (20:00 - 02:00) :crit, 20, 26
+    Trading Session (20:00 - 03:00) :crit, 20, 27
 ```
 
 1. **TradingView's Exchange Time**: Pine Script always evaluates candle timestamps using the asset's **Exchange Time** (which is **UTC-4 / New York Time** for Gold/XAUUSD), ignoring the user's local UI timezone.
 2. **Timezone Offset Conversion**: To find the difference between your MT5 broker's server time and TradingView's Exchange time, check:
    $$\text{Time Offset} = \text{MT5 Server Time (UTC)} - \text{TradingView Exchange Time (UTC-4)}$$
 3. **Universal Conversion Lookup (Gold 15m Preset)**:
-   To run the high-precision **Gold 15m Preset** (TradingView: 13:00 - 19:00 Exchange Time), configure your MT5 EA parameters based on your broker's server timezone offset:
-   *   **UTC + 0** (GMT Broker): MT5 Start Hour = `17`, End Hour = `23`
-   *   **UTC + 2** (EET Standard): MT5 Start Hour = `19`, End Hour = `1` (Overnight)
-   *   **UTC + 3** (EEST/Cyprus - Standard Broker): MT5 Start Hour = `20`, End Hour = `2` (Overnight)
-   *   **UTC + 5** (Central Asian Broker): MT5 Start Hour = `22`, End Hour = `4` (Overnight)
+   To run the high-precision **Gold 15m Preset** (TradingView: 13:00 - 20:00 Exchange Time), configure your MT5 EA parameters based on your broker's server timezone offset:
+   *   **UTC + 0** (GMT Broker): MT5 Start Hour = `17`, End Hour = `24`
+   *   **UTC + 2** (EET Standard): MT5 Start Hour = `19`, End Hour = `2` (Overnight)
+   *   **UTC + 3** (EEST/Cyprus - Standard Broker): MT5 Start Hour = `20`, End Hour = `3` (Overnight)
+   *   **UTC + 5** (Central Asian Broker): MT5 Start Hour = `22`, End Hour = `5` (Overnight)
 
 ---
 
@@ -186,7 +186,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
 | **Session Timing** | Start Hour | **13** | 7 | Shifted to 13:00 (Exchange Time) / Golden hour window |
-| | End Hour | **19** | 20 | Closes window at 19:00 (Exchange Time) / Golden hour window |
+| | End Hour | **20** | 20 | Closes window at 20:00 (Exchange Time) / Golden hour window |
 | | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
 | | Friday Close Time | **2345** | None | Weekly safety exit threshold |
 
