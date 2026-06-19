@@ -172,7 +172,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | Category | Parameter | Gold 15m Setting | Default (1H) | Purpose / Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Risk Management** | Risk % per Trade | **2.0%** | 2.0% | Standard risk exposure |
-| | Risk:Reward Ratio | **2.0** | 2.0 | 1:2.0 TP to maximize returns with high probability |
+| | Risk:Reward Ratio | **1.9** | 2.0 | 1:1.9 TP to maximize returns with high probability |
 | | ATR Multiplier (SL) | **2.0** | 2.0 | Balanced volatility-based stop loss |
 | | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
 | | Use Compounding Risk | **Enabled** (true) | Enabled | Compound lot sizing based on account equity |
@@ -188,5 +188,5 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | **Session Timing** | Start Hour | **13** | 7 | Shifted to 13:00 (Exchange Time) / Golden hour window |
 | | End Hour | **20** | 20 | Closes window at 20:00 (Exchange Time) / Golden hour window |
 | | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
-| | Friday Close Time | **2345** | None | Weekly safety exit threshold |
+| | Friday Close Time | **2345** | 2345 | Weekly safety exit threshold |
 
