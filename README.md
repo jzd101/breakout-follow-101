@@ -181,7 +181,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | **Indicators** | EMA Filter | **Enabled** (true) | Enabled | Trend-following direction lock |
 | | EMA Period | **200** | 200 | Long-term trend reference |
 | | Bollinger Bands Period| **15** | 15 | Short-term volatility contraction range |
-| | BB Deviation | **1.7** | 1.5 | Breakout signal threshold |
+| | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
 | | ATR Period | **18** | 14 | Smooth volatility range estimation over specified bars |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
