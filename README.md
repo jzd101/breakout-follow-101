@@ -171,7 +171,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 
 | Category | Parameter | Gold 15m Setting | Default (1H) | Purpose / Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **Risk Management** | Risk % per Trade | **2.0%** | 2.0% | Standard risk exposure |
+| **Risk Management** | Risk % per Trade | **2.1%** | 2.0% | Standard risk exposure |
 | | Risk:Reward Ratio | **1.9** | 2.0 | 1:1.9 TP to maximize returns with high probability |
 | | ATR Multiplier (SL) | **2.0** | 2.0 | Balanced volatility-based stop loss |
 | | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
