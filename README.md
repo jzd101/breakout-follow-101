@@ -175,7 +175,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Risk:Reward Ratio | **1.9** | 2.0 | 1:1.9 TP to maximize returns with high probability |
 | | ATR Multiplier (SL) | **2.0** | 2.0 | Balanced volatility-based stop loss |
 | | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
-| | Use Compounding Risk | **Enabled** (true) | Enabled | Compound lot sizing based on account equity |
+| | Use Compounding Risk | **Disabled** (false) | Enabled | Compound lot sizing based on account equity |
 | | Fixed Balance | **10,000** | 10,000 | Reference balance when compounding is disabled |
 | | Daily Loss Limit % | **2.0%** | 2.0% | Max realized loss threshold of base balance per day |
 | **Indicators** | EMA Filter | **Enabled** (true) | Enabled | Trend-following direction lock |
