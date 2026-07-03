@@ -173,24 +173,24 @@ The Pine Script strategy renders a live, interactive position management overlay
 
 For traders seeking higher accuracy and a larger Profit Factor with fewer, high-precision trades, attach the system to a **15m chart** using these optimized settings:
 
-| Category | Parameter | Gold 15m Setting | Default (1H) | Purpose / Description |
-| :--- | :--- | :--- | :--- | :--- |
-| **Risk Management** | Risk % per Trade | **2.1%** | 2.0% | Standard risk exposure |
-| | Risk:Reward Ratio | **1.9** | 2.0 | 1:1.9 TP to maximize returns with high probability |
-| | ATR Multiplier (SL) | **2.0** | 2.0 | Balanced volatility-based stop loss |
-| | Max Concurrent Trades| **1** | 1 | Strictly single-trade focus |
-| | Use Compounding Risk | **Disabled** (false) | Enabled | Compound lot sizing based on account equity |
-| | Fixed Balance | **10,000** | 10,000 | Reference balance when compounding is disabled |
-| | Daily Loss Limit % | **2.0%** | 2.0% | Max realized loss threshold of base balance per day |
-| **Indicators** | EMA Filter | **Enabled** (true) | Enabled | Trend-following direction lock |
-| | EMA Period | **200** | 200 | Long-term trend reference |
-| | Bollinger Bands Period| **15** | 15 | Short-term volatility contraction range |
-| | BB Deviation | **1.5** | 1.5 | Breakout signal threshold |
-| | ATR Period | **18** | 14 | Smooth volatility range estimation over specified bars |
-| **Volume Confirmation**| Volume Filter | **Enabled** (true) | Enabled | Exclude low-momentum breakouts |
-| | Volume MA Period | **15** | 15 | Vol SMA baseline |
-| **Session Timing** | Start Hour | **13** | 7 | Shifted to 13:00 (Exchange Time) / Golden hour window |
-| | End Hour | **20** | 20 | Closes window at 20:00 (Exchange Time) / Golden hour window |
-| | Weekend Close | **Enabled** (true) | Disabled | Let targets play out without forced close |
-| | Friday Close Time | **2345** | 2345 | Weekly safety exit threshold |
+| Category | Parameter | Gold 15m Setting | Purpose / Description |
+| :--- | :--- | :--- | :--- |
+| **Risk Management** | Risk % per Trade | **2.1%** | Standard risk exposure |
+| | Risk:Reward Ratio | **1.9** | 1:1.9 TP to maximize returns with high probability |
+| | ATR Multiplier (SL) | **2.0** | Balanced volatility-based stop loss |
+| | Max Concurrent Trades| **1** | Strictly single-trade focus |
+| | Use Compounding Risk | **Disabled** (false) | Compound lot sizing based on account equity |
+| | Fixed Balance | **10,000** | Reference balance when compounding is disabled |
+| | Daily Loss Limit % | **2.0%** | Max realized loss threshold of base balance per day |
+| **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
+| | EMA Period | **200** | Long-term trend reference |
+| | Bollinger Bands Period| **15** | Short-term volatility contraction range |
+| | BB Deviation | **1.5** | Breakout signal threshold |
+| | ATR Period | **18** | Smooth volatility range estimation over specified bars |
+| **Volume Confirmation**| Volume Filter | **Enabled** (true) | Exclude low-momentum breakouts |
+| | Volume MA Period | **15** | Vol SMA baseline |
+| **Session Timing** | Start Hour | **13** | Shifted to 13:00 (Exchange Time) / Golden hour window |
+| | End Hour | **20** | Closes window at 20:00 (Exchange Time) / Golden hour window |
+| | Weekend Close | **Enabled** (true) | Let targets play out without forced close |
+| | Friday Close Time | **2345** | Weekly safety exit threshold |
 
