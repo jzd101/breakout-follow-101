@@ -191,6 +191,6 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Volume MA Period | **15** | 15 | Vol SMA baseline |
 | **Session Timing** | Start Hour | **13** | 7 | Shifted to 13:00 (Exchange Time) / Golden hour window |
 | | End Hour | **20** | 20 | Closes window at 20:00 (Exchange Time) / Golden hour window |
-| | Weekend Close | **Disabled** (false) | Disabled | Let targets play out without forced close |
+| | Weekend Close | **Enabled** (true) | Disabled | Let targets play out without forced close |
 | | Friday Close Time | **2345** | 2345 | Weekly safety exit threshold |
 
