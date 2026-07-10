@@ -10,7 +10,7 @@
 #include <Trade\Trade.mqh>
 
 input double InpRiskPct = 2.1;      // Risk % per trade
-input double InpRR = 1.9;           // Risk Reward Ratio
+input double InpRR = 2.2;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
 input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
@@ -25,7 +25,7 @@ input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
-input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
+input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 13;      // Trading start hour (0-23)
 input int    InpEndHour = 20;       // Trading end hour (1-24)
 
