@@ -176,12 +176,12 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | Category | Parameter | Gold 15m Setting | Purpose / Description |
 | :--- | :--- | :--- | :--- |
 | **Risk Management** | Risk % per Trade | **2.1%** | Standard risk exposure |
-| | Risk:Reward Ratio | **1.9** | 1:1.9 TP to maximize returns with high probability |
+| | Risk:Reward Ratio | **2.2** | 1:2.2 TP to maximize returns with high probability |
 | | ATR Multiplier (SL) | **2.0** | Balanced volatility-based stop loss |
 | | Max Concurrent Trades| **1** | Strictly single-trade focus |
 | | Use Compounding Risk | **Disabled** (false) | Compound lot sizing based on account equity |
 | | Fixed Balance | **10,000** | Reference balance when compounding is disabled |
-| | Daily Loss Limit % | **2.0%** | Max realized loss threshold of base balance per day |
+| | Daily Loss Limit % | **1.0%** | Max realized loss threshold of base balance per day |
 | **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
 | | EMA Period | **200** | Long-term trend reference |
 | | Bollinger Bands Period| **15** | Short-term volatility contraction range |
