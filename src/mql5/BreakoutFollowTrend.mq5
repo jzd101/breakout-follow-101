@@ -4,32 +4,32 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.02"
+#property version   "1.03"
 
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 2.0;      // Risk % per trade
-input double InpRR = 2.0;           // Risk Reward Ratio
+input double InpRiskPct = 2.1;      // Risk % per trade
+input double InpRR = 1.9;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
-input bool   InpCompound = true;    // Use Compounding Risk (of current balance)
+input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 15;      // Bollinger Bands Period
 input double InpBBDev = 1.5;        // Bollinger Bands Deviations
-input int    InpATRPeriod = 14;     // ATR Period
+input int    InpATRPeriod = 18;     // ATR Period
 input int    InpVolPeriod = 15;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
-input bool   InpWeekendClose = false; // Close all trades on Friday evening
+input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 2.0; // Daily loss limit (% of initial capital). 0=disabled
-input int    InpStartHour = 7;       // Trading start hour (0-23)
+input int    InpStartHour = 13;      // Trading start hour (0-23)
 input int    InpEndHour = 20;       // Trading end hour (1-24)
 
-int handleEMA, handleBB;
+int handleEMA, handleBB, handleATR;
 CTrade trade;
 
 // Daily Loss Limit tracking
@@ -39,6 +39,7 @@ int    g_currentMon = -1;
 int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
 bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
+bool   g_weekendCloseFired = false; // Guard to prevent repeated weekend close attempts
 
 
 //+------------------------------------------------------------------+
@@ -119,11 +120,13 @@ void CheckDailyReset(datetime time_to_check)
 int OnInit()
   {
    trade.SetExpertMagicNumber(InpMagic);
+   trade.SetDeviationInPoints(30); // Max slippage in points for order execution
    
    handleEMA = iMA(_Symbol, _Period, InpEMAPeriod, 0, MODE_EMA, PRICE_CLOSE);
    handleBB = iBands(_Symbol, _Period, InpBBPeriod, 0, InpBBDev, PRICE_CLOSE);
+   handleATR = iATR(_Symbol, _Period, InpATRPeriod);
    
-   if(handleEMA == INVALID_HANDLE || handleBB == INVALID_HANDLE)
+   if(handleEMA == INVALID_HANDLE || handleBB == INVALID_HANDLE || handleATR == INVALID_HANDLE)
      {
       Print("Error creating indicator handles");
       return(INIT_FAILED);
@@ -153,6 +156,7 @@ void OnDeinit(const int reason)
   {
    IndicatorRelease(handleEMA);
    IndicatorRelease(handleBB);
+   IndicatorRelease(handleATR);
    EventKillTimer();
   }
 
@@ -266,8 +270,10 @@ void OnTick()
    if(CopyBuffer(handleBB, 1, bar1_time, bar1_time, upperBB) <= 0) return; // Do not update last_time; retry on next tick
    if(CopyBuffer(handleBB, 2, bar1_time, bar1_time, lowerBB) <= 0) return; // Do not update last_time; retry on next tick
    
-   // Manual ATR (RMA/Wilder's) Calculation to match Python
-   double atr_val = CalculateRMA_ATR(InpATRPeriod);
+   // ATR via built-in iATR handle (Wilder's RMA, same formula as Pine's ta.atr)
+   double atr_buf[];
+   if(CopyBuffer(handleATR, 0, bar1_time, bar1_time, atr_buf) <= 0) return; // Do not update last_time; retry on next tick
+   double atr_val = atr_buf[0];
    if(atr_val <= 0) return; // Do not update last_time; retry on next tick
 
    // Successfully fetched and calculated all data! Mark this bar as processed.
@@ -319,16 +325,15 @@ void OnTick()
       double slPrice = NormalizeDouble(entryPrice - slDist_rounded, _Digits);
       double tpPrice = NormalizeDouble(entryPrice + tpDist_rounded, _Digits);
       
-      double lotSize = CalculateLotSize(slDist);
+      double lotSize = CalculateLotSize(slDist_rounded);
       if(lotSize > 0)
         {
          if(trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG"))
             PrintFormat("LONG Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
         }
      }
-     
-   // SHORT Condition
-   if(ema_short && close1 < lowerBB[0] && vol_condition)
+        // SHORT Condition
+    else if(ema_short && close1 < lowerBB[0] && vol_condition)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       
@@ -342,7 +347,7 @@ void OnTick()
       double slPrice = NormalizeDouble(entryPrice + slDist_rounded, _Digits);
       double tpPrice = NormalizeDouble(entryPrice - tpDist_rounded, _Digits);
       
-      double lotSize = CalculateLotSize(slDist);
+      double lotSize = CalculateLotSize(slDist_rounded);
       if(lotSize > 0)
         {
          if(trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT"))
@@ -382,59 +387,8 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
      }
   }
 
-//+------------------------------------------------------------------+
-//| Calculate ATR using Wilder's Smoothing (RMA)                     |
-//| Matches Python: ewm(alpha=1/length, min_periods=length, adjust=False) |
-//+------------------------------------------------------------------+
-double CalculateRMA_ATR(int period)
-  {
-   double tr_sum = 0;
-   
-   // Use a large stabilization window so RMA converges to match Python's full-dataset calc.
-   // Python processes all bars from index 0; we simulate by using max available history.
-   int totalBars = iBars(_Symbol, _Period);
-   if(totalBars <= period + 1) return -1.0; // Not enough bars loaded yet
-   int bars_to_calculate = MathMin(period * 50, totalBars - 2);
-   if(bars_to_calculate < period * 2) return -1.0; // Not enough history
-
-   double atr = 0;
-   
-   // Initial SMA for the first 'period' bars (seed value)
-   for(int i = bars_to_calculate; i > bars_to_calculate - period; i--)
-     {
-      double tr = GetTrueRange(i);
-      if(tr <= 0.0) return -1.0; // Fail early if data is invalid/not loaded
-      tr_sum += tr;
-     }
-   atr = tr_sum / period;
-   
-   // Recursive RMA calculation: ATR_t = (ATR_{t-1} * (period-1) + TR_t) / period
-   for(int i = bars_to_calculate - period; i >= 1; i--)
-     {
-      double tr = GetTrueRange(i);
-      if(tr <= 0.0) return -1.0; // Fail early if data is invalid/not loaded
-      atr = (atr * (period - 1) + tr) / period;
-     }
-     
-   return atr;
-  }
-
-//+------------------------------------------------------------------+
-//| Get True Range for a specific bar index                          |
-//| Matches Python: max(H-L, abs(H-prevC), abs(L-prevC))            |
-//+------------------------------------------------------------------+
-double GetTrueRange(int index)
-  {
-   double high = iHigh(_Symbol, _Period, index);
-   if(high <= 0) return 0.0;
-   double low = iLow(_Symbol, _Period, index);
-   if(low <= 0) return 0.0;
-   double prev_close = iClose(_Symbol, _Period, index + 1);
-   if(prev_close <= 0) return 0.0;
-   
-   double tr = MathMax(high - low, MathMax(MathAbs(high - prev_close), MathAbs(low - prev_close)));
-   return tr;
-  }
+// CalculateRMA_ATR and GetTrueRange removed — replaced by built-in iATR() handle
+// MT5's iATR uses the same Wilder's RMA smoothing formula
 
 //+------------------------------------------------------------------+
 //| Count open positions with the magic number                       |
@@ -525,12 +479,18 @@ void CheckWeekendClose()
   {
    if(IsWeekendBlock())
      {
-      if(CountOpenPositions() > 0)
+      if(!g_weekendCloseFired && CountOpenPositions() > 0)
         {
          CloseAllPositions("Friday Close");
+         g_weekendCloseFired = true;
          MqlDateTime dt;
          TimeToStruct(TimeTradeServer(), dt);
          Print("Weekend Close Triggered (inclusive) at Day ", dt.day_of_week, " ", dt.hour, ":", dt.min, " (via Timer/ServerTime)");
         }
+     }
+   else
+     {
+      // Reset guard when weekend block ends (Monday trading resumes)
+      g_weekendCloseFired = false;
      }
   }
