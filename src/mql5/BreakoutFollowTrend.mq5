@@ -9,7 +9,7 @@
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 2.1;      // Risk % per trade
+input double InpRiskPct = 1.6;      // Risk % per trade
 input double InpRR = 2.2;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
 input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
@@ -131,6 +131,16 @@ int OnInit()
       Print("Error creating indicator handles");
       return(INIT_FAILED);
      }
+     
+   // Auto-detect correct filling mode for CTrade
+   ENUM_ORDER_TYPE_FILLING filling = (ENUM_ORDER_TYPE_FILLING)SymbolInfoInteger(_Symbol, SYMBOL_FILLING_MODE);
+   if((filling & SYMBOL_FILLING_FOK) == SYMBOL_FILLING_FOK)
+      trade.SetTypeFilling(ORDER_FILLING_FOK);
+   else if((filling & SYMBOL_FILLING_IOC) == SYMBOL_FILLING_IOC)
+      trade.SetTypeFilling(ORDER_FILLING_IOC);
+   else
+      trade.SetTypeFilling(ORDER_FILLING_RETURN);
+
    // Calculate daily loss max from initial balance
    double initBalance = InpCompound ? AccountInfoDouble(ACCOUNT_EQUITY) : InpFixedBalance;
    g_dailyLossMax = initBalance * (InpDailyLossLimit / 100.0);
@@ -330,6 +340,12 @@ void OnTick()
         {
          if(trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG"))
             PrintFormat("LONG Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
+         else
+            PrintFormat("LONG Entry Failed: Error=%d, Retcode=%d, Desc=%s", GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
+        }
+      else
+        {
+         PrintFormat("LONG Entry Skipped: Calculated LotSize is 0. SL Dist=%.5f", slDist_rounded);
         }
      }
         // SHORT Condition
@@ -352,7 +368,13 @@ void OnTick()
         {
          if(trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT"))
             PrintFormat("SHORT Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
-         }
+         else
+            PrintFormat("SHORT Entry Failed: Error=%d, Retcode=%d, Desc=%s", GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
+        }
+      else
+        {
+         PrintFormat("SHORT Entry Skipped: Calculated LotSize is 0. SL Dist=%.5f", slDist_rounded);
+        }
       }
    }
 
