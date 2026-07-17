@@ -17,6 +17,12 @@ inpCompound   = input.bool(false, "Use Compounding Risk", group=grp_risk, toolti
 inpFixedBal   = input.float(10000.0, "Fixed Balance (when compounding off)", minval=0.0, group=grp_risk)
 inpDailyLoss  = input.float(1.0, "Daily Loss Limit %", minval=0.0, step=0.1, group=grp_risk, tooltip="0 = disabled. Blocks new entries once realized daily P&L drops below this % of base balance.")
 
+// SL Move on Profit
+grp_slmove = "SL Move on Profit"
+inpUseSLMove     = input.bool(true, "Enable SL Move on Profit", group=grp_slmove, tooltip="When price reaches InpSLMoveAtRR × SL distance from entry, move SL to lock in a % of profit.")
+inpSLMoveAtRR    = input.float(0.2, "Trigger at RR", minval=0.1, step=0.1, group=grp_slmove, tooltip="Move SL when price reaches this RR level. E.g. 1.0 = RR 1:1 (1× SL distance in profit).")
+inpSLMoveToPct   = input.float(12.0, "New SL at % of TP Dist (RR)", minval=0.0, step=0.5, group=grp_slmove, tooltip="After trigger, new SL = Entry ± (TP distance × this% / 100). E.g. 5 = entry + 5% of full reward range. 0 = exact breakeven.")
+
 // Indicators
 grp_ind = "Indicators"
 inpUseEMA     = input.bool(true, "Use EMA Trend Filter", group=grp_ind)
@@ -32,8 +38,8 @@ inpVolPeriod  = input.int(15, "Volume MA Period", minval=1, group=grp_vol)
 
 // Time & Filters
 grp_time = "Time Filters"
-inpStartHour  = input.int(13, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
-inpEndHour    = input.int(20, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpStartHour  = input.int(8, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpEndHour    = input.int(22, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
 inpWeekendCl  = input.bool(true, "Weekend Close (Friday)", group=grp_time)
 inpFridayTime = input.string("2345", "Friday Close Time (HHMM)", group=grp_time)
 
@@ -171,6 +177,9 @@ var line[]   active_entry_lines  = array.new_line()
 var label[]  active_tp_labels    = array.new_label()
 var label[]  active_sl_labels    = array.new_label()
 var label[]  active_en_labels    = array.new_label()
+var float[]  active_entry_prices = array.new_float()     // Entry price per trade (for SL move calc)
+var float[]  active_sl_dists     = array.new_float()     // Original SL distance per trade
+var bool[]   active_sl_moved     = array.new_bool()      // Whether SL has already been moved
 
 // ── Helper: format price to 5 sig-figs ───────────────────────────────────────
 f_fmt(float p) => str.tostring(p, format.mintick)
@@ -287,6 +296,9 @@ if total_trades > prev_total_trades
             array.push(active_tp_prices,   tp)
             array.push(active_trade_ids,   eid)
             array.push(active_trade_dirs,  is_long)
+            array.push(active_entry_prices, en)
+            array.push(active_sl_dists,    sd_rounded)
+            array.push(active_sl_moved,    false)
 
 // ── 3. Prune closed trades ────────────────────────────────────────────────────
 if array.size(active_trade_ids) > 0
@@ -300,6 +312,9 @@ if array.size(active_trade_ids) > 0
     float[]  temp_tp_prices   = array.new_float()
     string[] temp_trade_ids   = array.new_string()
     bool[]   temp_trade_dirs  = array.new_bool()
+    float[]  temp_entry_prices = array.new_float()
+    float[]  temp_sl_dists    = array.new_float()
+    bool[]   temp_sl_moved    = array.new_bool()
 
     for i = 0 to array.size(active_trade_ids) - 1
         string tid = array.get(active_trade_ids, i)
@@ -322,6 +337,9 @@ if array.size(active_trade_ids) > 0
             array.push(temp_tp_prices,   array.get(active_tp_prices,   i))
             array.push(temp_trade_ids,   tid)
             array.push(temp_trade_dirs,  array.get(active_trade_dirs,  i))
+            array.push(temp_entry_prices, array.get(active_entry_prices, i))
+            array.push(temp_sl_dists,    array.get(active_sl_dists,    i))
+            array.push(temp_sl_moved,    array.get(active_sl_moved,    i))
 
     active_tp_boxes    := temp_tp_boxes
     active_sl_boxes    := temp_sl_boxes
@@ -333,10 +351,53 @@ if array.size(active_trade_ids) > 0
     active_tp_prices   := temp_tp_prices
     active_trade_ids   := temp_trade_ids
     active_trade_dirs  := temp_trade_dirs
+    active_entry_prices := temp_entry_prices
+    active_sl_dists    := temp_sl_dists
+    active_sl_moved    := temp_sl_moved
 
 // ── 4. Emergency Reset (Omitted to preserve historical boxes) ─────────────────
 
-// ── 5. Re-submit exit orders every bar using stored prices ────────────────────
+// ── 5. SL Move on Profit: check trigger & update SL price ─────────────────────
+if inpUseSLMove and array.size(active_trade_ids) > 0
+    for i = 0 to array.size(active_trade_ids) - 1
+        if not array.get(active_sl_moved, i)
+            bool  is_long_t  = array.get(active_trade_dirs,   i)
+            float en_t       = array.get(active_entry_prices, i)
+            float sd_t       = array.get(active_sl_dists,     i)
+
+            // Trigger price = entry ± (SL dist × trigger RR)
+            float trigger    = is_long_t ? en_t + sd_t * inpSLMoveAtRR : en_t - sd_t * inpSLMoveAtRR
+
+            // Check if current close has reached the trigger
+            bool triggered   = is_long_t ? close >= trigger : close <= trigger
+
+            if triggered
+                // New SL = entry ± (TP dist × inpSLMoveToPct / 100)
+                // TP dist = SL dist × RR  →  locks X% of the full reward range
+                float new_sl_dist = sd_t * inpRR * (inpSLMoveToPct / 100.0)
+                float new_sl_raw  = is_long_t ? en_t + new_sl_dist : en_t - new_sl_dist
+                float new_sl      = math.round(new_sl_raw / syminfo.mintick) * syminfo.mintick
+
+                // Only move SL in the direction that improves it (never worsen SL)
+                float cur_sl = array.get(active_sl_prices, i)
+                bool  improve = is_long_t ? new_sl > cur_sl : new_sl < cur_sl
+                if improve
+                    array.set(active_sl_prices, i, new_sl)
+                    array.set(active_sl_moved,  i, true)
+
+                    // Update SL box bottom/top to reflect new SL
+                    box b_sl_upd = array.get(active_sl_boxes, i)
+                    if is_long_t
+                        box.set_bottom(b_sl_upd, new_sl)
+                    else
+                        box.set_top(b_sl_upd, new_sl)
+
+                    // Update SL label text
+                    label lbl_sl_upd = array.get(active_sl_labels, i)
+                    label.set_text(lbl_sl_upd, "SL★ " + f_fmt(new_sl))
+                    label.set_y(lbl_sl_upd, new_sl)
+
+// ── 6. Re-submit exit orders every bar using stored prices ────────────────────
 if array.size(active_trade_ids) > 0
     for i = 0 to array.size(active_trade_ids) - 1
         string tid   = array.get(active_trade_ids, i)

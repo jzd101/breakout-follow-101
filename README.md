@@ -63,6 +63,12 @@ graph TD
     F -- No Breakout --> I[Keep Monitoring]
     G --> J[Set Stop Loss & Take Profit via ATR]
     H --> J
+    J --> K{SL Move on Profit Enabled?}
+    K -- Yes --> L{Price reached Trigger RR?}
+    K -- No --> M[Hold until SL/TP hit]
+    L -- Yes --> N[Move SL to lock in % profit — once only]
+    L -- No --> M
+    N --> M
 ```
 
 ### Technical Indicators & Settings
@@ -121,6 +127,16 @@ Holding open positions over the weekend exposes accounts to high-volatility brok
 *   When **Weekend Close** is enabled, the system force-closes all active positions at Friday's designated cutoff time (default: `23:45`).
 *   New orders are blocked until Monday morning at the designated starting hour.
 *   Log-flooding mitigation is active in MQL5 to isolate query logs on close triggers.
+
+### 4. SL Move on Profit (Breakeven+ Protection)
+An optional, per-trade mechanism to protect accumulated profit once a trade reaches a defined RR milestone.
+*   **Trigger Threshold**: When price travels `Trigger at RR × SL distance` from entry (e.g. `1.0` = RR 1:1), the feature activates.
+*   **New SL Placement**: The Stop Loss is repositioned to `Entry ± (TP distance × New SL % / 100)`, where TP distance = SL distance × RR ratio. This locks in a defined fraction of the full reward range. Setting `0%` = exact breakeven; `5%` = entry + 5% of the full TP range.
+*   **One-Shot Guard**: SL is moved only once per position — it cannot trigger twice or reverse.
+*   **Improvement-Only Rule**: The new SL is applied only if it is strictly better than the current SL (never worsens the position).
+*   **Example**: Entry = 2,000, ATR SL dist = 2.0, RR = 2.2 → TP dist = 4.4. Trigger RR = 1.0 → fires when price hits 2,002. New SL at 5% of TP dist → new SL = 2,000 + (4.4 × 0.05) = **2,000.22** (locks $0.22 of profit per unit).
+*   **MQL5**: Checked every tick via `ManageSLMove()`, SL modified live with `PositionModify()`.
+*   **Pine Script**: Checked on bar close; SL box & label update to `SL★` to visually confirm the move.
 
 ---
 
@@ -182,6 +198,9 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Use Compounding Risk | **Disabled** (false) | Compound lot sizing based on account equity |
 | | Fixed Balance | **10,000** | Reference balance when compounding is disabled |
 | | Daily Loss Limit % | **1.0%** | Max realized loss threshold of base balance per day |
+| **SL Move on Profit** | Enable SL Move | **Enabled** (true) | Toggle breakeven+ protection |
+| | Trigger at RR | **0.2** | Move SL when price reaches RR 1:0.2 from entry |
+| | New SL at % of TP Dist (RR) | **12%** | New SL = Entry + 12% of full TP range (e.g. TP dist=4.4 → lock $0.53) |
 | **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
 | | EMA Period | **200** | Long-term trend reference |
 | | Bollinger Bands Period| **15** | Short-term volatility contraction range |
@@ -189,8 +208,8 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | ATR Period | **18** | Smooth volatility range estimation over specified bars |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | Vol SMA baseline |
-| **Session Timing** | Start Hour | **13** | Shifted to 13:00 (Exchange Time) / Golden hour window |
-| | End Hour | **20** | Closes window at 20:00 (Exchange Time) / Golden hour window |
+| **Session Timing** | Start Hour | **8** | Exchange Time 08:00 |
+| | End Hour | **22** | Exchange Time 22:00 |
 | | Weekend Close | **Enabled** (true) | Let targets play out without forced close |
 | | Friday Close Time | **2345** | Weekly safety exit threshold |
 
