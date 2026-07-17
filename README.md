@@ -1,7 +1,7 @@
 # 📈 Breakout Follow Trend 101
 
 [![Asset: Gold](https://img.shields.io/badge/Asset-Gold%20%28XAUUSD%29-gold?style=flat-square&logo=gold)](https://github.com/jzd101/breakout-follow-101)
-[![Timeframe: 15m / 1H](https://img.shields.io/badge/Timeframe-15m%20%2F%201H-blue?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
+[![Timeframe: 15m](https://img.shields.io/badge/Timeframe-15m-blue?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![MetaTrader: 5 (MQL5)](https://img.shields.io/badge/MetaTrader-5%20%28MQL5%29-orange?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![TradingView: Pine Script v5](https://img.shields.io/badge/TradingView-Pine%20Script%20v5-blueviolet?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
@@ -35,7 +35,7 @@ breakout-follow-101/
 ### 1. MetaTrader 5 Expert Advisor
 Deploy for automated real-time execution:
 1. Copy [BreakoutFollowTrend.mq5](src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
-2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **1H** or **15m** timeframe.
+2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **15m** timeframe.
 3. Enable **Algo Trading** in your MT5 terminal.
 
 ### 2. TradingView Pine Script
