@@ -200,7 +200,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Daily Loss Limit % | **1.0%** | Max realized loss threshold of base balance per day |
 | **SL Move on Profit** | Enable SL Move | **Enabled** (true) | Toggle breakeven+ protection |
 | | Trigger at RR | **0.5** | Move SL when price reaches RR 1:0.5 from entry |
-| | New SL at % of TP Dist (RR) | **18%** | New SL = Entry + 18% of full TP range (e.g. TP dist=4.4 → lock $0.79) |
+| | New SL at % of TP Dist (RR) | **5%** | New SL = Entry + 5% of full TP range (e.g. TP dist=4.4 → lock $0.22) |
 | **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
 | | EMA Period | **200** | Long-term trend reference |
 | | Bollinger Bands Period| **15** | Short-term volatility contraction range |
