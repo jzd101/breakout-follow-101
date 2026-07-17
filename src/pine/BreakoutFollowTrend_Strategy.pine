@@ -157,14 +157,18 @@ p2 = plot(lowerBB, color=color.new(color.gray, 50), title="Lower BB")
 fill(p1, p2, color=color.new(color.gray, 90), title="BB Background")
 
 // ── Trade Box Color Palette (TradingView Style) ──────────────────────────────
-color_tp_fill    = color.new(#089981, 85)
-color_sl_fill    = color.new(#f23645, 85)
-color_tp_border  = color.new(#089981,  0)
-color_sl_border  = color.new(#f23645,  0)
-color_tp_label   = color.new(#089981,  0)
-color_sl_label   = color.new(#f23645,  0)
-color_entry_line = color.new(#b2b5be,  0)
-color_entry_lbl  = color.new(#b2b5be,  0)
+color_tp_fill      = color.new(#089981, 85)
+color_sl_fill      = color.new(#f23645, 85)
+color_tp_border    = color.new(#089981,  0)
+color_sl_border    = color.new(#f23645,  0)
+color_tp_label     = color.new(#089981,  0)
+color_sl_label     = color.new(#f23645,  0)
+color_entry_line   = color.new(#b2b5be,  0)
+color_entry_lbl    = color.new(#b2b5be,  0)
+// ── Moved-SL color (yellow) ───────────────────────────────────────────────────
+color_sl_moved_fill   = color.new(#d4a017, 85)
+color_sl_moved_border = color.new(#d4a017,  0)
+color_sl_moved_label  = color.new(#d4a017,  0)
 
 // ── Persistent Arrays for Active Visual Objects ───────────────────────────────
 var float[]  active_sl_prices    = array.new_float()
@@ -385,17 +389,21 @@ if inpUseSLMove and array.size(active_trade_ids) > 0
                     array.set(active_sl_prices, i, new_sl)
                     array.set(active_sl_moved,  i, true)
 
-                    // Update SL box bottom/top to reflect new SL
+                    // Update SL box bottom/top and color to reflect new SL
                     box b_sl_upd = array.get(active_sl_boxes, i)
                     if is_long_t
                         box.set_bottom(b_sl_upd, new_sl)
                     else
                         box.set_top(b_sl_upd, new_sl)
+                    // Change SL box color to yellow after move
+                    box.set_bgcolor(b_sl_upd,       color_sl_moved_fill)
+                    box.set_border_color(b_sl_upd,  color_sl_moved_border)
 
-                    // Update SL label text
+                    // Update SL label text and color
                     label lbl_sl_upd = array.get(active_sl_labels, i)
                     label.set_text(lbl_sl_upd, "SL★ " + f_fmt(new_sl))
                     label.set_y(lbl_sl_upd, new_sl)
+                    label.set_textcolor(lbl_sl_upd, color_sl_moved_label)
 
 // ── 6. Re-submit exit orders every bar using stored prices ────────────────────
 if array.size(active_trade_ids) > 0
