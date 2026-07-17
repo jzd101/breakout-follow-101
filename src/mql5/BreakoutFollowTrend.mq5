@@ -29,6 +29,11 @@ input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital)
 input int    InpStartHour = 13;      // Trading start hour (0-23)
 input int    InpEndHour = 20;       // Trading end hour (1-24)
 
+// --- SL Move on Profit ---
+input bool   InpUseSLMove   = false; // Enable SL Move on Profit
+input double InpSLMoveAtRR  = 1.0;   // Trigger at RR (e.g. 1.0 = RR 1:1)
+input double InpSLMoveToPct = 5.0;   // New SL at % of TP Dist (RR) (0 = breakeven, 5 = entry + 5% of full reward range)
+
 int handleEMA, handleBB, handleATR;
 CTrade trade;
 
@@ -40,6 +45,12 @@ int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
 bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 bool   g_weekendCloseFired = false; // Guard to prevent repeated weekend close attempts
+
+// SL Move on Profit tracking (parallel arrays indexed by open-position slot)
+ulong  g_pos_tickets[];   // Position ticket
+double g_pos_entry[];     // Entry price recorded at trade open
+double g_pos_sl_dist[];   // Original SL distance (rounded to tick) at trade open
+bool   g_pos_sl_moved[];  // Whether SL has already been moved for this position
 
 
 //+------------------------------------------------------------------+
@@ -151,6 +162,12 @@ int OnInit()
    g_currentYear = -1;
    CheckDailyReset(TimeTradeServer());
    
+   // Clear SL-move tracking arrays on (re-)init
+   ArrayResize(g_pos_tickets,  0);
+   ArrayResize(g_pos_entry,    0);
+   ArrayResize(g_pos_sl_dist,  0);
+   ArrayResize(g_pos_sl_moved, 0);
+   
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
    // Flag static last_time in OnTick to reset so we don't miss the first bar after re-init
@@ -218,6 +235,10 @@ void OnTick()
 
    // Block entries during the weekend close block
    if(IsWeekendBlock()) return;
+
+   // Manage SL Move on Profit (runs on every tick, not just new bars)
+   if(InpUseSLMove)
+      ManageSLMove();
 
    // Get current bar's start time
    datetime current_time = iTime(_Symbol, _Period, 0);
@@ -339,7 +360,11 @@ void OnTick()
       if(lotSize > 0)
         {
          if(trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG"))
+           {
             PrintFormat("LONG Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
+            // Register this position for SL-move tracking
+            RegisterPositionForSLMove(trade.ResultOrder(), entryPrice, slDist_rounded);
+           }
          else
             PrintFormat("LONG Entry Failed: Error=%d, Retcode=%d, Desc=%s", GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
         }
@@ -367,7 +392,11 @@ void OnTick()
       if(lotSize > 0)
         {
          if(trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT"))
+           {
             PrintFormat("SHORT Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
+            // Register this position for SL-move tracking
+            RegisterPositionForSLMove(trade.ResultOrder(), entryPrice, slDist_rounded);
+           }
          else
             PrintFormat("SHORT Entry Failed: Error=%d, Retcode=%d, Desc=%s", GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
         }
@@ -377,6 +406,107 @@ void OnTick()
         }
       }
    }
+
+//+------------------------------------------------------------------+
+//| Register a new position into the SL-move tracking arrays        |
+//+------------------------------------------------------------------+
+void RegisterPositionForSLMove(ulong ticket, double entryPrice, double slDist)
+  {
+   int n = ArraySize(g_pos_tickets);
+   ArrayResize(g_pos_tickets,  n + 1);
+   ArrayResize(g_pos_entry,    n + 1);
+   ArrayResize(g_pos_sl_dist,  n + 1);
+   ArrayResize(g_pos_sl_moved, n + 1);
+   g_pos_tickets[n]  = ticket;
+   g_pos_entry[n]    = entryPrice;
+   g_pos_sl_dist[n]  = slDist;
+   g_pos_sl_moved[n] = false;
+  }
+
+//+------------------------------------------------------------------+
+//| Manage SL Move on Profit — called every tick when feature is on |
+//+------------------------------------------------------------------+
+void ManageSLMove()
+  {
+   int n = ArraySize(g_pos_tickets);
+   if(n == 0) return;
+
+   double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   if(tickSize <= 0) tickSize = _Point;
+
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+   for(int i = n - 1; i >= 0; i--)
+     {
+      if(g_pos_sl_moved[i]) continue; // Already moved, skip
+
+      ulong ticket = g_pos_tickets[i];
+
+      // If position no longer exists, remove from tracking
+      if(!PositionSelectByTicket(ticket))
+        {
+         RemoveSlMoveEntry(i);
+         continue;
+        }
+
+      long posType = PositionGetInteger(POSITION_TYPE);
+      double entryPx = g_pos_entry[i];
+      double slDist  = g_pos_sl_dist[i];
+
+      // Trigger price: entry ± slDist × InpSLMoveAtRR
+      double triggerDist = slDist * InpSLMoveAtRR;
+      bool isLong = (posType == POSITION_TYPE_BUY);
+
+      double currentPrice = isLong ? bid : ask;
+      double triggerPrice = isLong ? entryPx + triggerDist : entryPx - triggerDist;
+
+      bool triggered = isLong ? (currentPrice >= triggerPrice) : (currentPrice <= triggerPrice);
+      if(!triggered) continue;
+
+      // New SL = entry ± slDist × InpRR × InpSLMoveToPct / 100  (X% of full reward range)
+      double newSlDist = slDist * InpRR * (InpSLMoveToPct / 100.0);
+      double newSlRaw  = isLong ? entryPx + newSlDist : entryPx - newSlDist;
+      double newSl     = NormalizeDouble(MathRound(newSlRaw / tickSize) * tickSize, _Digits);
+
+      // Only move if it improves (never worsen) the current SL
+      double curSl = PositionGetDouble(POSITION_SL);
+      bool improve = isLong ? (newSl > curSl) : (newSl < curSl);
+      if(!improve) { g_pos_sl_moved[i] = true; continue; }
+
+      double curTp = PositionGetDouble(POSITION_TP);
+      if(trade.PositionModify(ticket, newSl, curTp))
+        {
+         PrintFormat("SL Move triggered: Ticket=%llu, Entry=%.5f, Trigger=%.5f, OldSL=%.5f, NewSL=%.5f",
+                     ticket, entryPx, triggerPrice, curSl, newSl);
+         g_pos_sl_moved[i] = true;
+        }
+      else
+        {
+         PrintFormat("SL Move FAILED: Ticket=%llu, Error=%d, RetCode=%d (%s)",
+                     ticket, GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Remove entry i from all SL-move tracking arrays                  |
+//+------------------------------------------------------------------+
+void RemoveSlMoveEntry(int i)
+  {
+   int n = ArraySize(g_pos_tickets);
+   for(int k = i; k < n - 1; k++)
+     {
+      g_pos_tickets[k]  = g_pos_tickets[k + 1];
+      g_pos_entry[k]    = g_pos_entry[k + 1];
+      g_pos_sl_dist[k]  = g_pos_sl_dist[k + 1];
+      g_pos_sl_moved[k] = g_pos_sl_moved[k + 1];
+     }
+   ArrayResize(g_pos_tickets,  n - 1);
+   ArrayResize(g_pos_entry,    n - 1);
+   ArrayResize(g_pos_sl_dist,  n - 1);
+   ArrayResize(g_pos_sl_moved, n - 1);
+  }
 
 //+------------------------------------------------------------------+
 //| Track realized P&L for Daily Loss Limit                          |
