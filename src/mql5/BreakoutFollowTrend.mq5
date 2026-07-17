@@ -30,9 +30,9 @@ input int    InpStartHour = 13;      // Trading start hour (0-23)
 input int    InpEndHour = 20;       // Trading end hour (1-24)
 
 // --- SL Move on Profit ---
-input bool   InpUseSLMove   = false; // Enable SL Move on Profit
-input double InpSLMoveAtRR  = 1.0;   // Trigger at RR (e.g. 1.0 = RR 1:1)
-input double InpSLMoveToPct = 5.0;   // New SL at % of TP Dist (RR) (0 = breakeven, 5 = entry + 5% of full reward range)
+input bool   InpUseSLMove   = true;  // Enable SL Move on Profit
+input double InpSLMoveAtRR  = 0.5;   // Trigger at RR (e.g. 1.0 = RR 1:1)
+input double InpSLMoveToPct = 18.0;  // New SL at % of TP Dist (RR) (0 = breakeven, 5 = entry + 5% of full reward range)
 
 int handleEMA, handleBB, handleATR;
 CTrade trade;
