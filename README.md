@@ -181,7 +181,14 @@ To preserve system integrity, any mathematical or logic updates must be implemen
 
 ## 🖼️ Visual Chart Tools (TradingView Only)
 
-The Pine Script strategy renders a live, interactive position management overlay directly on the TradingView chart, mimicking TradingView's native order tools. It draws dynamic, color-coded SL (red) and TP (green) boxes and labels anchored to the actual fill price. It also displays the EMA filter line and Bollinger Bands. These elements are automatically updated with each active bar and remain on the chart as trade history after the trades are closed.
+The Pine Script strategy renders a live, interactive position management overlay directly on the TradingView chart, mimicking TradingView's native order tools. It draws dynamic, color-coded boxes and labels anchored to the actual fill price, as well as the EMA filter line and Bollinger Bands. These elements are automatically updated with each active bar and remain on the chart as trade history after the trades are closed.
+
+| Element | Color | Description |
+| :--- | :--- | :--- |
+| **TP Box** | 🟢 Green `#089981` | Take Profit zone from entry to TP price |
+| **SL Box** | 🔴 Red `#f23645` | Stop Loss zone from entry to SL price |
+| **SL Box (moved)** | 🟡 Amber `#d4a017` | SL box turns amber after SL Move on Profit is triggered, with label updated to `SL★` |
+| **Entry Line** | ⬜ Gray `#b2b5be` | Dashed horizontal line at the entry fill price |
 
 ---
 
