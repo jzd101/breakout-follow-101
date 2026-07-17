@@ -26,13 +26,13 @@ input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
-input int    InpStartHour = 13;      // Trading start hour (0-23)
-input int    InpEndHour = 20;       // Trading end hour (1-24)
+input int    InpStartHour = 8;       // Trading start hour (0-23)
+input int    InpEndHour = 22;        // Trading end hour (1-24)
 
 // --- SL Move on Profit ---
 input bool   InpUseSLMove   = true;  // Enable SL Move on Profit
-input double InpSLMoveAtRR  = 0.5;   // Trigger at RR (e.g. 1.0 = RR 1:1)
-input double InpSLMoveToPct = 5.0;   // New SL at % of TP Dist (RR) (0 = breakeven, 5 = entry + 5% of full reward range)
+input double InpSLMoveAtRR  = 0.2;   // Trigger at RR (e.g. 1.0 = RR 1:1)
+input double InpSLMoveToPct = 12.0;  // New SL at % of TP Dist (RR) (0 = breakeven, 5 = entry + 5% of full reward range)
 
 int handleEMA, handleBB, handleATR;
 CTrade trade;

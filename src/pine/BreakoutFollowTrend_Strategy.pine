@@ -20,8 +20,8 @@ inpDailyLoss  = input.float(1.0, "Daily Loss Limit %", minval=0.0, step=0.1, gro
 // SL Move on Profit
 grp_slmove = "SL Move on Profit"
 inpUseSLMove     = input.bool(true, "Enable SL Move on Profit", group=grp_slmove, tooltip="When price reaches InpSLMoveAtRR × SL distance from entry, move SL to lock in a % of profit.")
-inpSLMoveAtRR    = input.float(0.5, "Trigger at RR", minval=0.1, step=0.1, group=grp_slmove, tooltip="Move SL when price reaches this RR level. E.g. 1.0 = RR 1:1 (1× SL distance in profit).")
-inpSLMoveToPct   = input.float(5.0, "New SL at % of TP Dist (RR)", minval=0.0, step=0.5, group=grp_slmove, tooltip="After trigger, new SL = Entry ± (TP distance × this% / 100). E.g. 5 = entry + 5% of full reward range. 0 = exact breakeven.")
+inpSLMoveAtRR    = input.float(0.2, "Trigger at RR", minval=0.1, step=0.1, group=grp_slmove, tooltip="Move SL when price reaches this RR level. E.g. 1.0 = RR 1:1 (1× SL distance in profit).")
+inpSLMoveToPct   = input.float(12.0, "New SL at % of TP Dist (RR)", minval=0.0, step=0.5, group=grp_slmove, tooltip="After trigger, new SL = Entry ± (TP distance × this% / 100). E.g. 5 = entry + 5% of full reward range. 0 = exact breakeven.")
 
 // Indicators
 grp_ind = "Indicators"
@@ -38,8 +38,8 @@ inpVolPeriod  = input.int(15, "Volume MA Period", minval=1, group=grp_vol)
 
 // Time & Filters
 grp_time = "Time Filters"
-inpStartHour  = input.int(13, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
-inpEndHour    = input.int(20, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpStartHour  = input.int(8, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpEndHour    = input.int(22, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
 inpWeekendCl  = input.bool(true, "Weekend Close (Friday)", group=grp_time)
 inpFridayTime = input.string("2345", "Friday Close Time (HHMM)", group=grp_time)
 

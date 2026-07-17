@@ -199,8 +199,8 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Fixed Balance | **10,000** | Reference balance when compounding is disabled |
 | | Daily Loss Limit % | **1.0%** | Max realized loss threshold of base balance per day |
 | **SL Move on Profit** | Enable SL Move | **Enabled** (true) | Toggle breakeven+ protection |
-| | Trigger at RR | **0.5** | Move SL when price reaches RR 1:0.5 from entry |
-| | New SL at % of TP Dist (RR) | **5%** | New SL = Entry + 5% of full TP range (e.g. TP dist=4.4 → lock $0.22) |
+| | Trigger at RR | **0.2** | Move SL when price reaches RR 1:0.2 from entry |
+| | New SL at % of TP Dist (RR) | **12%** | New SL = Entry + 12% of full TP range (e.g. TP dist=4.4 → lock $0.53) |
 | **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
 | | EMA Period | **200** | Long-term trend reference |
 | | Bollinger Bands Period| **15** | Short-term volatility contraction range |
@@ -208,8 +208,8 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | ATR Period | **18** | Smooth volatility range estimation over specified bars |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | Exclude low-momentum breakouts |
 | | Volume MA Period | **15** | Vol SMA baseline |
-| **Session Timing** | Start Hour | **13** | Shifted to 13:00 (Exchange Time) / Golden hour window |
-| | End Hour | **20** | Closes window at 20:00 (Exchange Time) / Golden hour window |
+| **Session Timing** | Start Hour | **8** | Exchange Time 08:00 |
+| | End Hour | **22** | Exchange Time 22:00 |
 | | Weekend Close | **Enabled** (true) | Let targets play out without forced close |
 | | Friday Close Time | **2345** | Weekly safety exit threshold |
 
