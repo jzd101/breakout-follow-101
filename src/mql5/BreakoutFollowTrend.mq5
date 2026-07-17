@@ -4,7 +4,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.04"
+#property version   "1.05"
 
 
 #include <Trade\Trade.mqh>
