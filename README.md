@@ -193,31 +193,31 @@ The Pine Script strategy renders a live, interactive position management overlay
 
 ---
 
-## 🏆 High Win-Rate & Precision Settings (Gold 15m Preset)
+## 🏆 High Win-Rate & Precision Settings (15m Presets)
 
 For traders seeking higher accuracy and a larger Profit Factor with fewer, high-precision trades, attach the system to a **15m chart** using these optimized settings:
 
-| Category | Parameter | Gold 15m Setting | Purpose / Description |
-| :--- | :--- | :--- | :--- |
-| **Risk Management** | Risk % per Trade | **2.0%** | Standard risk exposure |
-| | Risk:Reward Ratio | **2.2** | 1:2.2 TP to maximize returns with high probability |
-| | ATR Multiplier (SL) | **2.0** | Balanced volatility-based stop loss |
-| | Max Concurrent Trades| **1** | Strictly single-trade focus |
-| | Use Compounding Risk | **Disabled** (false) | Compound lot sizing based on account equity |
-| | Fixed Balance | **10,000** | Reference balance when compounding is disabled |
-| | Daily Loss Limit % | **1.0%** | Max realized loss threshold of base balance per day |
-| **SL Move on Profit** | Enable SL Move | **Enabled** (true) | Toggle breakeven+ protection |
-| | Trigger at RR | **0.2** | Move SL when price reaches RR 1:0.2 from entry |
-| | New SL at % of TP Dist (RR) | **12%** | New SL = Entry + 12% of full TP range (e.g. TP dist=4.4 → lock $0.53) |
-| **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
-| | EMA Period | **200** | Long-term trend reference |
-| | Bollinger Bands Period| **15** | Short-term volatility contraction range |
-| | BB Deviation | **1.5** | Breakout signal threshold |
-| | ATR Period | **18** | Smooth volatility range estimation over specified bars |
-| **Volume Confirmation**| Volume Filter | **Enabled** (true) | Exclude low-momentum breakouts |
-| | Volume MA Period | **15** | Vol SMA baseline |
-| **Session Timing** | Start Hour | **8** | Exchange Time 08:00 |
-| | End Hour | **22** | Exchange Time 22:00 |
-| | Weekend Close | **Enabled** (true) | Let targets play out without forced close |
-| | Friday Close Time | **2345** | Weekly safety exit threshold |
+| Category | Parameter | Gold 15m Setting | Cocoa 15m Setting | Purpose / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Risk Management** | Risk % per Trade | **2.0%** | **2.0%** | Standard risk exposure |
+| | Risk:Reward Ratio | **2.2** | **2.0** | 1:2.2 TP to maximize returns with high probability |
+| | ATR Multiplier (SL) | **2.0** | **2.5** | Balanced volatility-based stop loss |
+| | Max Concurrent Trades| **1** | **1** | Strictly single-trade focus |
+| | Use Compounding Risk | **Disabled** (false) | **Disabled** (false) | Compound lot sizing based on account equity |
+| | Fixed Balance | **10,000** | **10,000** | Reference balance when compounding is disabled |
+| | Daily Loss Limit % | **1.0%** | **1.0%** | Max realized loss threshold of base balance per day |
+| **SL Move on Profit** | Enable SL Move | **Enabled** (true) | **Enabled** (true) | Toggle breakeven+ protection |
+| | Trigger at RR | **0.2** | **0.5** | Move SL when price reaches RR from entry |
+| | New SL at % of TP Dist | **12%** | **10%** | New SL = Entry + X% of full TP range |
+| **Indicators** | EMA Filter | **Enabled** (true) | **Enabled** (true) | Trend-following direction lock |
+| | EMA Period | **200** | **200** | Long-term trend reference |
+| | Bollinger Bands Period| **15** | **20** | Short-term volatility contraction range |
+| | BB Deviation | **1.5** | **2.0** | Breakout signal threshold |
+| | ATR Period | **18** | **14** | Smooth volatility range estimation over specified bars |
+| **Volume Confirmation**| Volume Filter | **Enabled** (true) | **Enabled** (true) | Exclude low-momentum breakouts |
+| | Volume MA Period | **15** | **20** | Vol SMA baseline |
+| **Session Timing** | Start Hour | **8** | **4** | Trading session open (Exchange Time) |
+| | End Hour | **22** | **13** | Trading session close (Exchange Time) |
+| | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
+| | Friday Close Time | **2345** | **1330** | Weekly safety exit threshold |
 
