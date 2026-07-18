@@ -1,13 +1,14 @@
 # 📈 Breakout Follow Trend 101
 
 [![Asset: Gold](https://img.shields.io/badge/Asset-Gold%20%28XAUUSD%29-gold?style=flat-square&logo=gold)](https://github.com/jzd101/breakout-follow-101)
+[![Asset: Cocoa](https://img.shields.io/badge/Asset-Cocoa%20%28COCOA%29-brown?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Timeframe: 15m](https://img.shields.io/badge/Timeframe-15m-blue?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![MetaTrader: 5 (MQL5)](https://img.shields.io/badge/MetaTrader-5%20%28MQL5%29-orange?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![TradingView: Pine Script v5](https://img.shields.io/badge/TradingView-Pine%20Script%20v5-blueviolet?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Prop Firm: Proven Pass](https://img.shields.io/badge/Prop%20Firm-Proven%20Pass-emerald?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 
-An automated, quantitative volatility breakout trading system specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across TradingView visualization and MetaTrader 5 execution.
+An automated, quantitative volatility breakout trading system supporting **Gold (XAUUSD)** and **Cocoa (COCOA)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across TradingView visualization and MetaTrader 5 execution.
 
 > [!NOTE]
 > **Prop Firm Verification**: This strategy has been proven to successfully pass Prop Firm evaluation challenges.
@@ -35,7 +36,7 @@ breakout-follow-101/
 ### 1. MetaTrader 5 Expert Advisor
 Deploy for automated real-time execution:
 1. Copy [BreakoutFollowTrend.mq5](src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
-2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **15m** timeframe.
+2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** or **Cocoa (COCOA)** chart on the **15m** timeframe.
 3. Enable **Algo Trading** in your MT5 terminal.
 
 ### 2. TradingView Pine Script
