@@ -1,13 +1,14 @@
 # 📈 Breakout Follow Trend 101
 
 [![Asset: Gold](https://img.shields.io/badge/Asset-Gold%20%28XAUUSD%29-gold?style=flat-square&logo=gold)](https://github.com/jzd101/breakout-follow-101)
+[![Asset: Cocoa](https://img.shields.io/badge/Asset-Cocoa%20%28COCOA%29-brown?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Timeframe: 15m](https://img.shields.io/badge/Timeframe-15m-blue?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Logic Parity: 100% Verified](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-green?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![MetaTrader: 5 (MQL5)](https://img.shields.io/badge/MetaTrader-5%20%28MQL5%29-orange?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![TradingView: Pine Script v5](https://img.shields.io/badge/TradingView-Pine%20Script%20v5-blueviolet?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Prop Firm: Proven Pass](https://img.shields.io/badge/Prop%20Firm-Proven%20Pass-emerald?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 
-An automated, quantitative volatility breakout trading system specifically optimized for **Gold (XAUUSD)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across TradingView visualization and MetaTrader 5 execution.
+An automated, quantitative volatility breakout trading system supporting **Gold (XAUUSD)** and **Cocoa (COCOA)**. This system trades volatility expansions (Bollinger Band breakouts) confirmed by trend direction filters (EMA) and volume momentum (Volume MA), utilizing 100% aligned logic across TradingView visualization and MetaTrader 5 execution.
 
 > [!NOTE]
 > **Prop Firm Verification**: This strategy has been proven to successfully pass Prop Firm evaluation challenges.
@@ -35,7 +36,7 @@ breakout-follow-101/
 ### 1. MetaTrader 5 Expert Advisor
 Deploy for automated real-time execution:
 1. Copy [BreakoutFollowTrend.mq5](src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
-2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **15m** timeframe.
+2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** or **Cocoa (COCOA)** chart on the **15m** timeframe.
 3. Enable **Algo Trading** in your MT5 terminal.
 
 ### 2. TradingView Pine Script
@@ -192,31 +193,31 @@ The Pine Script strategy renders a live, interactive position management overlay
 
 ---
 
-## 🏆 High Win-Rate & Precision Settings (Gold 15m Preset)
+## 🏆 High Win-Rate & Precision Settings (15m Presets)
 
 For traders seeking higher accuracy and a larger Profit Factor with fewer, high-precision trades, attach the system to a **15m chart** using these optimized settings:
 
-| Category | Parameter | Gold 15m Setting | Purpose / Description |
-| :--- | :--- | :--- | :--- |
-| **Risk Management** | Risk % per Trade | **2.0%** | Standard risk exposure |
-| | Risk:Reward Ratio | **2.2** | 1:2.2 TP to maximize returns with high probability |
-| | ATR Multiplier (SL) | **2.0** | Balanced volatility-based stop loss |
-| | Max Concurrent Trades| **1** | Strictly single-trade focus |
-| | Use Compounding Risk | **Disabled** (false) | Compound lot sizing based on account equity |
-| | Fixed Balance | **10,000** | Reference balance when compounding is disabled |
-| | Daily Loss Limit % | **1.0%** | Max realized loss threshold of base balance per day |
-| **SL Move on Profit** | Enable SL Move | **Enabled** (true) | Toggle breakeven+ protection |
-| | Trigger at RR | **0.2** | Move SL when price reaches RR 1:0.2 from entry |
-| | New SL at % of TP Dist (RR) | **12%** | New SL = Entry + 12% of full TP range (e.g. TP dist=4.4 → lock $0.53) |
-| **Indicators** | EMA Filter | **Enabled** (true) | Trend-following direction lock |
-| | EMA Period | **200** | Long-term trend reference |
-| | Bollinger Bands Period| **15** | Short-term volatility contraction range |
-| | BB Deviation | **1.5** | Breakout signal threshold |
-| | ATR Period | **18** | Smooth volatility range estimation over specified bars |
-| **Volume Confirmation**| Volume Filter | **Enabled** (true) | Exclude low-momentum breakouts |
-| | Volume MA Period | **15** | Vol SMA baseline |
-| **Session Timing** | Start Hour | **8** | Exchange Time 08:00 |
-| | End Hour | **22** | Exchange Time 22:00 |
-| | Weekend Close | **Enabled** (true) | Let targets play out without forced close |
-| | Friday Close Time | **2345** | Weekly safety exit threshold |
+| Category | Parameter | Gold 15m Setting | Cocoa 15m Setting | Purpose / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Risk Management** | Risk % per Trade | **2.0%** | **2.0%** | Standard risk exposure |
+| | Risk:Reward Ratio | **2.2** | **2.0** | 1:2.2 TP to maximize returns with high probability |
+| | ATR Multiplier (SL) | **2.0** | **2.5** | Balanced volatility-based stop loss |
+| | Max Concurrent Trades| **1** | **1** | Strictly single-trade focus |
+| | Use Compounding Risk | **Disabled** (false) | **Disabled** (false) | Compound lot sizing based on account equity |
+| | Fixed Balance | **10,000** | **10,000** | Reference balance when compounding is disabled |
+| | Daily Loss Limit % | **1.0%** | **1.0%** | Max realized loss threshold of base balance per day |
+| **SL Move on Profit** | Enable SL Move | **Enabled** (true) | **Enabled** (true) | Toggle breakeven+ protection |
+| | Trigger at RR | **0.2** | **0.5** | Move SL when price reaches RR from entry |
+| | New SL at % of TP Dist | **12%** | **10%** | New SL = Entry + X% of full TP range |
+| **Indicators** | EMA Filter | **Enabled** (true) | **Enabled** (true) | Trend-following direction lock |
+| | EMA Period | **200** | **200** | Long-term trend reference |
+| | Bollinger Bands Period| **15** | **20** | Short-term volatility contraction range |
+| | BB Deviation | **1.5** | **2.0** | Breakout signal threshold |
+| | ATR Period | **18** | **14** | Smooth volatility range estimation over specified bars |
+| **Volume Confirmation**| Volume Filter | **Enabled** (true) | **Enabled** (true) | Exclude low-momentum breakouts |
+| | Volume MA Period | **15** | **20** | Vol SMA baseline |
+| **Session Timing** | Start Hour | **8** | **4** | Trading session open (Exchange Time) |
+| | End Hour | **22** | **13** | Trading session close (Exchange Time) |
+| | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
+| | Friday Close Time | **2345** | **1330** | Weekly safety exit threshold |
 
