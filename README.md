@@ -200,24 +200,24 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | Category | Parameter | Gold 15m Setting | Cocoa 15m Setting | Purpose / Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Risk Management** | Risk % per Trade | **2.0%** | **2.0%** | Standard risk exposure |
-| | Risk:Reward Ratio | **2.2** | **2.0** | 1:2.2 TP to maximize returns with high probability |
-| | ATR Multiplier (SL) | **2.0** | **2.5** | Balanced volatility-based stop loss |
+| | Risk:Reward Ratio | **2.2** | **2.2** | 1:2.2 TP to maximize returns with high probability |
+| | ATR Multiplier (SL) | **2.0** | **2.0** | Balanced volatility-based stop loss |
 | | Max Concurrent Trades| **1** | **1** | Strictly single-trade focus |
 | | Use Compounding Risk | **Disabled** (false) | **Disabled** (false) | Compound lot sizing based on account equity |
 | | Fixed Balance | **10,000** | **10,000** | Reference balance when compounding is disabled |
 | | Daily Loss Limit % | **1.0%** | **1.0%** | Max realized loss threshold of base balance per day |
 | **SL Move on Profit** | Enable SL Move | **Enabled** (true) | **Enabled** (true) | Toggle breakeven+ protection |
-| | Trigger at RR | **0.2** | **0.5** | Move SL when price reaches RR from entry |
+| | Trigger at RR | **0.2** | **0.4** | Move SL when price reaches RR from entry |
 | | New SL at % of TP Dist | **12%** | **10%** | New SL = Entry + X% of full TP range |
 | **Indicators** | EMA Filter | **Enabled** (true) | **Enabled** (true) | Trend-following direction lock |
 | | EMA Period | **200** | **200** | Long-term trend reference |
-| | Bollinger Bands Period| **15** | **20** | Short-term volatility contraction range |
-| | BB Deviation | **1.5** | **2.0** | Breakout signal threshold |
-| | ATR Period | **18** | **14** | Smooth volatility range estimation over specified bars |
+| | Bollinger Bands Period| **15** | **15** | Short-term volatility contraction range |
+| | BB Deviation | **1.5** | **1.5** | Breakout signal threshold |
+| | ATR Period | **18** | **18** | Smooth volatility range estimation over specified bars |
 | **Volume Confirmation**| Volume Filter | **Enabled** (true) | **Enabled** (true) | Exclude low-momentum breakouts |
-| | Volume MA Period | **15** | **20** | Vol SMA baseline |
-| **Session Timing** | Start Hour | **8** | **4** | Trading session open (Exchange Time) |
-| | End Hour | **22** | **13** | Trading session close (Exchange Time) |
+| | Volume MA Period | **15** | **15** | Vol SMA baseline |
+| **Session Timing** | Start Hour | **8** | **8** | Trading session open (Exchange Time) |
+| | End Hour | **22** | **22** | Trading session close (Exchange Time) |
 | | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
-| | Friday Close Time | **2345** | **1330** | Weekly safety exit threshold |
+| | Friday Close Time | **2345** | **2345** | Weekly safety exit threshold |
 
