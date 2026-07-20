@@ -221,3 +221,15 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
 | | Friday Close Time | **2345** | **2345** | Weekly safety exit threshold |
 
+---
+
+## 💖 Support this Project
+
+If this system has helped you, consider buying me a coffee! ☕
+
+**USDC Address:** `0x104FA6E83F2322bdFbf1501a6d9959A0a76bc1D7`
+
+*Or simply scan the QR code below:*
+
+<img src="./donate-qr.png" alt="Donate QR Code" width="200" />
+
