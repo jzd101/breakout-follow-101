@@ -23,6 +23,7 @@ An automated, quantitative volatility breakout trading system supporting **Gold 
 ```text
 breakout-follow-101/
 ├── .agents/                 # AI Assistant skills and settings
+├── img/                     # Image assets
 ├── src/
 │   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
 │   └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
@@ -231,5 +232,5 @@ If this system has helped you, consider buying me a coffee! ☕
 
 *Or simply scan the QR code below:*
 
-<img src="./donate-qr.png" alt="Donate QR Code" width="200" />
+<img src="./img/donate-qr.png" alt="Donate QR Code" width="200" />
 
