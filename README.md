@@ -79,7 +79,7 @@ graph TD
 | **EMA** | Period = 200 | Primary Trend Filter |
 | **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger |
 | **Volume MA** | Period = 15 (SMA) | Momentum Filter |
-| **ATR** | Period = 14 | Dynamic SL/TP Base (Wilder's RMA Smoothing) |
+| **ATR** | Period = 18 | Dynamic SL/TP Base (Wilder's RMA Smoothing) |
 
 ---
 
