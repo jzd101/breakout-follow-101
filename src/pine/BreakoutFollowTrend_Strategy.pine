@@ -9,7 +9,7 @@ strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000
 // ==========================================
 // Risk Management
 grp_risk = "Risk Management"
-inpRiskPct    = input.float(2.0, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk, tooltip="Percentage of base balance to risk based on SL distance")
+inpRiskPct    = input.float(1.6, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk, tooltip="Percentage of base balance to risk based on SL distance")
 inpRR         = input.float(2.2, "Risk:Reward Ratio", minval=0.1, step=0.1, group=grp_risk)
 inpATRMult    = input.float(2.0, "ATR Multiplier (SL)", minval=0.1, step=0.1, group=grp_risk)
 inpMaxTrades  = input.int(1, "Max Concurrent Trades", minval=1, group=grp_risk)
