@@ -36,6 +36,11 @@ grp_vol = "Volume Filter"
 inpUseVol     = input.bool(true, "Use Volume Filter", group=grp_vol)
 inpVolPeriod  = input.int(15, "Volume MA Period", minval=1, group=grp_vol)
 
+// Cooldown Bars After Close/SL/TP
+grp_cooldown     = "Cooldown After Close/SL/TP"
+inpUseCooldown   = input.bool(true, "Enable Cooldown Bars", group=grp_cooldown, tooltip="Block new entries for X bars after any position is closed (SL/TP/Manual close).")
+inpCooldownBars  = input.int(1, "Cooldown Bars", minval=1, group=grp_cooldown, tooltip="Number of completed bars to wait after a close/SL/TP before allowing new entries. E.g. 1 = skip the next 1 bar.")
+
 // Time & Filters
 grp_time = "Time Filters"
 inpStartHour  = input.int(8, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
@@ -101,11 +106,19 @@ if strategy.closedtrades > nz(strategy.closedtrades[1])
 dailyLossHit = inpDailyLoss > 0 and not na(currentDay) and dailyPnL <= -dailyLossMax
 
 // ==========================================
+// Cooldown Bars tracking — matches MQL5 g_cooldown_bar_time logic
+// ==========================================
+var int lastClosedBar = na  // bar_index on which the last close/SL/TP occurred
+if strategy.closedtrades > nz(strategy.closedtrades[1])
+    lastClosedBar := bar_index
+cooldownActive = inpUseCooldown and not na(lastClosedBar) and (bar_index - lastClosedBar) <= inpCooldownBars
+
+// ==========================================
 // Signal Conditions — plain comparison on closed bar (matches MQL5: close1 > upperBB / close1 < lowerBB)
 // ==========================================
 volCond        = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
-longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
-shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit
+longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive
+shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive
 
 // ==========================================
 // Strategy Execution

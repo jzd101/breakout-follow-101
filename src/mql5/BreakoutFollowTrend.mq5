@@ -4,7 +4,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.05"
+#property version   "1.06"
 
 
 #include <Trade\Trade.mqh>
@@ -25,6 +25,10 @@ input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
+
+// --- Cooldown Bars After Close/SL/TP ---
+input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
+input int    InpCooldownBars = 1;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 8;       // Trading start hour (0-23)
 input int    InpEndHour = 22;        // Trading end hour (1-24)
@@ -45,6 +49,7 @@ int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
 bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 bool   g_weekendCloseFired = false; // Guard to prevent repeated weekend close attempts
+datetime g_cooldown_bar_time = 0;  // Bar open time of the bar in which the last position closed
 
 // SL Move on Profit tracking (parallel arrays indexed by open-position slot)
 ulong  g_pos_tickets[];   // Position ticket
@@ -267,6 +272,18 @@ void OnTick()
      {
       last_time = current_time;
       return;
+     }
+   
+   // Cooldown Bars: block new entries for InpCooldownBars bars after any close/SL/TP
+   if(InpUseCooldown && InpCooldownBars > 0 && g_cooldown_bar_time != 0)
+     {
+      // iBarShift returns the bar index offset of g_cooldown_bar_time from current bar (0=current)
+      int bars_elapsed = iBarShift(_Symbol, _Period, g_cooldown_bar_time, false);
+      if(bars_elapsed >= 0 && bars_elapsed <= InpCooldownBars)
+        {
+         last_time = current_time;
+         return;
+        }
      }
    
    // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
@@ -534,6 +551,10 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
             double dealSwap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
             double dealComm = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
             g_dailyPnL += (dealProfit + dealSwap + dealComm);
+            
+            // Cooldown: record the open time of the bar in which this close occurred
+            if(InpUseCooldown)
+               g_cooldown_bar_time = iTime(_Symbol, _Period, 0);
            }
         }
      }

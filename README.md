@@ -59,7 +59,9 @@ graph TD
     B -- No --> D{Within Trading Hours?}
     D -- No --> C
     D -- Yes --> E[Calculate Indicators: EMA, BB, Volume MA, ATR]
-    E --> F{Breakout & Trend Confirm?}
+    E --> CC{Cooldown Active?}
+    CC -- Yes --> C
+    CC -- No --> F{Breakout & Trend Confirm?}
     F -- 🟢 Bullish BB + Vol > MA + Close > EMA --> G[Market Buy / Calculate dynamic Lot]
     F -- 🔴 Bearish BB + Vol > MA + Close < EMA --> H[Market Sell / Calculate dynamic Lot]
     F -- No Breakout --> I[Keep Monitoring]
@@ -139,6 +141,16 @@ An optional, per-trade mechanism to protect accumulated profit once a trade reac
 *   **Example**: Entry = 2,000, ATR SL dist = 2.0, RR = 2.2 → TP dist = 4.4. Trigger RR = 1.0 → fires when price hits 2,002. New SL at 5% of TP dist → new SL = 2,000 + (4.4 × 0.05) = **2,000.22** (locks $0.22 of profit per unit).
 *   **MQL5**: Checked every tick via `ManageSLMove()`, SL modified live with `PositionModify()`.
 *   **Pine Script**: Checked on bar close; SL box & label update to `SL★` to visually confirm the move.
+
+### 5. Cooldown Bars After Close/SL/TP
+An optional mechanism to prevent consecutive entries immediately after a position closes, giving the market time to settle before re-entering.
+*   **Trigger**: Activates whenever any position managed by the EA is closed — whether by SL hit, TP hit, or weekend force-close.
+*   **Cooldown Duration**: The system blocks new entries for **X completed bars** on the active timeframe after the close bar. `X = 1` means the very next bar is skipped; `X = 5` means the next 5 bars are skipped.
+*   **Default**: Enabled (`true`) with `X = 1` bar.
+*   **Toggle**: Can be fully disabled via the `Enable Cooldown Bars After Close/SL/TP` parameter.
+*   **Example (15m TF)**: A trade hits SL at 14:15. With `Cooldown Bars = 1`, the 14:30 bar is skipped. The system resumes normal entry logic from the 14:45 bar onward.
+*   **MQL5**: Records the bar open time via `OnTradeTransaction` (`g_cooldown_bar_time`); checks `iBarShift` offset in `OnTick` before allowing entry.
+*   **Pine Script**: Records `bar_index` of the close bar (`lastClosedBar`); computes `cooldownActive = (bar_index - lastClosedBar) <= inpCooldownBars` and wires it into `longCondition`/`shortCondition`.
 
 ---
 
@@ -221,6 +233,8 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | End Hour | **22** | **22** | Trading session close (Exchange Time) |
 | | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
 | | Friday Close Time | **2345** | **2345** | Weekly safety exit threshold |
+| **Cooldown After Close** | Enable Cooldown Bars | **Enabled** (true) | **Enabled** (true) | Block entries for X bars after any close/SL/TP |
+| | Cooldown Bars | **1** | **1** | Number of bars to wait before re-entering |
 
 ---
 
