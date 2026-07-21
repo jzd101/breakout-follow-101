@@ -238,7 +238,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
 | | Friday Close Time | **2345** | **2345** | Weekly safety exit threshold |
 | **Cooldown After Close** | Enable Cooldown Bars | **Enabled** (true) | **Enabled** (true) | Block entries for X bars after any close/SL/TP |
-| | Cooldown Bars | **1** | **1** | Number of bars to wait before re-entering |
+| | Cooldown Bars | **6** | **6** | Number of bars to wait before re-entering |
 
 ---
 

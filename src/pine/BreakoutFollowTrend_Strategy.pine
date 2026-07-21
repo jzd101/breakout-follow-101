@@ -40,7 +40,7 @@ inpVolPeriod  = input.int(15, "Volume MA Period", minval=1, group=grp_vol)
 // Cooldown Bars After Close/SL/TP
 grp_cooldown     = "Cooldown After Close/SL/TP"
 inpUseCooldown   = input.bool(true, "Enable Cooldown Bars", group=grp_cooldown, tooltip="Block new entries for X bars after any position is closed (SL/TP/Manual close).")
-inpCooldownBars  = input.int(1, "Cooldown Bars", minval=1, group=grp_cooldown, tooltip="Number of completed bars to wait after a close/SL/TP before allowing new entries. E.g. 1 = skip the next 1 bar.")
+inpCooldownBars  = input.int(6, "Cooldown Bars", minval=1, group=grp_cooldown, tooltip="Number of completed bars to wait after a close/SL/TP before allowing new entries. E.g. 1 = skip the next 1 bar.")
 
 // Time & Filters
 grp_time = "Time Filters"
