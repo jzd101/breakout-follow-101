@@ -4,17 +4,18 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.05"
+#property version   "1.06"
 
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 2.0;      // Risk % per trade
+input double InpRiskPct = 1.6;      // Risk % per trade
 input double InpRR = 2.2;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
 input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
+input bool   InpUseEMABodyFilter = true; // Block entry if signal bar overlaps EMA (ambiguous direction)
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 15;      // Bollinger Bands Period
@@ -25,6 +26,10 @@ input int    InpMagic = 123456;      // Magic Number
 input bool   InpWeekendClose = true; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
+
+// --- Cooldown Bars After Close/SL/TP ---
+input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
+input int    InpCooldownBars = 1;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 8;       // Trading start hour (0-23)
 input int    InpEndHour = 22;        // Trading end hour (1-24)
@@ -45,6 +50,7 @@ int    g_currentYear = -1;
 double g_dailyLossMax = 0.0;  // Calculated in OnInit
 bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 bool   g_weekendCloseFired = false; // Guard to prevent repeated weekend close attempts
+datetime g_cooldown_bar_time = 0;  // Bar open time of the bar in which the last position closed
 
 // SL Move on Profit tracking (parallel arrays indexed by open-position slot)
 ulong  g_pos_tickets[];   // Position ticket
@@ -269,6 +275,18 @@ void OnTick()
       return;
      }
    
+   // Cooldown Bars: block new entries for InpCooldownBars bars after any close/SL/TP
+   if(InpUseCooldown && InpCooldownBars > 0 && g_cooldown_bar_time != 0)
+     {
+      // iBarShift returns the bar index offset of g_cooldown_bar_time from current bar (0=current)
+      int bars_elapsed = iBarShift(_Symbol, _Period, g_cooldown_bar_time, false);
+      if(bars_elapsed >= 0 && bars_elapsed <= InpCooldownBars)
+        {
+         last_time = current_time;
+         return;
+        }
+     }
+   
    // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
    datetime bar1_time = iTime(_Symbol, _Period, 1);
    if(bar1_time == 0) return; // Time not ready, retry on next tick
@@ -335,6 +353,11 @@ void OnTick()
    bool ema_long = !InpUseEMA || (close1 > ema[0]);
    bool ema_short = !InpUseEMA || (close1 < ema[0]);
    
+   // EMA Body Overlap filter: block if the signal bar's High/Low range straddles the EMA
+   double high1 = iHigh(_Symbol, _Period, 1);
+   double low1  = iLow(_Symbol, _Period, 1);
+   bool ema_overlap_blocked = InpUseEMABodyFilter && InpUseEMA && (low1 <= ema[0]) && (high1 >= ema[0]);
+   
    // Debug Log (Compare these values with Python output)
    /*
    PrintFormat("Time: %s, Close: %.5f, EMA: %.5f, UpperBB: %.5f, LowerBB: %.5f, ATR: %.5f, Vol: %d, VolMA: %.2f", 
@@ -342,7 +365,7 @@ void OnTick()
    */
    
    // LONG Condition
-   if(ema_long && close1 > upperBB[0] && vol_condition)
+   if(ema_long && close1 > upperBB[0] && vol_condition && !ema_overlap_blocked)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
       
@@ -374,7 +397,7 @@ void OnTick()
         }
      }
         // SHORT Condition
-    else if(ema_short && close1 < lowerBB[0] && vol_condition)
+    else if(ema_short && close1 < lowerBB[0] && vol_condition && !ema_overlap_blocked)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       
@@ -534,6 +557,10 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
             double dealSwap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
             double dealComm = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
             g_dailyPnL += (dealProfit + dealSwap + dealComm);
+            
+            // Cooldown: record the open time of the bar in which this close occurred
+            if(InpUseCooldown)
+               g_cooldown_bar_time = iTime(_Symbol, _Period, 0);
            }
         }
      }

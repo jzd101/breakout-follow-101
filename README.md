@@ -59,7 +59,9 @@ graph TD
     B -- No --> D{Within Trading Hours?}
     D -- No --> C
     D -- Yes --> E[Calculate Indicators: EMA, BB, Volume MA, ATR]
-    E --> F{Breakout & Trend Confirm?}
+    E --> CC{Cooldown Active?}
+    CC -- Yes --> C
+    CC -- No --> F{Breakout & Trend Confirm?}
     F -- 🟢 Bullish BB + Vol > MA + Close > EMA --> G[Market Buy / Calculate dynamic Lot]
     F -- 🔴 Bearish BB + Vol > MA + Close < EMA --> H[Market Sell / Calculate dynamic Lot]
     F -- No Breakout --> I[Keep Monitoring]
@@ -77,6 +79,7 @@ graph TD
 | Indicator | Default Setting | Purpose |
 | :--- | :--- | :--- |
 | **EMA** | Period = 200 | Primary Trend Filter |
+| **EMA Body Overlap Filter** | Enabled (true) | Block entries when signal bar's High-Low range straddles the EMA (direction ambiguous) |
 | **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger |
 | **Volume MA** | Period = 15 (SMA) | Momentum Filter |
 | **ATR** | Period = 18 | Dynamic SL/TP Base (Wilder's RMA Smoothing) |
@@ -86,6 +89,7 @@ graph TD
 ### 🟢 LONG (Buy Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1** (completed candle):
 *   **Trend Filter**: Price is strictly above EMA 200 (`Close > EMA 200`).
+*   **EMA Body Filter**: The signal bar's High-Low range must NOT straddle the EMA (i.e., `Low > EMA` for a long — EMA is fully below the candle).
 *   **BB Breakout**: Candle close is greater than the Upper Bollinger Band (`Close > Upper BB`).
 *   **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
 *   *Execution: Market BUY order opened at the open of the very next candle (Candle 0).*
@@ -93,6 +97,7 @@ All conditions must be confirmed on the **Close of Candle 1** (completed candle)
 ### 🔴 SHORT (Sell Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1** (completed candle):
 *   **Trend Filter**: Price is strictly below EMA 200 (`Close < EMA 200`).
+*   **EMA Body Filter**: The signal bar's High-Low range must NOT straddle the EMA (i.e., `High < EMA` for a short — EMA is fully above the candle).
 *   **BB Breakout**: Candle close is less than the Lower Bollinger Band (`Close < Lower BB`).
 *   **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
 *   *Execution: Market SELL order opened at the open of the very next candle (Candle 0).*
@@ -139,6 +144,16 @@ An optional, per-trade mechanism to protect accumulated profit once a trade reac
 *   **Example**: Entry = 2,000, ATR SL dist = 2.0, RR = 2.2 → TP dist = 4.4. Trigger RR = 1.0 → fires when price hits 2,002. New SL at 5% of TP dist → new SL = 2,000 + (4.4 × 0.05) = **2,000.22** (locks $0.22 of profit per unit).
 *   **MQL5**: Checked every tick via `ManageSLMove()`, SL modified live with `PositionModify()`.
 *   **Pine Script**: Checked on bar close; SL box & label update to `SL★` to visually confirm the move.
+
+### 5. Cooldown Bars After Close/SL/TP
+An optional mechanism to prevent consecutive entries immediately after a position closes, giving the market time to settle before re-entering.
+*   **Trigger**: Activates whenever any position managed by the EA is closed — whether by SL hit, TP hit, or weekend force-close.
+*   **Cooldown Duration**: The system blocks new entries for **X completed bars** on the active timeframe after the close bar. `X = 1` means the very next bar is skipped; `X = 5` means the next 5 bars are skipped.
+*   **Default**: Enabled (`true`) with `X = 1` bar.
+*   **Toggle**: Can be fully disabled via the `Enable Cooldown Bars After Close/SL/TP` parameter.
+*   **Example (15m TF)**: A trade hits SL at 14:15. With `Cooldown Bars = 1`, the 14:30 bar is skipped. The system resumes normal entry logic from the 14:45 bar onward.
+*   **MQL5**: Records the bar open time via `OnTradeTransaction` (`g_cooldown_bar_time`); checks `iBarShift` offset in `OnTick` before allowing entry.
+*   **Pine Script**: Records `bar_index` of the close bar (`lastClosedBar`); computes `cooldownActive = (bar_index - lastClosedBar) <= inpCooldownBars` and wires it into `longCondition`/`shortCondition`.
 
 ---
 
@@ -211,6 +226,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Trigger at RR | **0.2** | **0.4** | Move SL when price reaches RR from entry |
 | | New SL at % of TP Dist | **12%** | **10%** | New SL = Entry + X% of full TP range |
 | **Indicators** | EMA Filter | **Enabled** (true) | **Enabled** (true) | Trend-following direction lock |
+| | EMA Body Overlap Filter | **Enabled** (true) | **Enabled** (true) | Block entry when candle straddles EMA |
 | | EMA Period | **200** | **200** | Long-term trend reference |
 | | Bollinger Bands Period| **15** | **15** | Short-term volatility contraction range |
 | | BB Deviation | **1.5** | **1.5** | Breakout signal threshold |
@@ -221,6 +237,8 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | End Hour | **22** | **22** | Trading session close (Exchange Time) |
 | | Weekend Close | **Enabled** (true) | **Enabled** (true) | Let targets play out without forced close |
 | | Friday Close Time | **2345** | **2345** | Weekly safety exit threshold |
+| **Cooldown After Close** | Enable Cooldown Bars | **Enabled** (true) | **Enabled** (true) | Block entries for X bars after any close/SL/TP |
+| | Cooldown Bars | **1** | **1** | Number of bars to wait before re-entering |
 
 ---
 
