@@ -15,6 +15,7 @@ input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
 input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
+input bool   InpUseEMABodyFilter = true; // Block entry if signal bar overlaps EMA (ambiguous direction)
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 15;      // Bollinger Bands Period
@@ -352,6 +353,11 @@ void OnTick()
    bool ema_long = !InpUseEMA || (close1 > ema[0]);
    bool ema_short = !InpUseEMA || (close1 < ema[0]);
    
+   // EMA Body Overlap filter: block if the signal bar's High/Low range straddles the EMA
+   double high1 = iHigh(_Symbol, _Period, 1);
+   double low1  = iLow(_Symbol, _Period, 1);
+   bool ema_overlap_blocked = InpUseEMABodyFilter && InpUseEMA && (low1 <= ema[0]) && (high1 >= ema[0]);
+   
    // Debug Log (Compare these values with Python output)
    /*
    PrintFormat("Time: %s, Close: %.5f, EMA: %.5f, UpperBB: %.5f, LowerBB: %.5f, ATR: %.5f, Vol: %d, VolMA: %.2f", 
@@ -359,7 +365,7 @@ void OnTick()
    */
    
    // LONG Condition
-   if(ema_long && close1 > upperBB[0] && vol_condition)
+   if(ema_long && close1 > upperBB[0] && vol_condition && !ema_overlap_blocked)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
       
@@ -391,7 +397,7 @@ void OnTick()
         }
      }
         // SHORT Condition
-    else if(ema_short && close1 < lowerBB[0] && vol_condition)
+    else if(ema_short && close1 < lowerBB[0] && vol_condition && !ema_overlap_blocked)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       

@@ -79,6 +79,7 @@ graph TD
 | Indicator | Default Setting | Purpose |
 | :--- | :--- | :--- |
 | **EMA** | Period = 200 | Primary Trend Filter |
+| **EMA Body Overlap Filter** | Enabled (true) | Block entries when signal bar's High-Low range straddles the EMA (direction ambiguous) |
 | **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger |
 | **Volume MA** | Period = 15 (SMA) | Momentum Filter |
 | **ATR** | Period = 18 | Dynamic SL/TP Base (Wilder's RMA Smoothing) |
@@ -88,6 +89,7 @@ graph TD
 ### 🟢 LONG (Buy Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1** (completed candle):
 *   **Trend Filter**: Price is strictly above EMA 200 (`Close > EMA 200`).
+*   **EMA Body Filter**: The signal bar's High-Low range must NOT straddle the EMA (i.e., `Low > EMA` for a long — EMA is fully below the candle).
 *   **BB Breakout**: Candle close is greater than the Upper Bollinger Band (`Close > Upper BB`).
 *   **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
 *   *Execution: Market BUY order opened at the open of the very next candle (Candle 0).*
@@ -95,6 +97,7 @@ All conditions must be confirmed on the **Close of Candle 1** (completed candle)
 ### 🔴 SHORT (Sell Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1** (completed candle):
 *   **Trend Filter**: Price is strictly below EMA 200 (`Close < EMA 200`).
+*   **EMA Body Filter**: The signal bar's High-Low range must NOT straddle the EMA (i.e., `High < EMA` for a short — EMA is fully above the candle).
 *   **BB Breakout**: Candle close is less than the Lower Bollinger Band (`Close < Lower BB`).
 *   **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
 *   *Execution: Market SELL order opened at the open of the very next candle (Candle 0).*
@@ -223,6 +226,7 @@ For traders seeking higher accuracy and a larger Profit Factor with fewer, high-
 | | Trigger at RR | **0.2** | **0.4** | Move SL when price reaches RR from entry |
 | | New SL at % of TP Dist | **12%** | **10%** | New SL = Entry + X% of full TP range |
 | **Indicators** | EMA Filter | **Enabled** (true) | **Enabled** (true) | Trend-following direction lock |
+| | EMA Body Overlap Filter | **Enabled** (true) | **Enabled** (true) | Block entry when candle straddles EMA |
 | | EMA Period | **200** | **200** | Long-term trend reference |
 | | Bollinger Bands Period| **15** | **15** | Short-term volatility contraction range |
 | | BB Deviation | **1.5** | **1.5** | Breakout signal threshold |

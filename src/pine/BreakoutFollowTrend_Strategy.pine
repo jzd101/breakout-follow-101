@@ -25,11 +25,12 @@ inpSLMoveToPct   = input.float(12.0, "New SL at % of TP Dist (RR)", minval=0.0, 
 
 // Indicators
 grp_ind = "Indicators"
-inpUseEMA     = input.bool(true, "Use EMA Trend Filter", group=grp_ind)
-inpEMAPeriod  = input.int(200, "EMA Period", minval=1, group=grp_ind)
-inpBBPeriod   = input.int(15, "Bollinger Bands Period", minval=1, group=grp_ind)
-inpBBDev      = input.float(1.5, "Bollinger Bands Deviation", minval=0.1, step=0.1, group=grp_ind)
-inpATRPeriod  = input.int(18, "ATR Period", minval=1, group=grp_ind)
+inpUseEMA          = input.bool(true, "Use EMA Trend Filter", group=grp_ind)
+inpEMAPeriod       = input.int(200, "EMA Period", minval=1, group=grp_ind)
+inpUseEMABodyFilter= input.bool(true, "Block Entry if Candle Overlaps EMA", group=grp_ind, tooltip="If the signal bar's High/Low range straddles the EMA (EMA is between High and Low), block the entry. Direction is ambiguous when price is crossing the EMA.")
+inpBBPeriod        = input.int(15, "Bollinger Bands Period", minval=1, group=grp_ind)
+inpBBDev           = input.float(1.5, "Bollinger Bands Deviation", minval=0.1, step=0.1, group=grp_ind)
+inpATRPeriod       = input.int(18, "ATR Period", minval=1, group=grp_ind)
 
 // Volume Filter
 grp_vol = "Volume Filter"
@@ -116,9 +117,11 @@ cooldownActive = inpUseCooldown and not na(lastClosedBar) and (bar_index - lastC
 // ==========================================
 // Signal Conditions — plain comparison on closed bar (matches MQL5: close1 > upperBB / close1 < lowerBB)
 // ==========================================
-volCond        = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
-longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive
-shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive
+volCond           = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
+// EMA Body Overlap filter: block if EMA is inside the candle's High-Low range (ambiguous direction)
+emaOverlapBlocked = inpUseEMABodyFilter and inpUseEMA and (low <= emaVal and high >= emaVal)
+longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive and not emaOverlapBlocked
+shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive and not emaOverlapBlocked
 
 // ==========================================
 // Strategy Execution
