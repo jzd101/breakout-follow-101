@@ -4,7 +4,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.06"
+#property version   "1.07"
 
 
 #include <Trade\Trade.mqh>
@@ -32,7 +32,7 @@ input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
 input int    InpCooldownBars = 9;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input int    InpStartHour = 8;       // Trading start hour (0-23)
-input int    InpEndHour = 22;        // Trading end hour (1-24)
+input int    InpEndHour = 20;        // Trading end hour (1-24)
 
 // --- SL Move on Profit ---
 input bool   InpUseSLMove   = true;  // Enable SL Move on Profit
