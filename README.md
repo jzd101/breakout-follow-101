@@ -7,13 +7,27 @@
 [![TradingView: Pine Script v5](https://img.shields.io/badge/TradingView-Pine%20Script%20v5-blueviolet?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 [![Prop Firm: Proven Pass](https://img.shields.io/badge/Prop%20Firm-Proven%20Pass-emerald?style=flat-square)](https://github.com/jzd101/breakout-follow-101)
 
-An institutional-grade, quantitative trend-following framework optimized for Gold (XAUUSD). Captures volatility expansion via Bollinger Band breakouts, rigorously validated by multi-layer EMA trend filters and volume momentum—backed by 100% logic parity across TradingView and MT5.
+An institutional-grade, quantitative trend-following framework optimized for **Gold (XAUUSD)** on the **15m timeframe**. Captures volatility expansion via Bollinger Band breakouts, rigorously validated by multi-layer EMA trend filters and volume momentum—backed by **100% logic parity** across TradingView and MetaTrader 5.
 
 > [!NOTE]
 > **Prop Firm Verification**: This strategy has been proven to successfully pass Prop Firm evaluation challenges.
 
 > [!IMPORTANT]
-> **100% Logic Parity Guarantee**: This repository maintains absolute mathematical alignment across TradingView (Visualization) and MetaTrader 5 (Execution). Every entry, exit, indicator, and risk calculation matches perfectly across both platforms to eliminate strategy drift.
+> **100% Logic Parity Guarantee**: This repository maintains absolute mathematical alignment across TradingView (Visualization) and MetaTrader 5 (Execution). Every entry, exit, indicator calculation, and risk control matches perfectly across both platforms to eliminate strategy drift.
+
+---
+
+## 📍 Table of Contents
+- [📂 Repository Blueprint](#-repository-blueprint)
+- [🚀 Quick Start Guide](#-quick-start-guide)
+- [📐 Core Logic & Strategy Rules](#-core-logic--strategy-rules)
+- [🔄 Dual-Platform Execution Lifecycles](#-dual-platform-execution-lifecycles)
+- [🛡️ Advanced Risk Management & Capital Preservation](#-advanced-risk-management--capital-preservation)
+- [🕒 Timezone Mapping & Synchronization](#-timezone-mapping--synchronization)
+- [🤝 System Parity & Math Alignment](#-system-parity--math-alignment)
+- [🖼️ Visual Chart Tools (TradingView)](#-visual-chart-tools-tradingview)
+- [🏆 High Win-Rate Preset Parameters (15m)](#-high-win-rate-preset-parameters-15m)
+- [💖 Support this Project](#-support-this-project)
 
 ---
 
@@ -21,8 +35,8 @@ An institutional-grade, quantitative trend-following framework optimized for Gol
 
 ```text
 breakout-follow-101/
-├── .agents/                 # AI Assistant skills and settings
-├── img/                     # Image assets
+├── .agents/                 # AI Assistant skills, rules, and workspace configurations
+├── img/                     # Image assets (e.g. donation QR code)
 ├── src/
 │   ├── mql5/                # MetaTrader 5 Expert Advisor (BreakoutFollowTrend.mq5)
 │   └── pine/                # TradingView Pine Script v5 (BreakoutFollowTrend_Strategy.pine)
@@ -31,19 +45,17 @@ breakout-follow-101/
 
 ---
 
-## 🚀 1-Minute Quick Start
+## 🚀 Quick Start Guide
 
-### 1. MetaTrader 5 Expert Advisor
-Deploy for automated real-time execution:
-1. Copy [BreakoutFollowTrend.mq5](src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` folder.
-2. Compile the EA inside MetaEditor and attach it to a **Gold (XAUUSD)** chart on the **15m** timeframe.
-3. Enable **Algo Trading** in your MT5 terminal.
+### 1. MetaTrader 5 Expert Advisor (Automated Execution)
+1. Copy [BreakoutFollowTrend.mq5](src/mql5/BreakoutFollowTrend.mq5) to your terminal's `/MQL5/Experts/` directory.
+2. Open **MetaEditor** (`F4`), compile the script, and attach it to a **Gold (XAUUSD)** chart on the **15m** timeframe.
+3. Enable **Algo Trading** in your MT5 terminal toolbar.
 
-### 2. TradingView Pine Script
-Visualize entry signals and dynamic risk tools:
+### 2. TradingView Pine Script (Visualization & Backtesting)
 1. Copy the full source code from [BreakoutFollowTrend_Strategy.pine](src/pine/BreakoutFollowTrend_Strategy.pine).
 2. In TradingView, open the **Pine Editor** tab, paste the code, and click **Save**.
-3. Click **Add to Chart** and open the **Strategy Tester** tab to inspect trade histories.
+3. Click **Add to Chart** and open the **Strategy Tester** tab to inspect trade histories and performance metrics.
 
 ---
 
@@ -53,23 +65,23 @@ The Breakout Follow Trend system relies on pure statistics and momentum confirma
 
 ```mermaid
 graph TD
-    A[New Candle Close] --> B{Daily Loss Limit Hit?}
+    A[New Candle Close / Bar 1] --> B{Daily Loss Limit Hit?}
     B -- Yes --> C[Block Entry]
     B -- No --> D{Within Trading Hours?}
     D -- No --> C
     D -- Yes --> E[Calculate Indicators: EMA, BB, Volume MA, ATR]
     E --> CC{Cooldown Active?}
     CC -- Yes --> C
-    CC -- No --> F{Breakout & Trend Confirm?}
-    F -- 🟢 Bullish BB + Vol > MA + Close > EMA --> G[Market Buy / Calculate dynamic Lot]
-    F -- 🔴 Bearish BB + Vol > MA + Close < EMA --> H[Market Sell / Calculate dynamic Lot]
+    CC -- No --> F{Breakout & Signal Evaluation}
+    F -- 🟢 Bullish BB + Vol > MA + Close > EMA --> G[Market Buy / Calculate Dynamic Lot]
+    F -- 🔴 Bearish BB + Vol > MA + Close < EMA --> H[Market Sell / Calculate Dynamic Lot]
     F -- No Breakout --> I[Keep Monitoring]
     G --> J[Set Stop Loss & Take Profit via ATR]
     H --> J
     J --> K{SL Move on Profit Enabled?}
     K -- Yes --> L{Price reached Trigger RR?}
-    K -- No --> M[Hold until SL/TP hit]
-    L -- Yes --> N[Move SL to lock in % profit — once only]
+    K -- No --> M[Hold Trade until SL/TP Hit]
+    L -- Yes --> N[Move SL to Lock in Profit — Once Only]
     L -- No --> M
     N --> M
 ```
@@ -77,29 +89,29 @@ graph TD
 ### Technical Indicators & Settings
 | Indicator | Default Setting | Purpose |
 | :--- | :--- | :--- |
-| **EMA** | Period = 200 | Primary Trend Filter |
-| **EMA Body Overlap Filter** | Enabled (true) | Block entries when signal bar's High-Low range straddles the EMA (direction ambiguous) |
-| **Bollinger Bands** | Period = 15, StdDev = 1.5 | Breakout Trigger |
-| **Volume MA** | Period = 15 (SMA) | Momentum Filter |
-| **ATR** | Period = 18 | Dynamic SL/TP Base (Wilder's RMA Smoothing) |
+| **EMA** | Period = `200` | Primary Trend Filter |
+| **EMA Body Overlap Filter** | `Enabled` (`true`) | Blocks entries when signal bar's High-Low range straddles the EMA (direction ambiguous) |
+| **Bollinger Bands** | Period = `15`, StdDev = `1.5` | Breakout Trigger |
+| **Volume MA** | Period = `15` (SMA) | Momentum Filter |
+| **ATR** | Period = `18` | Dynamic SL/TP Base (Wilder's RMA Smoothing) |
 
 ---
 
 ### 🟢 LONG (Buy Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1** (completed candle):
-*   **Trend Filter**: Price is strictly above EMA 200 (`Close > EMA 200`).
-*   **EMA Body Filter**: The signal bar's High-Low range must NOT straddle the EMA (i.e., `Low > EMA` for a long — EMA is fully below the candle).
-*   **BB Breakout**: Candle close is greater than the Upper Bollinger Band (`Close > Upper BB`).
-*   **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
-*   *Execution: Market BUY order opened at the open of the very next candle (Candle 0).*
+* **Trend Filter**: Price is strictly above EMA 200 (`Close > EMA 200`).
+* **EMA Body Filter**: Signal bar's High-Low range must NOT straddle the EMA (`Low > EMA 200` — EMA is fully below the candle).
+* **BB Breakout**: Candle close is greater than the Upper Bollinger Band (`Close > Upper BB`).
+* **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
+* *Execution: Market BUY order opened at the open of the very next candle (Candle 0).*
 
 ### 🔴 SHORT (Sell Entry) Conditions
 All conditions must be confirmed on the **Close of Candle 1** (completed candle):
-*   **Trend Filter**: Price is strictly below EMA 200 (`Close < EMA 200`).
-*   **EMA Body Filter**: The signal bar's High-Low range must NOT straddle the EMA (i.e., `High < EMA` for a short — EMA is fully above the candle).
-*   **BB Breakout**: Candle close is less than the Lower Bollinger Band (`Close < Lower BB`).
-*   **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
-*   *Execution: Market SELL order opened at the open of the very next candle (Candle 0).*
+* **Trend Filter**: Price is strictly below EMA 200 (`Close < EMA 200`).
+* **EMA Body Filter**: Signal bar's High-Low range must NOT straddle the EMA (`High < EMA 200` — EMA is fully above the candle).
+* **BB Breakout**: Candle close is less than the Lower Bollinger Band (`Close < Lower BB`).
+* **Volume Momentum**: Volume is greater than the 15-period Volume MA (`Volume > Vol SMA 15`).
+* *Execution: Market SELL order opened at the open of the very next candle (Candle 0).*
 
 ---
 
@@ -107,79 +119,71 @@ All conditions must be confirmed on the **Close of Candle 1** (completed candle)
 
 Understanding how TradingView and MetaTrader 5 process price data is crucial for achieving 100% execution parity.
 
-*   **TradingView's Historical vs. Real-time Execution**: In TradingView, backtesting calculations run once per candle close. When a candle closes (Bar 1), indicators are evaluated. If a breakout occurs, Pine Script's execution engine simulates the entry at the opening tick of the next bar (Bar 0).
-*   **MT5 Expert Advisor Real-time Execution**: The MT5 Expert Advisor operates within the `OnTick()` event loop. To avoid entering trades mid-candle (which creates historical divergence), the EA monitors when a new bar has just opened. Once detected, it immediately queries indicator buffers for the completed candle (Bar 1) to evaluate trade signals and execute instantly on Bar 0.
+* **TradingView Historical vs. Real-Time Execution**: In TradingView, backtesting calculations run once per candle close. When a candle closes (**Bar 1**), indicators are evaluated. If a breakout occurs, Pine Script's execution engine simulates entry at the opening tick of the next bar (**Bar 0**).
+* **MT5 EA Real-Time Execution**: The MT5 Expert Advisor operates within the `OnTick()` event loop. To avoid entering trades mid-candle (which creates historical divergence), the EA monitors when a new bar has just opened. Once detected, it immediately queries indicator buffers for the completed candle (**Bar 1**) to evaluate trade signals and execute instantly on **Bar 0**.
 
 ---
 
-## 🛡️ Advanced Risk & Capital Preservation Controls
+## 🛡️ Advanced Risk Management & Capital Preservation
 
 The Breakout Follow Trend system incorporates active institutional-grade capital preservation safeguards, fully integrated and logically aligned across MQL5 and Pine Script.
 
 ### 1. Dynamic Volatility-Based Position Sizing
-When **Compounding Risk** is enabled, the trade lot size is dynamically computed based on the active account equity and the volatility-based Stop Loss distance (ATR multiplied by the ATR Multiplier).
-*   **Compounding Enabled**: Lot sizes scale up as the account grows and shrink during drawdowns.
-*   **Compounding Disabled**: Sizing is calculated using a user-defined Fixed Balance, maintaining consistent lot sizes regardless of live equity.
-*   **Tick Rounding**: Both platforms round the Stop Loss and Take Profit distances to the nearest tick value before executing, preventing order rejection on MT5 due to raw decimal price offsets.
+When **Compounding Risk** is enabled, trade lot size is dynamically computed based on active account equity and the volatility-based Stop Loss distance (ATR multiplied by the ATR Multiplier).
+* **Compounding Enabled**: Lot sizes scale up as the account grows and shrink during drawdowns.
+* **Compounding Disabled**: Sizing is calculated using a user-defined Fixed Balance (`Fixed Balance = 10,000`), maintaining consistent lot sizes regardless of live equity.
+* **Tick Rounding**: Both platforms round Stop Loss and Take Profit distances to the nearest tick value before executing, preventing order rejection on MT5 due to raw decimal price offsets.
 
 ### 2. Transactional Daily Loss Limit (Drawdown Lockout)
 To protect against consecutive losses or black swan events, the system features a realized **Daily Loss Limit**.
-*   **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
-*   **Threshold Blocking**: Once the net realized loss for the current server day exceeds the specified percentage (e.g., `2.0%` of daily starting balance), the system immediately suspends all new entries.
-*   **Automatic Reset**: The lockout automatically resets on the next server trading day. Gregorian calendar boundary transitions are fully protected on both platforms.
+* **Realized P&L Tracker**: The system tracks realized transaction profit/loss in real-time.
+* **Threshold Blocking**: Once net realized loss for the current server day exceeds the specified percentage (default: `1.0%` of starting balance), the system immediately suspends all new entries.
+* **Automatic Reset**: The lockout automatically resets on the next server trading day at 00:00.
 
 ### 3. Weekend Liquidation Policy
 Holding open positions over the weekend exposes accounts to high-volatility broker gaps.
-*   When **Weekend Close** is enabled, the system force-closes all active positions at Friday's designated cutoff time (default: `23:45`).
-*   New orders are blocked until Monday morning at the designated starting hour.
-*   Log-flooding mitigation is active in MQL5 to isolate query logs on close triggers.
+* When **Weekend Close** is enabled, the system force-closes all active positions at Friday's designated cutoff time (default: `23:45`).
+* New orders are blocked until Monday morning at the designated starting hour.
 
 ### 4. SL Move on Profit (Breakeven+ Protection)
-An optional, per-trade mechanism to protect accumulated profit once a trade reaches a defined RR milestone.
-*   **Trigger Threshold**: When price travels `Trigger at RR × SL distance` from entry (e.g. `1.0` = RR 1:1), the feature activates.
-*   **New SL Placement**: The Stop Loss is repositioned to `Entry ± (TP distance × New SL % / 100)`, where TP distance = SL distance × RR ratio. This locks in a defined fraction of the full reward range. Setting `0%` = exact breakeven; `5%` = entry + 5% of the full TP range.
-*   **One-Shot Guard**: SL is moved only once per position — it cannot trigger twice or reverse.
-*   **Improvement-Only Rule**: The new SL is applied only if it is strictly better than the current SL (never worsens the position).
-*   **Example**: Entry = 2,000, ATR SL dist = 2.0, RR = 2.2 → TP dist = 4.4. Trigger RR = 1.0 → fires when price hits 2,002. New SL at 5% of TP dist → new SL = 2,000 + (4.4 × 0.05) = **2,000.22** (locks $0.22 of profit per unit).
-*   **MQL5**: Checked every tick via `ManageSLMove()`, SL modified live with `PositionModify()`.
-*   **Pine Script**: Checked on bar close; SL box & label update to `SL★` to visually confirm the move.
+An optional, per-trade mechanism to protect accumulated profit once a trade reaches a defined Risk:Reward milestone.
+* **Trigger Threshold**: When price reaches `Trigger at RR × SL distance` from entry (default: `0.2 RR`), the feature activates.
+* **New SL Placement**: Stop Loss is repositioned to `Entry ± (TP distance × New SL % / 100)` (default: `12%` of full TP distance locked into profit).
+* **One-Shot Guard**: SL is moved only once per position—it cannot trigger twice or reverse.
+* **Improvement-Only Rule**: The new SL is applied only if it is strictly better than the current SL.
 
 ### 5. Cooldown Bars After Close/SL/TP
 An optional mechanism to prevent consecutive entries immediately after a position closes, giving the market time to settle before re-entering.
-*   **Trigger**: Activates whenever any position managed by the EA is closed — whether by SL hit, TP hit, or weekend force-close.
-*   **Cooldown Duration**: The system blocks new entries for **X completed bars** on the active timeframe after the close bar. `X = 1` means the very next bar is skipped; `X = 5` means the next 5 bars are skipped.
-*   **Default**: Enabled (`true`) with `X = 1` bar.
-*   **Toggle**: Can be fully disabled via the `Enable Cooldown Bars After Close/SL/TP` parameter.
-*   **Example (15m TF)**: A trade hits SL at 14:15. With `Cooldown Bars = 1`, the 14:30 bar is skipped. The system resumes normal entry logic from the 14:45 bar onward.
-*   **MQL5**: Records the bar open time via `OnTradeTransaction` (`g_cooldown_bar_time`); checks `iBarShift` offset in `OnTick` before allowing entry.
-*   **Pine Script**: Records `bar_index` of the close bar (`lastClosedBar`); computes `cooldownActive = (bar_index - lastClosedBar) <= inpCooldownBars` and wires it into `longCondition`/`shortCondition`.
+* **Trigger**: Activates whenever any position managed by the EA is closed—whether by SL hit, TP hit, or weekend force-close.
+* **Cooldown Duration**: The system blocks new entries for **X completed bars** on the active timeframe after the close bar (default: `9 bars` = 2 hours 15 minutes on a 15m timeframe).
+* **Toggle**: Can be fully enabled or disabled via the `Enable Cooldown Bars` parameter.
 
 ---
 
-## 🕒 Global Synchronization & Timezone Mapping
+## 🕒 Timezone Mapping & Synchronization
 
-When setting up trading session times, it is critical to understand how TradingView and MetaTrader 5 interpret time parameters.
+Pine Script evaluates session timing using **Exchange Time (UTC-4 / New York Time)**, whereas MetaTrader 5 uses **Broker Server Time**.
 
 ```mermaid
 gantt
     title Timezone Mapping (Gold 15m Preset)
-    dateFormat HH
+    dateFormat YYYY-MM-DD HH:mm
     axisFormat %H:00
     section TradingView (Exchange Time / UTC-4)
-    Trading Session (13:00 - 20:00) :active, 13, 20
+    08:00 - 20:00 :active, 2026-01-01 08:00, 2026-01-01 20:00
     section MT5 Broker Server Time (UTC+3)
-    Trading Session (20:00 - 03:00) :crit, 20, 27
+    15:00 - 03:00 :crit, 2026-01-01 15:00, 2026-01-02 03:00
 ```
 
-1. **TradingView's Exchange Time**: Pine Script always evaluates candle timestamps using the asset's **Exchange Time** (which is **UTC-4 / New York Time** for Gold/XAUUSD), ignoring the user's local UI timezone.
-2. **Timezone Offset Conversion**: To find the difference between your MT5 broker's server time and TradingView's Exchange time, check:
-   $$\text{Time Offset} = \text{MT5 Server Time (UTC)} - \text{TradingView Exchange Time (UTC-4)}$$
+1. **TradingView's Exchange Time**: Pine Script evaluates candle timestamps using the asset's Exchange Time (**UTC-4** for Gold/XAUUSD). For the Gold 15m Preset, the trading session runs from **08:00 to 20:00** (`Start Hour = 8`, `End Hour = 20`).
+2. **Timezone Offset Conversion**: To calculate your MT5 broker's parameters from TradingView Exchange Time:
+   $$\text{MT5 Hour} = \text{TradingView Exchange Hour} + (\text{MT5 Broker UTC} - (-4))$$
 3. **Universal Conversion Lookup (Gold 15m Preset)**:
-   To run the high-precision **Gold 15m Preset** (TradingView: 13:00 - 20:00 Exchange Time), configure your MT5 EA parameters based on your broker's server timezone offset:
-   *   **UTC + 0** (GMT Broker): MT5 Start Hour = `17`, End Hour = `24`
-   *   **UTC + 2** (EET Standard): MT5 Start Hour = `19`, End Hour = `2` (Overnight)
-   *   **UTC + 3** (EEST/Cyprus - Standard Broker): MT5 Start Hour = `20`, End Hour = `3` (Overnight)
-   *   **UTC + 5** (Central Asian Broker): MT5 Start Hour = `22`, End Hour = `5` (Overnight)
+   To run the high-precision **Gold 15m Preset** (TradingView Exchange Time `08:00 - 20:00`), configure your MT5 EA parameters based on your broker's server timezone offset:
+   * **UTC + 0** (GMT Broker): MT5 Start Hour = `12`, End Hour = `24`
+   * **UTC + 2** (EET Standard / Winter): MT5 Start Hour = `14`, End Hour = `2` (Overnight)
+   * **UTC + 3** (EEST / Cyprus - Standard Broker): MT5 Start Hour = `15`, End Hour = `3` (Overnight)
+   * **UTC + 5** (Central Asian Broker): MT5 Start Hour = `17`, End Hour = `5` (Overnight)
 
 ---
 
@@ -187,11 +191,11 @@ gantt
 
 To preserve system integrity, any mathematical or logic updates must be implemented across both platforms simultaneously. Parity is maintained via the following alignment techniques:
 
-*   **Tick-Size Rounding**: Both platforms round SL/TP distances using the symbol's tick size before calculating execution prices. This aligns the math and prevents MT5 order rejection.
-*   **Completed-Bar Hour Filtering**: Hour limits are evaluated based on the completed signal bar's open time (Bar 1) rather than the active tick time (Bar 0). This prevents a 1-bar discrepancy on session window transitions.
-*   **Indicator Buffer Synchronization**: In MQL5, indicators run asynchronously. When a new bar forms, the EA queries indicators using the exact datetime of the completed signal bar (`bar1_time`) rather than index-based offsets. If values are not yet updated, the EA retries on the next tick, avoiding a 1-bar delay.
-*   **Indicator & Volume Smoothing**: Both environments use Wilder's Smoothing (RMA) for ATR calculations and anchor SL/TP distances to the actual fill price of the entry candle rather than the signal candle's close.
-*   **Per-Entry SL/TP Queue**: When executing multiple concurrent positions (`MaxTrades > 1`), both platforms utilize a queue structure to map unique entry IDs to their correct ATR-based SL/TP distances, preventing visual-to-broker parameter mismatches.
+* **Tick-Size Rounding**: Both platforms round SL/TP distances using the symbol's tick size before calculating execution prices. This aligns the math and prevents MT5 order rejection.
+* **Completed-Bar Hour Filtering**: Hour limits are evaluated based on the completed signal bar's open time (Bar 1) rather than the active tick time (Bar 0). This prevents a 1-bar discrepancy on session window transitions.
+* **Indicator Buffer Synchronization**: In MQL5, indicators run asynchronously. When a new bar forms, the EA queries indicators using the exact datetime of the completed signal bar (`bar1_time`) rather than index-based offsets. If values are not yet updated, the EA retries on the next tick, avoiding a 1-bar delay.
+* **Indicator & Volume Smoothing**: Both environments use Wilder's Smoothing (RMA) for ATR calculations and anchor SL/TP distances to the actual fill price of the entry candle rather than the signal candle's close.
+* **Per-Entry SL/TP Queue**: When executing multiple concurrent positions (`MaxTrades > 1`), both platforms utilize a queue structure to map unique entry IDs to their correct ATR-based SL/TP distances, preventing visual-to-broker parameter mismatches.
 
 ---
 
@@ -203,12 +207,12 @@ The Pine Script strategy renders a live, interactive position management overlay
 | :--- | :--- | :--- |
 | **TP Box** | 🟢 Green `#089981` | Take Profit zone from entry to TP price |
 | **SL Box** | 🔴 Red `#f23645` | Stop Loss zone from entry to SL price |
-| **SL Box (moved)** | 🟡 Amber `#d4a017` | SL box turns amber after SL Move on Profit is triggered, with label updated to `SL★` |
+| **SL Box (moved)** | 🟡 Amber `#d4a017` | SL box turns amber after *SL Move on Profit* is triggered, with label updated to `SL★` |
 | **Entry Line** | ⬜ Gray `#b2b5be` | Dashed horizontal line at the entry fill price |
 
 ---
 
-## 🏆 High Win-Rate & Precision Settings (15m Presets)
+## 🏆 High Win-Rate Preset Parameters (15m)
 
 For traders seeking higher accuracy and a larger Profit Factor with fewer, high-precision trades, attach the system to a **15m chart** using these optimized settings:
 
@@ -249,5 +253,7 @@ If this system has helped you, consider buying me a coffee! ☕
 
 *Or simply scan the QR code below:*
 
-<img src="./img/donate-qr.png" alt="Donate QR Code" width="200" />
-
+<div align="center">
+  <br>
+  <img src="./img/donate-qr.png" alt="Donate QR Code" width="180" />
+</div>
