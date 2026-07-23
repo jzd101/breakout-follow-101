@@ -248,7 +248,7 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | | Daily Loss Limit % | **1.0%** | Hard daily drawdown limit |
 | **SL Move on Profit** | Enable SL Move | **Enabled** (`true`) | Breakeven+ protection toggle |
 | | Trigger at RR | **0.2** | Activation profit distance |
-| | New SL % of TP | **12%** | Profit locked into SL |
+| | New SL % of TP | **1%** | Profit locked into SL |
 | **Indicators** | EMA Filter | **Enabled** (`true`) | 200 EMA trend filter |
 | | EMA Body Overlap | **Enabled** (`true`) | Straddle entry block |
 | | EMA Period | **200** | Long-term trend baseline |
