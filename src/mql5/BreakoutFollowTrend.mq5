@@ -4,7 +4,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.07"
+#property version   "1.08"
 
 
 #include <Trade\Trade.mqh>
@@ -31,8 +31,9 @@ input int    InpMaxTrades = 1;       // Maximum concurrent trades
 input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
 input int    InpCooldownBars = 9;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
-input int    InpStartHour = 8;       // Trading start hour (0-23)
-input int    InpEndHour = 20;        // Trading end hour (1-24)
+input bool   InpUseTimeFilter = true; // Enable Time Filter (false = trade all day, no hourly restriction)
+input int    InpStartHour = 6;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 23:00 UTC-4
+input int    InpEndHour = 3;         // Trading end hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView End 20:00 UTC-4
 
 // --- SL Move on Profit ---
 input bool   InpUseSLMove   = true;  // Enable SL Move on Profit
@@ -226,7 +227,8 @@ bool IsWeekendBlock()
    
    bool is_friday_past = (dt.day_of_week == 5 && current_min >= target_min);
    bool is_weekend = (dt.day_of_week == 6 || dt.day_of_week == 0);
-   bool is_monday_before = (dt.day_of_week == 1 && dt.hour < InpStartHour);
+   // is_monday_before only applies when time filter is on (InpStartHour is meaningful)
+   bool is_monday_before = InpUseTimeFilter && (dt.day_of_week == 1 && dt.hour < InpStartHour);
    
    return (is_friday_past || is_weekend || is_monday_before);
   }
@@ -288,21 +290,25 @@ void OnTick()
      }
    
    // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
-   datetime bar1_time = iTime(_Symbol, _Period, 1);
-   if(bar1_time == 0) return; // Time not ready, retry on next tick
-   
-   MqlDateTime dt_time;
-   TimeToStruct(bar1_time, dt_time);
-   bool in_time_window = true;
-   if(InpStartHour < InpEndHour)
-      in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
-   else // Overnight window
-      in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
-      
-   if(!in_time_window)
+   // Only check if time filter is enabled
+   if(InpUseTimeFilter)
      {
-      last_time = current_time;
-      return;
+      datetime bar1_time = iTime(_Symbol, _Period, 1);
+      if(bar1_time == 0) return; // Time not ready, retry on next tick
+      
+      MqlDateTime dt_time;
+      TimeToStruct(bar1_time, dt_time);
+      bool in_time_window = true;
+      if(InpStartHour < InpEndHour)
+         in_time_window = (dt_time.hour >= InpStartHour && dt_time.hour < InpEndHour);
+      else // Overnight window
+         in_time_window = (dt_time.hour >= InpStartHour || dt_time.hour < InpEndHour);
+         
+      if(!in_time_window)
+        {
+         last_time = current_time;
+         return;
+        }
      }
    
       double close1 = iClose(_Symbol, _Period, 1);

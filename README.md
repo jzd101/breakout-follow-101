@@ -80,7 +80,9 @@ The strategy isolates high-probability breakout trades during expanding volatili
 flowchart TD
     A[New Bar Open / Bar 1 Close] --> B{Daily Loss Limit Hit?}
     B -- Yes --> C[⛔ Block Entry]
-    B -- No --> D{Within Trading Session Hours?}
+    B -- No --> TF{Time Filter Enabled?}
+    TF -- Yes --> D{Within Trading Session Hours?}
+    TF -- No --> E
     D -- No --> C
     D -- Yes --> E[Calculate Indicators: EMA, BB, Volume MA, ATR]
     E --> CC{Cooldown Active?}
@@ -183,15 +185,18 @@ Institutional protection mechanisms engineered directly into MQL5 and Pine Scrip
 
 Pine Script processes sessions in **Exchange Time (UTC-4 / New York)**, while MT5 operates on **Broker Server Time**.
 
+> [!WARNING]
+> **Daylight Saving Time (DST):** During US DST (approximately March–November), New York shifts to **UTC-4** (EDT). Outside DST (approximately November–March), it shifts to **UTC-5** (EST). Most MT5 brokers on Cyprus/EET **also observe DST**, shifting their server from **UTC+3 → UTC+2** in winter. This means the **+7 hour offset between TradingView and UTC+3 brokers remains constant year-round** — no manual adjustment needed when both sides change together. However, if your broker does **not** observe DST, you must manually shift MT5 hours by ±1 hour each season.
+
 ```mermaid
 gantt
-    title Session Timezone Mapping (Gold 15m Preset)
+    title Session Timezone Mapping (Gold 15m Best Setting)
     dateFormat YYYY-MM-DD HH:mm
     axisFormat %H:00
-    section TradingView (UTC-4)
-    08:00 - 20:00 :active, 2026-01-01 08:00, 2026-01-01 20:00
-    section MT5 Server (UTC+3)
-    15:00 - 03:00 :crit, 2026-01-01 15:00, 2026-01-02 03:00
+    section TradingView (UTC-4, Exchange Time)
+    23:00 - 20:00 next day :active, 2026-01-01 23:00, 2026-01-02 20:00
+    section MT5 Server (UTC+3, Broker Time)
+    06:00 - 03:00 next day :crit, 2026-01-01 06:00, 2026-01-02 03:00
 ```
 
 ### 📐 Conversion Formula
@@ -201,10 +206,10 @@ $$\text{MT5 Hour} = \text{TradingView Exchange Hour} + (\text{MT5 Broker UTC Off
 
 | Broker Server Timezone | Trading Session (Start - End) | Note |
 | :--- | :--- | :--- |
-| **UTC + 0** (GMT Broker) | **12:00 – 24:00** | Standard Session |
-| **UTC + 2** (EET Winter) | **14:00 – 02:00** | Crosses Midnight |
-| **UTC + 3** (EEST Summer / Cyprus) | **15:00 – 03:00** | Standard MT5 Broker Offset |
-| **UTC + 5** (Central Asian) | **17:00 – 05:00** | Crosses Midnight |
+| **UTC + 0** (GMT Broker) | **19:00 – 16:00** | Crosses Midnight |
+| **UTC + 2** (EET Winter / DST Off) | **01:00 – 22:00** | ⚠️ Use when broker observes DST (Nov–Mar); MT5 = UTC+2 winter, UTC+3 summer |
+| **UTC + 3** (EEST Summer / Cyprus) | **06:00 – 03:00** | ✅ Best Setting — use when broker is at UTC+3 (DST active, ~Mar–Nov) |
+| **UTC + 5** (Central Asian) | **08:00 – 05:00** | Crosses Midnight |
 
 ---
 
@@ -256,7 +261,10 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | | ATR Period | **18** | Wilder's RMA length |
 | **Volume Filter** | Enable Volume Filter | **Enabled** (`true`) | Momentum confirmation |
 | | Volume MA Period | **15** | SMA volume baseline |
-| **Session Timing** | Start / End Hour | **8 / 20** | Exchange session window |
+| **Session Timing** | Enable Time Filter | **Enabled** (`true`) | Disable = trade all day, no hourly restriction |
+| | Start / End Hour (TradingView) | **23 / 20** | Exchange Time (UTC-4) overnight window — crosses midnight |
+| | Start / End Hour (MT5) | **6 / 3** | Broker Server Time (UTC+3) — UTC-4 + 7h offset; crosses midnight |
+| | *(Why different?)* | *Timezone offset* | *TradingView uses New York Exchange Time (UTC-4); MT5 EA uses Broker Server Time (UTC+3). The same real-world window is 23:00–20:00 in UTC-4, which equals 06:00–03:00 in UTC+3 (+7h shift).* |
 | | Weekend Close | **Enabled** (`true`) | Friday risk liquidation |
 | | Friday Close Time | **2345** | Weekly exit cut-off time |
 | **Cooldown** | Enable Cooldown | **Enabled** (`true`) | Over-trading guard |
