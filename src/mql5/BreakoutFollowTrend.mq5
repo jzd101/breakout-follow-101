@@ -32,8 +32,8 @@ input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
 input int    InpCooldownBars = 9;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input bool   InpUseTimeFilter = true; // Enable Time Filter (false = trade all day, no hourly restriction)
-input int    InpStartHour = 8;       // Trading start hour (0-23)
-input int    InpEndHour = 20;        // Trading end hour (1-24)
+input int    InpStartHour = 6;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 23:00 UTC-4
+input int    InpEndHour = 3;         // Trading end hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView End 20:00 UTC-4
 
 // --- SL Move on Profit ---
 input bool   InpUseSLMove   = true;  // Enable SL Move on Profit
