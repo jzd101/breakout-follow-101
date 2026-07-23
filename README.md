@@ -80,7 +80,9 @@ The strategy isolates high-probability breakout trades during expanding volatili
 flowchart TD
     A[New Bar Open / Bar 1 Close] --> B{Daily Loss Limit Hit?}
     B -- Yes --> C[⛔ Block Entry]
-    B -- No --> D{Within Trading Session Hours?}
+    B -- No --> TF{Time Filter Enabled?}
+    TF -- Yes --> D{Within Trading Session Hours?}
+    TF -- No --> E
     D -- No --> C
     D -- Yes --> E[Calculate Indicators: EMA, BB, Volume MA, ATR]
     E --> CC{Cooldown Active?}
@@ -256,7 +258,8 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | | ATR Period | **18** | Wilder's RMA length |
 | **Volume Filter** | Enable Volume Filter | **Enabled** (`true`) | Momentum confirmation |
 | | Volume MA Period | **15** | SMA volume baseline |
-| **Session Timing** | Start / End Hour | **8 / 20** | Exchange session window |
+| **Session Timing** | Enable Time Filter | **Enabled** (`true`) | Disable = trade all day, no hourly restriction |
+| | Start / End Hour | **8 / 20** | Exchange session window (active when Time Filter on) |
 | | Weekend Close | **Enabled** (`true`) | Friday risk liquidation |
 | | Friday Close Time | **2345** | Weekly exit cut-off time |
 | **Cooldown** | Enable Cooldown | **Enabled** (`true`) | Over-trading guard |
