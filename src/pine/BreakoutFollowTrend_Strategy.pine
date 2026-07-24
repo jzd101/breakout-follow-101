@@ -1,8 +1,8 @@
 // This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © jzd101
 
-//@version=5
-strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=100)
+//@version=6
+strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=100, margin_long=0, margin_short=0)
 
 // ==========================================
 // Inputs
@@ -70,8 +70,8 @@ isInTimeWindow = not inpUseTimeFilter or (inpStartHour < inpEndHour ? (hour >= i
 
 // Weekend Block (matches MQL5 CheckWeekendClose: Friday past time, full Sat/Sun, Monday before StartHour)
 cleanTimeVal = str.tonumber(str.replace_all(inpFridayTime, ":", ""))
-fHour = na(cleanTimeVal) ? 23 : math.floor(cleanTimeVal / 100)
-fMin  = na(cleanTimeVal) ? 45 : math.floor(cleanTimeVal % 100)
+fHour = na(cleanTimeVal) ? 23 : int(math.floor(cleanTimeVal / 100))
+fMin  = na(cleanTimeVal) ? 45 : int(math.floor(cleanTimeVal % 100))
 fridayMin      = fHour * 60 + fMin
 nowMin         = hour * 60 + minute
 isFridayPast   = dayofweek == dayofweek.friday and nowMin >= fridayMin
@@ -88,42 +88,63 @@ baseBal    = inpCompound ? strategy.equity : inpFixedBal
 slDist     = atrVal * inpATRMult
 riskAmount = baseBal * (inpRiskPct / 100)
 // Divide by syminfo.pointvalue to scale properly on Futures or CFDs
-posSize    = (slDist > 0 and syminfo.pointvalue > 0) ? (riskAmount / slDist) / syminfo.pointvalue : 0.0
+float pVal = nz(syminfo.pointvalue, 1.0)
+bool isValidSize = not na(slDist) and slDist > 0 and pVal > 0
+float posSize    = isValidSize ? (riskAmount / slDist) / pVal : 0.0
 
 // ==========================================
-// Daily Loss Limit tracking (realized P&L) — matches MQL5 OnTradeTransaction
+// Daily Loss Limit & Cooldown Bars tracking (realized P&L)
 // ==========================================
 var float dailyPnL     = 0.0
-var int   currentDay   = na
+var int   currentDay   = 0
 var float dailyLossMax = 0.0
-d = time("D")
-if not na(d) and (na(currentDay) or d != currentDay)
+var int   lastClosedBar = -1000  // safe default
+var int   prev_closed_trades = 0
+
+int d = time("D")
+if not na(d) and d != currentDay
     currentDay   := d
     dailyPnL     := 0.0
     // Recalculate daily loss max with current equity/balance (matches MQL5 daily reset)
     dailyLossMax := baseBal * (inpDailyLoss / 100)
-// Sum ALL trades closed this bar (MQL5 OnTradeTransaction fires per-deal; loop covers simultaneous exits)
-if strategy.closedtrades > nz(strategy.closedtrades[1])
-    for i = int(nz(strategy.closedtrades[1])) to strategy.closedtrades - 1
-        dailyPnL := dailyPnL + strategy.closedtrades.profit(i) - nz(strategy.closedtrades.commission(i))
-dailyLossHit = inpDailyLoss > 0 and not na(currentDay) and dailyPnL <= -dailyLossMax
 
-// ==========================================
-// Cooldown Bars tracking — matches MQL5 g_cooldown_bar_time logic
-// ==========================================
-var int lastClosedBar = na  // bar_index on which the last close/SL/TP occurred
-if strategy.closedtrades > nz(strategy.closedtrades[1])
+// Sum ALL trades closed this bar (MQL5 OnTradeTransaction fires per-deal; loop covers simultaneous exits)
+if strategy.closedtrades > prev_closed_trades
+    for i = prev_closed_trades to strategy.closedtrades - 1
+        dailyPnL := dailyPnL + strategy.closedtrades.profit(i) - nz(strategy.closedtrades.commission(i))
     lastClosedBar := bar_index
-cooldownActive = inpUseCooldown and not na(lastClosedBar) and (bar_index - lastClosedBar) <= inpCooldownBars
+    prev_closed_trades := strategy.closedtrades
+
+bool dailyLossHit = inpDailyLoss > 0 and currentDay != 0 and dailyPnL <= -dailyLossMax
+bool cooldownActive = inpUseCooldown and (bar_index - lastClosedBar) <= inpCooldownBars
 
 // ==========================================
 // Signal Conditions — plain comparison on closed bar (matches MQL5: close1 > upperBB / close1 < lowerBB)
 // ==========================================
-volCond           = (not inpUseVol) or na(volMA) or volMA == 0 or volume > volMA
+bool volCond           = (not inpUseVol) or na(volMA) or nz(volMA) == 0 or volume > nz(volMA)
+
+// v6: explicit na-guards for all indicator values used in conditions
+bool emaReady = not na(emaVal)
+bool atrReady = not na(atrVal)
+bool bbReady  = not na(upperBB) and not na(lowerBB)
+
 // EMA Body Overlap filter: block if EMA is inside the candle's High-Low range (ambiguous direction)
-emaOverlapBlocked = inpUseEMABodyFilter and inpUseEMA and (low <= emaVal and high >= emaVal)
-longCondition  = (not inpUseEMA or close > emaVal) and close > upperBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive and not emaOverlapBlocked
-shortCondition = (not inpUseEMA or close < emaVal) and close < lowerBB and volCond and isInTimeWindow and not isWeekendBlock and not dailyLossHit and not cooldownActive and not emaOverlapBlocked
+bool emaOverlap = emaReady and (low <= nz(emaVal) and high >= nz(emaVal))
+bool emaOverlapBlocked = inpUseEMABodyFilter and inpUseEMA and emaOverlap
+
+bool isAboveEMA = emaReady and close > nz(emaVal)
+bool isBelowEMA = emaReady and close < nz(emaVal)
+
+bool isAboveBB = bbReady and close > nz(upperBB)
+bool isBelowBB = bbReady and close < nz(lowerBB)
+
+bool canLong  = (not inpUseEMA or isAboveEMA) and isAboveBB
+bool canShort = (not inpUseEMA or isBelowEMA) and isBelowBB
+
+bool isInTimeWindowVal = (not inpUseTimeFilter) or (inpStartHour < inpEndHour ? (hour >= inpStartHour and hour < inpEndHour) : (hour >= inpStartHour or hour < inpEndHour))
+
+bool longCondition  = atrReady and canLong  and volCond and isInTimeWindowVal and not isWeekendBlock and not dailyLossHit and not cooldownActive and not emaOverlapBlocked
+bool shortCondition = atrReady and canShort and volCond and isInTimeWindowVal and not isWeekendBlock and not dailyLossHit and not cooldownActive and not emaOverlapBlocked
 
 // ==========================================
 // Strategy Execution
@@ -153,14 +174,14 @@ if (not didLongEntry) and shortCondition and strategy.opentrades < inpMaxTrades 
 // Matches MQL5: if(lotSize > 0) guard prevents zero-size entries when ATR is unavailable
 if (longCondition and strategy.opentrades < inpMaxTrades and posSize > 0)
     entryCounter += 1
-    id = "L" + str.tostring(entryCounter)
-    strategy.entry(id, strategy.long, qty=posSize, comment="Long")
+    string trade_id = "L" + str.tostring(entryCounter)
+    strategy.entry(trade_id, strategy.long, qty=posSize, comment="Long")
     didLongEntry := true
 
 if ((not didLongEntry) and shortCondition and strategy.opentrades < inpMaxTrades and posSize > 0)
     entryCounter += 1
-    id = "S" + str.tostring(entryCounter)
-    strategy.entry(id, strategy.short, qty=posSize, comment="Short")
+    string trade_id = "S" + str.tostring(entryCounter)
+    strategy.entry(trade_id, strategy.short, qty=posSize, comment="Short")
 
 // Weekend Close — close all positions while inside the weekend block
 if (isWeekendBlock)
@@ -232,7 +253,7 @@ f_pop_sl_dist(string entry_id) =>
 
 // ── 2. New entry detection ────────────────────────────────────────────────────
 int total_trades      = strategy.closedtrades + strategy.opentrades
-int prev_total_trades = nz(strategy.closedtrades[1]) + nz(strategy.opentrades[1])
+var int prev_total_trades = 0
 if total_trades > prev_total_trades
     int num_opened       = total_trades - prev_total_trades
     int trades_to_process = math.min(num_opened, strategy.opentrades)
@@ -321,6 +342,7 @@ if total_trades > prev_total_trades
             array.push(active_entry_prices, en)
             array.push(active_sl_dists,    sd_rounded)
             array.push(active_sl_moved,    false)
+    prev_total_trades := total_trades
 
 // ── 3. Prune closed trades ────────────────────────────────────────────────────
 if array.size(active_trade_ids) > 0
