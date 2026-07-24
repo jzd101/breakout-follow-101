@@ -6,7 +6,7 @@
 ![Timeframe](https://img.shields.io/badge/Timeframe-15m-3b82f6?style=for-the-badge&logo=clock&logoColor=white)
 ![Logic Parity](https://img.shields.io/badge/Logic%20Parity-100%25%20Verified-10b981?style=for-the-badge&logo=check-circle&logoColor=white)
 ![MetaTrader 5](https://img.shields.io/badge/MetaTrader-5%20%28MQL5%29-f97316?style=for-the-badge&logo=metatrader&logoColor=white)
-![TradingView](https://img.shields.io/badge/TradingView-Pine%20Script%20v5-8b5cf6?style=for-the-badge&logo=tradingview&logoColor=white)
+[![TradingView](https://img.shields.io/badge/TradingView-Pine%20Script-2962FF?style=for-the-badge&logo=tradingview&logoColor=white)](https://www.tradingview.com/script/07xDq1rh-Breakout-Follow-Trend-Strategy/)
 ![Prop Firm](https://img.shields.io/badge/Prop%20Firm-Proven%20Pass-059669?style=for-the-badge&logo=shield&logoColor=white)
 
 <br/>
@@ -14,6 +14,10 @@
 **An Institutional-Grade, Quantitative Trend-Following Framework Optimized for Gold (XAUUSD)**
 
 *Capturing volatility expansion via Bollinger Band breakouts, filtered by multi-layer EMA trend checks and volume momentum — featuring 100% verified logic parity between TradingView and MetaTrader 5.*
+
+<br/>
+
+🔗 **[TradingView Official Script](https://www.tradingview.com/script/07xDq1rh-Breakout-Follow-Trend-Strategy/)** *(Recommended: **XAUUSD** on **Pepperstone** 15m)*
 
 </div>
 
@@ -66,9 +70,11 @@ breakout-follow-101/
 3. Enable **Algo Trading** in your MT5 toolbar and configure risk inputs.
 
 ### 2️⃣ TradingView Pine Script (Strategy Tester & Visual Overlay)
-1. Open [`src/pine/BreakoutFollowTrend_Strategy.pine`](src/pine/BreakoutFollowTrend_Strategy.pine) and copy the entire source code.
-2. In TradingView, open the **Pine Editor** tab at the bottom, paste the code, and click **Save**.
-3. Click **Add to Chart** and launch the **Strategy Tester** panel to evaluate performance metrics.
+* 🔗 **Direct Link**: Add directly from **[TradingView Script Page](https://www.tradingview.com/script/07xDq1rh-Breakout-Follow-Trend-Strategy/)** *(Recommended Symbol: **XAUUSD** on **Pepperstone** 15m)*
+* **Manual Setup**:
+  1. Open [`src/pine/BreakoutFollowTrend_Strategy.pine`](src/pine/BreakoutFollowTrend_Strategy.pine) and copy the entire source code.
+  2. In TradingView, open the **Pine Editor** tab at the bottom, paste the code, and click **Save**.
+  3. Click **Add to Chart** and launch the **Strategy Tester** panel to evaluate performance metrics.
 
 ---
 
