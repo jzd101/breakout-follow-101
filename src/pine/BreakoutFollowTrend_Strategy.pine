@@ -1,7 +1,7 @@
 // This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © jzd101
 
-//@version=6
+//@version=5
 strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.0, pyramiding=100)
 
 // ==========================================
