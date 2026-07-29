@@ -289,13 +289,13 @@ void OnTick()
         }
      }
    
+   datetime bar1_time = iTime(_Symbol, _Period, 1);
+   if(bar1_time == 0) return; // Time not ready, retry on next tick
+   
    // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
    // Only check if time filter is enabled
    if(InpUseTimeFilter)
      {
-      datetime bar1_time = iTime(_Symbol, _Period, 1);
-      if(bar1_time == 0) return; // Time not ready, retry on next tick
-      
       MqlDateTime dt_time;
       TimeToStruct(bar1_time, dt_time);
       bool in_time_window = true;
