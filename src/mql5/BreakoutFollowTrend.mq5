@@ -15,7 +15,7 @@ input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
 input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
-input bool   InpUseEMABodyFilter = true; // Block entry if signal bar overlaps EMA (ambiguous direction)
+input bool   InpUseEMABodyFilter = false; // Block entry if signal bar overlaps EMA (ambiguous direction)
 input bool   InpUseVol = true;      // Use Volume MA Filter
 input int    InpEMAPeriod = 200;    // EMA Period
 input int    InpBBPeriod = 15;      // Bollinger Bands Period
@@ -292,7 +292,6 @@ void OnTick()
    // Get bar1 time (completed bar index 1) — needed for both time filter and CopyBuffer calls below
    datetime bar1_time = iTime(_Symbol, _Period, 1);
    if(bar1_time == 0) return; // Time not ready, retry on next tick
-
    // Check Trading Hours based on completed bar (index 1) to align with Pine Script signal bar hour
    // Only check if time filter is enabled
    if(InpUseTimeFilter)
