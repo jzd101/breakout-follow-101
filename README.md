@@ -200,9 +200,9 @@ gantt
     dateFormat YYYY-MM-DD HH:mm
     axisFormat %H:00
     section TradingView (UTC-4, Exchange Time)
-    23:00 - 20:00 next day :active, 2026-01-01 23:00, 2026-01-02 20:00
+    08:00 - 20:00 same day :active, 2026-01-01 08:00, 2026-01-01 20:00
     section MT5 Server (UTC+3, Broker Time)
-    06:00 - 03:00 next day :crit, 2026-01-01 06:00, 2026-01-02 03:00
+    15:00 - 03:00 next day :crit, 2026-01-01 15:00, 2026-01-02 03:00
 ```
 
 ### 📐 Conversion Formula
@@ -212,10 +212,10 @@ $$\text{MT5 Hour} = \text{TradingView Exchange Hour} + (\text{MT5 Broker UTC Off
 
 | Broker Server Timezone | Trading Session (Start - End) | Note |
 | :--- | :--- | :--- |
-| **UTC + 0** (GMT Broker) | **19:00 – 16:00** | Crosses Midnight |
-| **UTC + 2** (EET Winter / DST Off) | **01:00 – 22:00** | ⚠️ Use when broker observes DST (Nov–Mar); MT5 = UTC+2 winter, UTC+3 summer |
-| **UTC + 3** (EEST Summer / Cyprus) | **06:00 – 03:00** | ✅ Best Setting — use when broker is at UTC+3 (DST active, ~Mar–Nov) |
-| **UTC + 5** (Central Asian) | **08:00 – 05:00** | Crosses Midnight |
+| **UTC + 0** (GMT Broker) | **12:00 – 00:00** | Crosses Midnight |
+| **UTC + 2** (EET Winter / DST Off) | **14:00 – 02:00** | ⚠️ Use when broker observes DST (Nov–Mar); MT5 = UTC+2 winter, UTC+3 summer |
+| **UTC + 3** (EEST Summer / Cyprus) | **15:00 – 03:00** | ✅ Best Setting — use when broker is at UTC+3 (DST active, ~Mar–Nov) |
+| **UTC + 5** (Central Asian) | **17:00 – 05:00** | Crosses Midnight |
 
 ---
 
@@ -268,9 +268,9 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | **Volume Filter** | Enable Volume Filter | **Enabled** (`true`) | Momentum confirmation |
 | | Volume MA Period | **15** | SMA volume baseline |
 | **Session Timing** | Enable Time Filter | **Enabled** (`true`) | Disable = trade all day, no hourly restriction |
-| | Start / End Hour (TradingView) | **23 / 20** | Exchange Time (UTC-4) overnight window — crosses midnight |
-| | Start / End Hour (MT5) | **6 / 3** | Broker Server Time (UTC+3) — UTC-4 + 7h offset; crosses midnight |
-| | *(Why different?)* | *Timezone offset* | *TradingView uses New York Exchange Time (UTC-4); MT5 EA uses Broker Server Time (UTC+3). The same real-world window is 23:00–20:00 in UTC-4, which equals 06:00–03:00 in UTC+3 (+7h shift).* |
+| | Start / End Hour (TradingView) | **8 / 20** | Exchange Time (UTC-4) intraday window |
+| | Start / End Hour (MT5) | **15 / 3** | Broker Server Time (UTC+3) — UTC-4 + 7h offset; crosses midnight |
+| | *(Why different?)* | *Timezone offset* | *TradingView uses New York Exchange Time (UTC-4); MT5 EA uses Broker Server Time (UTC+3). The same real-world window is 08:00–20:00 in UTC-4, which equals 15:00–03:00 in UTC+3 (+7h shift).* |
 | | Weekend Close | **Enabled** (`true`) | Friday risk liquidation |
 | | Friday Close Time | **2345** | Weekly exit cut-off time |
 | **Cooldown** | Enable Cooldown | **Enabled** (`true`) | Over-trading guard |

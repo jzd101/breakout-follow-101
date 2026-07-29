@@ -4,7 +4,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.08"
+#property version   "1.09"
 
 
 #include <Trade\Trade.mqh>
@@ -32,7 +32,7 @@ input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
 input int    InpCooldownBars = 9;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input bool   InpUseTimeFilter = true; // Enable Time Filter (false = trade all day, no hourly restriction)
-input int    InpStartHour = 6;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 23:00 UTC-4
+input int    InpStartHour = 15;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 8:00 UTC-4
 input int    InpEndHour = 3;         // Trading end hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView End 20:00 UTC-4
 
 // --- SL Move on Profit ---

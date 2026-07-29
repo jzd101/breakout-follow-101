@@ -45,7 +45,7 @@ inpCooldownBars  = input.int(9, "Cooldown Bars", minval=1, group=grp_cooldown, t
 // Time & Filters
 grp_time = "Time Filters"
 inpUseTimeFilter = input.bool(true, "Enable Time Filter", group=grp_time, tooltip="When disabled, the EA trades all day without any hourly restriction.")
-inpStartHour  = input.int(23, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpStartHour  = input.int(8, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
 inpEndHour    = input.int(20, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
 inpWeekendCl  = input.bool(true, "Weekend Close (Friday)", group=grp_time)
 inpFridayTime = input.string("2345", "Friday Close Time (HHMM)", group=grp_time)
