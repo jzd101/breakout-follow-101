@@ -118,7 +118,7 @@ flowchart TD
 | Indicator | Default Setting | Technical Purpose |
 | :--- | :--- | :--- |
 | **EMA Filter** | `Period = 200` | Primary trend filter direction lock |
-| **EMA Body Overlap Filter** | `Enabled` (`true`) | Blocks trades when signal bar range straddles the EMA line |
+| **EMA Body Overlap Filter** | `Disabled` (`false`) | Blocks trades when signal bar range straddles the EMA line |
 | **Bollinger Bands** | `Period = 15`, `StdDev = 1.5` | Volatility expansion & breakout trigger |
 | **Volume MA** | `Period = 15` (SMA) | Volume momentum filter |
 | **ATR** | `Period = 18` (Wilder's RMA) | Volatility-adjusted SL/TP baseline |
@@ -261,7 +261,7 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | | Trigger at RR | **0.2** | Activation profit distance |
 | | New SL % of TP | **1%** | Profit locked into SL |
 | **Indicators** | EMA Filter | **Enabled** (`true`) | 200 EMA trend filter |
-| | EMA Body Overlap | **Enabled** (`true`) | Straddle entry block |
+| | EMA Body Overlap | **Disabled** (`false`) | Straddle entry block |
 | | EMA Period | **200** | Long-term trend baseline |
 | | BB Period / Dev | **15 / 1.5** | Volatility breakout bounds |
 | | ATR Period | **18** | Wilder's RMA length |

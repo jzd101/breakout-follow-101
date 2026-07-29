@@ -27,7 +27,7 @@ inpSLMoveToPct   = input.float(1.0, "New SL at % of TP Dist (RR)", minval=0.0, s
 grp_ind = "Indicators"
 inpUseEMA          = input.bool(true, "Use EMA Trend Filter", group=grp_ind)
 inpEMAPeriod       = input.int(200, "EMA Period", minval=1, group=grp_ind)
-inpUseEMABodyFilter= input.bool(true, "Block Entry if Candle Overlaps EMA", group=grp_ind, tooltip="If the signal bar's High/Low range straddles the EMA (EMA is between High and Low), block the entry. Direction is ambiguous when price is crossing the EMA.")
+inpUseEMABodyFilter= input.bool(false, "Block Entry if Candle Overlaps EMA", group=grp_ind, tooltip="If the signal bar's High/Low range straddles the EMA (EMA is between High and Low), block the entry. Direction is ambiguous when price is crossing the EMA.")
 inpBBPeriod        = input.int(15, "Bollinger Bands Period", minval=1, group=grp_ind)
 inpBBDev           = input.float(1.5, "Bollinger Bands Deviation", minval=0.1, step=0.1, group=grp_ind)
 inpATRPeriod       = input.int(18, "ATR Period", minval=1, group=grp_ind)
