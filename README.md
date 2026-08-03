@@ -251,7 +251,7 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | Category | Input Parameter | Preset Value | Purpose / Description |
 | :--- | :--- | :--- | :--- |
 | **Risk Management** | Risk % per Trade | **1.6%** | Optimized account exposure |
-| | Risk:Reward Ratio | **2.2** | High expectancy TP target |
+| | Risk:Reward Ratio | **2.0** | High expectancy TP target |
 | | ATR Multiplier (SL) | **2.0** | Volatility-adjusted stop range |
 | | Max Concurrent Trades | **1** | Single position discipline |
 | | Compounding Risk | **Disabled** (`false`) | Constant lot calculation mode |
