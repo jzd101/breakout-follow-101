@@ -274,7 +274,7 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | | Weekend Close | **Enabled** (`true`) | Friday risk liquidation |
 | | Friday Close Time | **2345** | Weekly exit cut-off time |
 | **Cooldown** | Enable Cooldown | **Enabled** (`true`) | Over-trading guard |
-| | Cooldown Bars | **9** | Delay period after exit (2h 15m) |
+| | Cooldown Bars | **6** | Delay period after exit (1h 30m) |
 
 ---
 

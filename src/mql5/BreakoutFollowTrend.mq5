@@ -29,7 +29,7 @@ input int    InpMaxTrades = 1;       // Maximum concurrent trades
 
 // --- Cooldown Bars After Close/SL/TP ---
 input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
-input int    InpCooldownBars = 9;    // Bars to wait after close/SL/TP before next entry
+input int    InpCooldownBars = 6;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input bool   InpUseTimeFilter = true; // Enable Time Filter (false = trade all day, no hourly restriction)
 input int    InpStartHour = 15;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 8:00 UTC-4
