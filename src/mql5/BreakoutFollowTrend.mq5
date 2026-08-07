@@ -497,8 +497,7 @@ void ManagePartialTP()
       double currentVolume = PositionGetDouble(POSITION_VOLUME);
       double lot_to_close = currentVolume * (InpPartialTPPct / 100.0);
       
-      double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-      double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+      double minLot  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
       double stepLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
       if(stepLot <= 0) stepLot = minLot;
       

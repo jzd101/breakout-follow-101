@@ -178,12 +178,12 @@ Institutional protection mechanisms engineered directly into MQL5 and Pine Scrip
 * Halts new entries until Monday market open.
 
 ### 4. 🔒 Partial Take Profit
-* **Trigger Threshold**: Activates when trade reaches `1.5 RR` (default).
+* **Trigger Threshold**: Activates when trade reaches `1.6 RR` (default).
 * **Position Scaling**: Closes `50%` of the active position volume to lock in profit.
 * **One-Shot Safety**: Executes once per order lifetime. The remaining volume runs until the original SL or TP is hit.
 
 ### 5. ⏳ Cooldown Period After Exit
-* Prevents over-trading by blocking entries for **9 bars** (2 hrs 15 mins on 15m) after any trade closure (SL/TP/Weekend close).
+* Prevents over-trading by blocking entries for **6 bars** (1 hr 30 mins on 15m) after any trade closure (SL/TP/Weekend close).
 
 ---
 
