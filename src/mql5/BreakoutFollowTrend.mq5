@@ -506,7 +506,19 @@ void ManagePartialTP()
       if(lot_to_close < minLot) lot_to_close = minLot;
       if(lot_to_close > currentVolume) lot_to_close = currentVolume; // can't close more than exists
       
-      if(trade.PositionClosePartial(ticket, lot_to_close))
+      MqlTradeRequest req = {};
+      MqlTradeResult  res = {};
+      req.action       = TRADE_ACTION_DEAL;
+      req.position     = ticket;
+      req.symbol       = _Symbol;
+      req.volume       = lot_to_close;
+      req.type         = isLong ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+      req.price        = isLong ? bid : ask;
+      req.deviation    = 30;
+      req.magic        = InpMagic;
+      req.comment      = "Partial TP";
+      req.type_filling = trade.TypeFilling();
+      if(OrderSend(req, res) && (res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_PLACED))
         {
          PrintFormat("Partial TP executed: Ticket=%llu, Trigger=%.5f, Volume Closed=%.2f",
                      ticket, triggerPrice, lot_to_close);
@@ -514,8 +526,8 @@ void ManagePartialTP()
         }
       else
         {
-         PrintFormat("Partial TP FAILED: Ticket=%llu, Error=%d, RetCode=%d (%s)",
-                     ticket, GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
+         PrintFormat("Partial TP FAILED: Ticket=%llu, Error=%d, RetCode=%u",
+                     ticket, GetLastError(), res.retcode);
         }
      }
   }
