@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                     BreakoutFollowTrend.mq5      |
+//|                                        BreakoutFollowTrend.mq5   |
 //|                    Copyright 2026, jzd101 (Aligned with Pine v5) |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
@@ -311,7 +311,7 @@ void OnTick()
         }
      }
    
-      double close1 = iClose(_Symbol, _Period, 1);
+   double close1 = iClose(_Symbol, _Period, 1);
    if(close1 <= 0) return; // Signal bar not ready, retry on next tick
    long vol1 = iVolume(_Symbol, _Period, 1);
    if(vol1 < 0) return; // Signal bar volume not ready, retry on next tick
@@ -402,8 +402,8 @@ void OnTick()
          PrintFormat("LONG Entry Skipped: Calculated LotSize is 0. SL Dist=%.5f", slDist_rounded);
         }
      }
-        // SHORT Condition
-    else if(ema_short && close1 < lowerBB[0] && vol_condition && !ema_overlap_blocked)
+   // SHORT Condition
+   else if(ema_short && close1 < lowerBB[0] && vol_condition && !ema_overlap_blocked)
      {
       double entryPrice = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
       
@@ -657,7 +657,7 @@ double CalculateLotSize(double sl_distance)
    double stepLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
    
    if(stepLot <= 0) stepLot = minLot; // Prevent division by zero
-    
+
    lot = MathFloor(lot / stepLot) * stepLot;
    if(lot < minLot) lot = minLot;
    if(lot > maxLot) lot = maxLot;

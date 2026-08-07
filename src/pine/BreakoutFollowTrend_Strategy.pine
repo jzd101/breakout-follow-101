@@ -207,7 +207,6 @@ color_entry_lbl    = color.new(#b2b5be,  0)
 // ── Partial TP Label Color ───────────────────────────────────────────────────
 color_ptp_label = color.new(#089981, 0)
 
-
 // ── Persistent Arrays for Active Visual Objects ───────────────────────────────
 var float[]  active_sl_prices    = array.new_float()
 var float[]  active_tp_prices    = array.new_float()
@@ -427,4 +426,3 @@ if array.size(active_trade_ids) > 0
             strategy.exit("X" + tid, tid, stop=sl_val, limit=tp_val, comment_loss="SL", comment_profit="TP")
         else
             strategy.exit("X" + tid, tid, stop=sl_val, limit=tp_val, comment_loss="SL", comment_profit="TP")
-
