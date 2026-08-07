@@ -4,15 +4,15 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, jzd101"
 #property link      ""
-#property version   "1.09"
+#property version   "1.10"
 
 
 #include <Trade\Trade.mqh>
 
-input double InpRiskPct = 1.6;      // Risk % per trade
+input double InpRiskPct = 1.0;      // Risk % per trade
 input double InpRR = 2.0;           // Risk Reward Ratio
 input double InpATRMult = 2.0;      // ATR Multiplier for Stop Loss
-input bool   InpCompound = false;   // Use Compounding Risk (of current balance)
+input bool   InpCompound = true;   // Use Compounding Risk (of current balance)
 input double InpFixedBalance = 10000.0; // Fixed balance to use if Compounding is false
 input bool   InpUseEMA = true;      // Use EMA 200 Trend Filter
 input bool   InpUseEMABodyFilter = false; // Block entry if signal bar overlaps EMA (ambiguous direction)
@@ -23,7 +23,7 @@ input double InpBBDev = 1.5;        // Bollinger Bands Deviations
 input int    InpATRPeriod = 18;     // ATR Period
 input int    InpVolPeriod = 15;     // Volume MA Period
 input int    InpMagic = 123456;      // Magic Number
-input bool   InpWeekendClose = true; // Close all trades on Friday evening
+input bool   InpWeekendClose = false; // Close all trades on Friday evening
 input string InpFridayTime = "2345"; // Friday Time to close (Broker Time, e.g. 23:45 or 2345)
 input int    InpMaxTrades = 1;       // Maximum concurrent trades
 
@@ -32,13 +32,13 @@ input bool   InpUseCooldown  = true; // Enable Cooldown Bars After Close/SL/TP
 input int    InpCooldownBars = 6;    // Bars to wait after close/SL/TP before next entry
 input double InpDailyLossLimit = 1.0; // Daily loss limit (% of initial capital). 0=disabled
 input bool   InpUseTimeFilter = true; // Enable Time Filter (false = trade all day, no hourly restriction)
-input int    InpStartHour = 15;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 8:00 UTC-4
-input int    InpEndHour = 3;         // Trading end hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView End 20:00 UTC-4
+input int    InpStartHour = 19;       // Trading start hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView Start 12:00 UTC-4
+input int    InpEndHour = 1;         // Trading end hour (0-23) — Broker Server Time (UTC+3); equivalent to TradingView End 18:00 UTC-4
 
-// --- SL Move on Profit ---
-input bool   InpUseSLMove   = true;  // Enable SL Move on Profit
-input double InpSLMoveAtRR  = 0.2;   // Trigger at RR (e.g. 1.0 = RR 1:1)
-input double InpSLMoveToPct = 1.0;  // New SL at % of TP Dist (RR) (0 = breakeven, 5 = entry + 5% of full reward range)
+// --- Partial Take Profit ---
+input bool   InpUsePartialTP  = true;  // Enable Partial TP
+input double InpPartialTPAtRR = 1.6;   // Trigger at RR
+input double InpPartialTPPct  = 50.0;  // Close % at Partial TP (1-99)
 
 int handleEMA, handleBB, handleATR;
 CTrade trade;
@@ -53,11 +53,11 @@ bool   g_resetLastTime = false; // Flag to reset static last_time on re-init
 bool   g_weekendCloseFired = false; // Guard to prevent repeated weekend close attempts
 datetime g_cooldown_bar_time = 0;  // Bar open time of the bar in which the last position closed
 
-// SL Move on Profit tracking (parallel arrays indexed by open-position slot)
-ulong  g_pos_tickets[];   // Position ticket
-double g_pos_entry[];     // Entry price recorded at trade open
-double g_pos_sl_dist[];   // Original SL distance (rounded to tick) at trade open
-bool   g_pos_sl_moved[];  // Whether SL has already been moved for this position
+// Partial TP tracking (parallel arrays indexed by open-position slot)
+ulong  g_pos_tickets[];             // Position ticket
+double g_pos_entry[];               // Entry price recorded at trade open
+double g_pos_sl_dist[];             // Original SL distance (rounded to tick) at trade open
+bool   g_pos_partial_tp_executed[]; // Whether Partial TP has been executed
 
 
 //+------------------------------------------------------------------+
@@ -169,11 +169,11 @@ int OnInit()
    g_currentYear = -1;
    CheckDailyReset(TimeTradeServer());
    
-   // Clear SL-move tracking arrays on (re-)init
+   // Clear Partial TP tracking arrays on (re-)init
    ArrayResize(g_pos_tickets,  0);
    ArrayResize(g_pos_entry,    0);
    ArrayResize(g_pos_sl_dist,  0);
-   ArrayResize(g_pos_sl_moved, 0);
+   ArrayResize(g_pos_partial_tp_executed, 0);
    
    // Set Timer for precise weekend closing (even without ticks)
    EventSetTimer(10);
@@ -244,9 +244,9 @@ void OnTick()
    // Block entries during the weekend close block
    if(IsWeekendBlock()) return;
 
-   // Manage SL Move on Profit (runs on every tick, not just new bars)
-   if(InpUseSLMove)
-      ManageSLMove();
+   // Manage Partial TP (runs on every tick, not just new bars)
+   if(InpUsePartialTP)
+      ManagePartialTP();
 
    // Get current bar's start time
    datetime current_time = iTime(_Symbol, _Period, 0);
@@ -391,8 +391,8 @@ void OnTick()
          if(trade.Buy(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout LONG"))
            {
             PrintFormat("LONG Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
-            // Register this position for SL-move tracking
-            RegisterPositionForSLMove(trade.ResultOrder(), entryPrice, slDist_rounded);
+            // Register this position for Partial TP tracking
+            RegisterPositionForPartialTP(trade.ResultOrder(), entryPrice, slDist_rounded);
            }
          else
             PrintFormat("LONG Entry Failed: Error=%d, Retcode=%d, Desc=%s", GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
@@ -423,8 +423,8 @@ void OnTick()
          if(trade.Sell(lotSize, _Symbol, entryPrice, slPrice, tpPrice, "Breakout SHORT"))
            {
             PrintFormat("SHORT Entry: Price=%.5f, SL=%.5f, TP=%.5f, Lot=%.2f", entryPrice, slPrice, tpPrice, lotSize);
-            // Register this position for SL-move tracking
-            RegisterPositionForSLMove(trade.ResultOrder(), entryPrice, slDist_rounded);
+            // Register this position for Partial TP tracking
+            RegisterPositionForPartialTP(trade.ResultOrder(), entryPrice, slDist_rounded);
            }
          else
             PrintFormat("SHORT Entry Failed: Error=%d, Retcode=%d, Desc=%s", GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
@@ -437,25 +437,25 @@ void OnTick()
    }
 
 //+------------------------------------------------------------------+
-//| Register a new position into the SL-move tracking arrays        |
+//| Register a new position into the Partial TP tracking arrays     |
 //+------------------------------------------------------------------+
-void RegisterPositionForSLMove(ulong ticket, double entryPrice, double slDist)
+void RegisterPositionForPartialTP(ulong ticket, double entryPrice, double slDist)
   {
    int n = ArraySize(g_pos_tickets);
    ArrayResize(g_pos_tickets,  n + 1);
    ArrayResize(g_pos_entry,    n + 1);
    ArrayResize(g_pos_sl_dist,  n + 1);
-   ArrayResize(g_pos_sl_moved, n + 1);
+   ArrayResize(g_pos_partial_tp_executed, n + 1);
    g_pos_tickets[n]  = ticket;
    g_pos_entry[n]    = entryPrice;
    g_pos_sl_dist[n]  = slDist;
-   g_pos_sl_moved[n] = false;
+   g_pos_partial_tp_executed[n] = false;
   }
 
 //+------------------------------------------------------------------+
-//| Manage SL Move on Profit — called every tick when feature is on |
+//| Manage Partial TP — called every tick when feature is on         |
 //+------------------------------------------------------------------+
-void ManageSLMove()
+void ManagePartialTP()
   {
    int n = ArraySize(g_pos_tickets);
    if(n == 0) return;
@@ -468,14 +468,14 @@ void ManageSLMove()
 
    for(int i = n - 1; i >= 0; i--)
      {
-      if(g_pos_sl_moved[i]) continue; // Already moved, skip
+      if(g_pos_partial_tp_executed[i]) continue; // Already executed, skip
 
       ulong ticket = g_pos_tickets[i];
 
       // If position no longer exists, remove from tracking
       if(!PositionSelectByTicket(ticket))
         {
-         RemoveSlMoveEntry(i);
+         RemovePartialTPEntry(i);
          continue;
         }
 
@@ -483,8 +483,8 @@ void ManageSLMove()
       double entryPx = g_pos_entry[i];
       double slDist  = g_pos_sl_dist[i];
 
-      // Trigger price: entry ± slDist × InpSLMoveAtRR
-      double triggerDist = slDist * InpSLMoveAtRR;
+      // Trigger price: entry ± slDist × InpPartialTPAtRR
+      double triggerDist = slDist * InpPartialTPAtRR;
       bool isLong = (posType == POSITION_TYPE_BUY);
 
       double currentPrice = isLong ? bid : ask;
@@ -493,35 +493,51 @@ void ManageSLMove()
       bool triggered = isLong ? (currentPrice >= triggerPrice) : (currentPrice <= triggerPrice);
       if(!triggered) continue;
 
-      // New SL = entry ± slDist × InpRR × InpSLMoveToPct / 100  (X% of full reward range)
-      double newSlDist = slDist * InpRR * (InpSLMoveToPct / 100.0);
-      double newSlRaw  = isLong ? entryPx + newSlDist : entryPx - newSlDist;
-      double newSl     = NormalizeDouble(MathRound(newSlRaw / tickSize) * tickSize, _Digits);
-
-      // Only move if it improves (never worsen) the current SL
-      double curSl = PositionGetDouble(POSITION_SL);
-      bool improve = isLong ? (newSl > curSl) : (newSl < curSl);
-      if(!improve) { g_pos_sl_moved[i] = true; continue; }
-
-      double curTp = PositionGetDouble(POSITION_TP);
-      if(trade.PositionModify(ticket, newSl, curTp))
+      // Close a percentage of the volume
+      double currentVolume = PositionGetDouble(POSITION_VOLUME);
+      double lot_to_close = currentVolume * (InpPartialTPPct / 100.0);
+      
+      double minLot  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+      double stepLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+      if(stepLot <= 0) stepLot = minLot;
+      
+      lot_to_close = MathFloor(lot_to_close / stepLot) * stepLot;
+      if(lot_to_close < minLot) lot_to_close = minLot;
+      if(lot_to_close > currentVolume) lot_to_close = currentVolume; // can't close more than exists
+      
+      MqlTradeRequest req = {};
+      MqlTradeResult  res = {};
+      req.action       = TRADE_ACTION_DEAL;
+      req.position     = ticket;
+      req.symbol       = _Symbol;
+      req.volume       = lot_to_close;
+      req.type         = isLong ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+      req.price        = isLong ? bid : ask;
+      req.deviation    = 30;
+      req.magic        = InpMagic;
+      req.comment      = "Partial TP";
+      int fill_mask = (int)SymbolInfoInteger(_Symbol, SYMBOL_FILLING_MODE);
+      req.type_filling = ((fill_mask & SYMBOL_FILLING_FOK) != 0) ? ORDER_FILLING_FOK :
+                         ((fill_mask & SYMBOL_FILLING_IOC) != 0) ? ORDER_FILLING_IOC :
+                                                                    ORDER_FILLING_RETURN;
+      if(OrderSend(req, res) && (res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_PLACED))
         {
-         PrintFormat("SL Move triggered: Ticket=%llu, Entry=%.5f, Trigger=%.5f, OldSL=%.5f, NewSL=%.5f",
-                     ticket, entryPx, triggerPrice, curSl, newSl);
-         g_pos_sl_moved[i] = true;
+         PrintFormat("Partial TP executed: Ticket=%llu, Trigger=%.5f, Volume Closed=%.2f",
+                     ticket, triggerPrice, lot_to_close);
+         g_pos_partial_tp_executed[i] = true;
         }
       else
         {
-         PrintFormat("SL Move FAILED: Ticket=%llu, Error=%d, RetCode=%d (%s)",
-                     ticket, GetLastError(), trade.ResultRetcode(), trade.ResultRetcodeDescription());
+         PrintFormat("Partial TP FAILED: Ticket=%llu, Error=%d, RetCode=%u",
+                     ticket, GetLastError(), res.retcode);
         }
      }
   }
 
 //+------------------------------------------------------------------+
-//| Remove entry i from all SL-move tracking arrays                  |
+//| Remove entry i from all Partial TP tracking arrays               |
 //+------------------------------------------------------------------+
-void RemoveSlMoveEntry(int i)
+void RemovePartialTPEntry(int i)
   {
    int n = ArraySize(g_pos_tickets);
    for(int k = i; k < n - 1; k++)
@@ -529,12 +545,12 @@ void RemoveSlMoveEntry(int i)
       g_pos_tickets[k]  = g_pos_tickets[k + 1];
       g_pos_entry[k]    = g_pos_entry[k + 1];
       g_pos_sl_dist[k]  = g_pos_sl_dist[k + 1];
-      g_pos_sl_moved[k] = g_pos_sl_moved[k + 1];
+      g_pos_partial_tp_executed[k] = g_pos_partial_tp_executed[k + 1];
      }
    ArrayResize(g_pos_tickets,  n - 1);
    ArrayResize(g_pos_entry,    n - 1);
    ArrayResize(g_pos_sl_dist,  n - 1);
-   ArrayResize(g_pos_sl_moved, n - 1);
+   ArrayResize(g_pos_partial_tp_executed,  n - 1);
   }
 
 //+------------------------------------------------------------------+
