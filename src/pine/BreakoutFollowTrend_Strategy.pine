@@ -9,19 +9,19 @@ strategy("Breakout Follow Trend [Strategy]", overlay=true, initial_capital=10000
 // ==========================================
 // Risk Management
 grp_risk = "Risk Management"
-inpRiskPct    = input.float(1.6, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk, tooltip="Percentage of base balance to risk based on SL distance")
+inpRiskPct    = input.float(1.0, "Risk % per Trade", minval=0.1, step=0.1, group=grp_risk, tooltip="Percentage of base balance to risk based on SL distance")
 inpRR         = input.float(2.0, "Risk:Reward Ratio", minval=0.1, step=0.1, group=grp_risk)
 inpATRMult    = input.float(2.0, "ATR Multiplier (SL)", minval=0.1, step=0.1, group=grp_risk)
 inpMaxTrades  = input.int(1, "Max Concurrent Trades", minval=1, group=grp_risk)
-inpCompound   = input.bool(false, "Use Compounding Risk", group=grp_risk, tooltip="If true, risk = current equity * risk%. If false, risk = fixed balance * risk%.")
+inpCompound   = input.bool(true, "Use Compounding Risk", group=grp_risk, tooltip="If true, risk = current equity * risk%. If false, risk = fixed balance * risk%.")
 inpFixedBal   = input.float(10000.0, "Fixed Balance (when compounding off)", minval=0.0, group=grp_risk)
 inpDailyLoss  = input.float(1.0, "Daily Loss Limit %", minval=0.0, step=0.1, group=grp_risk, tooltip="0 = disabled. Blocks new entries once realized daily P&L drops below this % of base balance.")
 
-// SL Move on Profit
-grp_slmove = "SL Move on Profit"
-inpUseSLMove     = input.bool(true, "Enable SL Move on Profit", group=grp_slmove, tooltip="When price reaches InpSLMoveAtRR × SL distance from entry, move SL to lock in a % of profit.")
-inpSLMoveAtRR    = input.float(0.2, "Trigger at RR", minval=0.1, step=0.1, group=grp_slmove, tooltip="Move SL when price reaches this RR level. E.g. 1.0 = RR 1:1 (1× SL distance in profit).")
-inpSLMoveToPct   = input.float(1.0, "New SL at % of TP Dist (RR)", minval=0.0, step=0.5, group=grp_slmove, tooltip="After trigger, new SL = Entry ± (TP distance × this% / 100). E.g. 5 = entry + 5% of full reward range. 0 = exact breakeven.")
+// Partial Take Profit
+grp_partial_tp = "Partial Take Profit"
+inpUsePartialTP  = input.bool(true, "Enable Partial TP", group=grp_partial_tp, tooltip="When price reaches Partial TP at RR, close a percentage of the order.")
+inpPartialTPAtRR = input.float(1.6, "Partial TP at RR", minval=0.1, step=0.1, group=grp_partial_tp, tooltip="Trigger partial close when price reaches this RR level.")
+inpPartialTPPct  = input.float(50.0, "Close % at Partial TP", minval=1.0, maxval=99.0, step=1.0, group=grp_partial_tp, tooltip="Percentage of the position to close.")
 
 // Indicators
 grp_ind = "Indicators"
@@ -45,9 +45,9 @@ inpCooldownBars  = input.int(6, "Cooldown Bars", minval=1, group=grp_cooldown, t
 // Time & Filters
 grp_time = "Time Filters"
 inpUseTimeFilter = input.bool(true, "Enable Time Filter", group=grp_time, tooltip="When disabled, the EA trades all day without any hourly restriction.")
-inpStartHour  = input.int(8, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
-inpEndHour    = input.int(20, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
-inpWeekendCl  = input.bool(true, "Weekend Close (Friday)", group=grp_time)
+inpStartHour  = input.int(12, "Start Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpEndHour    = input.int(18, "End Hour (0-23)", minval=0, maxval=23, group=grp_time)
+inpWeekendCl  = input.bool(false, "Weekend Close (Friday)", group=grp_time)
 inpFridayTime = input.string("2345", "Friday Close Time (HHMM)", group=grp_time)
 
 // ==========================================
@@ -204,10 +204,9 @@ color_tp_label     = color.new(#089981,  0)
 color_sl_label     = color.new(#f23645,  0)
 color_entry_line   = color.new(#b2b5be,  0)
 color_entry_lbl    = color.new(#b2b5be,  0)
-// ── Moved-SL color (yellow) ───────────────────────────────────────────────────
-color_sl_moved_fill   = color.new(#d4a017, 85)
-color_sl_moved_border = color.new(#d4a017,  0)
-color_sl_moved_label  = color.new(#d4a017,  0)
+// ── Partial TP Label Color ───────────────────────────────────────────────────
+color_ptp_label = color.new(#089981, 0)
+
 
 // ── Persistent Arrays for Active Visual Objects ───────────────────────────────
 var float[]  active_sl_prices    = array.new_float()
@@ -222,7 +221,7 @@ var label[]  active_sl_labels    = array.new_label()
 var label[]  active_en_labels    = array.new_label()
 var float[]  active_entry_prices = array.new_float()     // Entry price per trade (for SL move calc)
 var float[]  active_sl_dists     = array.new_float()     // Original SL distance per trade
-var bool[]   active_sl_moved     = array.new_bool()      // Whether SL has already been moved
+var bool[]   active_partial_tp_done = array.new_bool()   // Whether Partial TP has executed
 
 // ── Helper: format price to 5 sig-figs ───────────────────────────────────────
 f_fmt(float p) => str.tostring(p, format.mintick)
@@ -341,7 +340,7 @@ if total_trades > prev_total_trades
             array.push(active_trade_dirs,  is_long)
             array.push(active_entry_prices, en)
             array.push(active_sl_dists,    sd_rounded)
-            array.push(active_sl_moved,    false)
+            array.push(active_partial_tp_done, false)
     prev_total_trades := total_trades
 
 // ── 3. Prune closed trades ────────────────────────────────────────────────────
@@ -358,7 +357,7 @@ if array.size(active_trade_ids) > 0
     bool[]   temp_trade_dirs  = array.new_bool()
     float[]  temp_entry_prices = array.new_float()
     float[]  temp_sl_dists    = array.new_float()
-    bool[]   temp_sl_moved    = array.new_bool()
+    bool[]   temp_partial_tp_done = array.new_bool()
 
     for i = 0 to array.size(active_trade_ids) - 1
         string tid = array.get(active_trade_ids, i)
@@ -383,7 +382,7 @@ if array.size(active_trade_ids) > 0
             array.push(temp_trade_dirs,  array.get(active_trade_dirs,  i))
             array.push(temp_entry_prices, array.get(active_entry_prices, i))
             array.push(temp_sl_dists,    array.get(active_sl_dists,    i))
-            array.push(temp_sl_moved,    array.get(active_sl_moved,    i))
+            array.push(temp_partial_tp_done, array.get(active_partial_tp_done, i))
 
     active_tp_boxes    := temp_tp_boxes
     active_sl_boxes    := temp_sl_boxes
@@ -397,53 +396,11 @@ if array.size(active_trade_ids) > 0
     active_trade_dirs  := temp_trade_dirs
     active_entry_prices := temp_entry_prices
     active_sl_dists    := temp_sl_dists
-    active_sl_moved    := temp_sl_moved
+    active_partial_tp_done := temp_partial_tp_done
 
 // ── 4. Emergency Reset (Omitted to preserve historical boxes) ─────────────────
 
-// ── 5. SL Move on Profit: check trigger & update SL price ─────────────────────
-if inpUseSLMove and array.size(active_trade_ids) > 0
-    for i = 0 to array.size(active_trade_ids) - 1
-        if not array.get(active_sl_moved, i)
-            bool  is_long_t  = array.get(active_trade_dirs,   i)
-            float en_t       = array.get(active_entry_prices, i)
-            float sd_t       = array.get(active_sl_dists,     i)
-
-            // Trigger price = entry ± (SL dist × trigger RR)
-            float trigger    = is_long_t ? en_t + sd_t * inpSLMoveAtRR : en_t - sd_t * inpSLMoveAtRR
-
-            // Check if current close has reached the trigger
-            bool triggered   = is_long_t ? close >= trigger : close <= trigger
-
-            if triggered
-                // New SL = entry ± (TP dist × inpSLMoveToPct / 100)
-                // TP dist = SL dist × RR  →  locks X% of the full reward range
-                float new_sl_dist = sd_t * inpRR * (inpSLMoveToPct / 100.0)
-                float new_sl_raw  = is_long_t ? en_t + new_sl_dist : en_t - new_sl_dist
-                float new_sl      = math.round(new_sl_raw / syminfo.mintick) * syminfo.mintick
-
-                // Only move SL in the direction that improves it (never worsen SL)
-                float cur_sl = array.get(active_sl_prices, i)
-                bool  improve = is_long_t ? new_sl > cur_sl : new_sl < cur_sl
-                if improve
-                    array.set(active_sl_prices, i, new_sl)
-                    array.set(active_sl_moved,  i, true)
-
-                    // Update SL box bottom/top and color to reflect new SL
-                    box b_sl_upd = array.get(active_sl_boxes, i)
-                    if is_long_t
-                        box.set_bottom(b_sl_upd, new_sl)
-                    else
-                        box.set_top(b_sl_upd, new_sl)
-                    // Change SL box color to yellow after move
-                    box.set_bgcolor(b_sl_upd,       color_sl_moved_fill)
-                    box.set_border_color(b_sl_upd,  color_sl_moved_border)
-
-                    // Update SL label text and color
-                    label lbl_sl_upd = array.get(active_sl_labels, i)
-                    label.set_text(lbl_sl_upd, "SL★ " + f_fmt(new_sl))
-                    label.set_y(lbl_sl_upd, new_sl)
-                    label.set_textcolor(lbl_sl_upd, color_sl_moved_label)
+// ── 5. Partial TP executed natively via strategy.exit ───────────────────────
 
 // ── 6. Re-submit exit orders every bar using stored prices ────────────────────
 if array.size(active_trade_ids) > 0
@@ -451,4 +408,23 @@ if array.size(active_trade_ids) > 0
         string tid   = array.get(active_trade_ids, i)
         float sl_val = array.get(active_sl_prices,  i)
         float tp_val = array.get(active_tp_prices,  i)
-        strategy.exit("X" + tid, tid, stop=sl_val, limit=tp_val, comment_loss="SL", comment_profit="TP")
+        
+        if inpUsePartialTP
+            float sd_t = array.get(active_sl_dists, i)
+            float en_t = array.get(active_entry_prices, i)
+            bool is_long_t = array.get(active_trade_dirs, i)
+            
+            float partial_tp_raw = is_long_t ? en_t + sd_t * inpPartialTPAtRR : en_t - sd_t * inpPartialTPAtRR
+            float partial_tp_val = math.round(partial_tp_raw / syminfo.mintick) * syminfo.mintick
+            bool ptp_done = array.get(active_partial_tp_done, i)
+            
+            if not ptp_done
+                strategy.exit("XP" + tid, tid, qty_percent=inpPartialTPPct, stop=sl_val, limit=partial_tp_val, comment_loss="SL", comment_profit="P-TP")
+                bool hit = is_long_t ? high >= partial_tp_val : low <= partial_tp_val
+                if hit
+                    array.set(active_partial_tp_done, i, true)
+                    
+            strategy.exit("X" + tid, tid, stop=sl_val, limit=tp_val, comment_loss="SL", comment_profit="TP")
+        else
+            strategy.exit("X" + tid, tid, stop=sl_val, limit=tp_val, comment_loss="SL", comment_profit="TP")
+

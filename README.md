@@ -102,11 +102,11 @@ flowchart TD
     G --> J[Set ATR-Based Stop Loss & Take Profit]
     H --> J
 
-    J --> K{SL Move on Profit Enabled?}
+    J --> K{Partial TP Enabled?}
     K -- Yes --> L{Price Reached Trigger RR?}
     K -- No --> M[Hold Position until SL/TP Hit]
 
-    L -- Yes --> N[🔒 Move SL to Lock Profit — Once Only]
+    L -- Yes --> N[🔒 Close Partial % of Position — Once Only]
     L -- No --> M
     N --> M
 ```
@@ -177,10 +177,10 @@ Institutional protection mechanisms engineered directly into MQL5 and Pine Scrip
 * Eliminates broker weekend gap risk by force-closing open trades on Friday at **23:45** (default).
 * Halts new entries until Monday market open.
 
-### 4. 🔒 SL Move on Profit (Breakeven+ Protection)
-* **Trigger Threshold**: Activates when trade reaches `0.2 RR` (default).
-* **SL Adjustment**: Repositions SL into profit: $\text{Entry} \pm (\text{TP Distance} \times 12\%)$.
-* **One-Shot Safety**: Executes once per order lifetime and only improves existing SL.
+### 4. 🔒 Partial Take Profit
+* **Trigger Threshold**: Activates when trade reaches `1.5 RR` (default).
+* **Position Scaling**: Closes `50%` of the active position volume to lock in profit.
+* **One-Shot Safety**: Executes once per order lifetime. The remaining volume runs until the original SL or TP is hit.
 
 ### 5. ⏳ Cooldown Period After Exit
 * Prevents over-trading by blocking entries for **9 bars** (2 hrs 15 mins on 15m) after any trade closure (SL/TP/Weekend close).
@@ -239,7 +239,7 @@ The Pine Script engine renders real-time execution visuals directly on your char
 | :--- | :--- | :--- |
 | **Take Profit Zone** | 🟢 Green `#089981` | Dynamic Take Profit Target Box |
 | **Stop Loss Zone** | 🔴 Red `#f23645` | Standard Risk Zone |
-| **Protected SL** | 🟡 Amber `#d4a017` | Activated when *SL Move on Profit* triggers (`SL★`) |
+| **Partial TP** | 🟢 Green `#089981` | Label indicates the exact price for Partial TP (`P-TP`) |
 | **Entry Price Line** | ⬜ Gray `#b2b5be` | Dashed horizontal line at actual fill price |
 
 ---
@@ -250,16 +250,16 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 
 | Category | Input Parameter | Preset Value | Purpose / Description |
 | :--- | :--- | :--- | :--- |
-| **Risk Management** | Risk % per Trade | **1.6%** | Optimized account exposure |
+| **Risk Management** | Risk % per Trade | **1.0%** | Optimized account exposure |
 | | Risk:Reward Ratio | **2.0** | High expectancy TP target |
 | | ATR Multiplier (SL) | **2.0** | Volatility-adjusted stop range |
 | | Max Concurrent Trades | **1** | Single position discipline |
-| | Compounding Risk | **Disabled** (`false`) | Constant lot calculation mode |
+| | Compounding Risk | **Enabled** (`true`) | Dynamic lot calculation mode |
 | | Fixed Balance | **10,000** | Reference balance for fixed sizing |
 | | Daily Loss Limit % | **1.0%** | Hard daily drawdown limit |
-| **SL Move on Profit** | Enable SL Move | **Enabled** (`true`) | Breakeven+ protection toggle |
-| | Trigger at RR | **0.2** | Activation profit distance |
-| | New SL % of TP | **1%** | Profit locked into SL |
+| **Partial Take Profit** | Enable Partial TP | **Enabled** (`true`) | Position scaling toggle |
+| | Trigger at RR | **1.6** | Activation profit distance |
+| | Close % at Partial TP | **50%** | Position size to close |
 | **Indicators** | EMA Filter | **Enabled** (`true`) | 200 EMA trend filter |
 | | EMA Body Overlap | **Disabled** (`false`) | Straddle entry block |
 | | EMA Period | **200** | Long-term trend baseline |
@@ -268,10 +268,10 @@ Optimized settings tuned specifically for **Gold (XAUUSD) 15m**:
 | **Volume Filter** | Enable Volume Filter | **Enabled** (`true`) | Momentum confirmation |
 | | Volume MA Period | **15** | SMA volume baseline |
 | **Session Timing** | Enable Time Filter | **Enabled** (`true`) | Disable = trade all day, no hourly restriction |
-| | Start / End Hour (TradingView) | **8 / 20** | Exchange Time (UTC-4) intraday window |
-| | Start / End Hour (MT5) | **15 / 3** | Broker Server Time (UTC+3) — UTC-4 + 7h offset; crosses midnight |
-| | *(Why different?)* | *Timezone offset* | *TradingView uses New York Exchange Time (UTC-4); MT5 EA uses Broker Server Time (UTC+3). The same real-world window is 08:00–20:00 in UTC-4, which equals 15:00–03:00 in UTC+3 (+7h shift).* |
-| | Weekend Close | **Enabled** (`true`) | Friday risk liquidation |
+| | Start / End Hour (TradingView) | **12 / 18** | Exchange Time (UTC-4) intraday window |
+| | Start / End Hour (MT5) | **19 / 1** | Broker Server Time (UTC+3) — UTC-4 + 7h offset; crosses midnight |
+| | *(Why different?)* | *Timezone offset* | *TradingView uses New York Exchange Time (UTC-4); MT5 EA uses Broker Server Time (UTC+3). The same real-world window is 12:00–18:00 in UTC-4, which equals 19:00–01:00 in UTC+3 (+7h shift).* |
+| | Weekend Close | **Disabled** (`false`) | Friday risk liquidation |
 | | Friday Close Time | **2345** | Weekly exit cut-off time |
 | **Cooldown** | Enable Cooldown | **Enabled** (`true`) | Over-trading guard |
 | | Cooldown Bars | **6** | Delay period after exit (1h 30m) |
