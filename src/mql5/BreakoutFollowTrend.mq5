@@ -517,7 +517,10 @@ void ManagePartialTP()
       req.deviation    = 30;
       req.magic        = InpMagic;
       req.comment      = "Partial TP";
-      req.type_filling = trade.TypeFilling();
+      int fill_mask = (int)SymbolInfoInteger(_Symbol, SYMBOL_FILLING_MODE);
+      req.type_filling = ((fill_mask & SYMBOL_FILLING_FOK) != 0) ? ORDER_FILLING_FOK :
+                         ((fill_mask & SYMBOL_FILLING_IOC) != 0) ? ORDER_FILLING_IOC :
+                                                                    ORDER_FILLING_RETURN;
       if(OrderSend(req, res) && (res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_PLACED))
         {
          PrintFormat("Partial TP executed: Ticket=%llu, Trigger=%.5f, Volume Closed=%.2f",
