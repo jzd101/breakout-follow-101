@@ -506,7 +506,7 @@ void ManagePartialTP()
       if(lot_to_close < minLot) lot_to_close = minLot;
       if(lot_to_close > currentVolume) lot_to_close = currentVolume; // can't close more than exists
       
-      if(trade.PositionClose(ticket, lot_to_close))
+      if(trade.PositionClosePartial(ticket, lot_to_close))
         {
          PrintFormat("Partial TP executed: Ticket=%llu, Trigger=%.5f, Volume Closed=%.2f",
                      ticket, triggerPrice, lot_to_close);
